@@ -1,6 +1,7 @@
 import { useParams, useSearchParams } from "react-router-dom";
 import { useCard } from "../api/hooks";
 import { CardDetailView } from "../components/card/CardDetail";
+import { ErrorState } from "../components/layout/ErrorState";
 
 const LANGUAGE_LABELS: Record<string, string> = {
   en: "EN",
@@ -27,6 +28,8 @@ export function CardPage() {
   const available = data?.data.available_languages ?? [];
   const showSwitcher = available.length > 1;
 
+  if (error) return <ErrorState message={(error as Error).message} wide />;
+
   return (
     <div>
       {showSwitcher && (
@@ -47,8 +50,7 @@ export function CardPage() {
           </div>
         </div>
       )}
-      {isLoading && <div className="p-8 text-text-muted">Loading...</div>}
-      {error && <div className="p-8 text-banned">Error: {(error as Error).message}</div>}
+      {isLoading && <div className="p-8" aria-live="polite"><span className="sr-only">Loading card</span></div>}
       {data && <CardDetailView card={data.data} initialVariant={variantParam != null ? parseInt(variantParam, 10) : undefined} />}
     </div>
   );

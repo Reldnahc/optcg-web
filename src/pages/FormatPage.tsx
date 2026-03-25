@@ -1,6 +1,7 @@
 import { useParams, Link } from "react-router-dom";
 import { useFormat } from "../api/hooks";
 import type { FormatDetail } from "../api/types";
+import { ErrorState } from "../components/layout/ErrorState";
 import { PageContainer } from "../components/layout/PageContainer";
 
 type DisplayBan = Omit<FormatDetail["bans"][number], "paired_with"> & {
@@ -11,8 +12,8 @@ export function FormatPage() {
   const { name } = useParams<{ name: string }>();
   const { data, isLoading, error } = useFormat(name!);
 
-  if (isLoading) return <div className="p-8 text-text-muted">Loading...</div>;
-  if (error) return <div className="p-8 text-banned">Error: {(error as Error).message}</div>;
+  if (isLoading) return <div className="p-8" aria-live="polite"><span className="sr-only">Loading format</span></div>;
+  if (error) return <ErrorState message={(error as Error).message} />;
   if (!data) return null;
 
   const format = data.data;

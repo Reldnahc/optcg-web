@@ -1,20 +1,34 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useRandomCard } from "../api/hooks";
+import { apiFetch } from "../api/client";
+import type { Card } from "../api/types";
+import { ErrorState } from "../components/layout/ErrorState";
 
 export function RandomRedirect() {
   const navigate = useNavigate();
-  const { refetch } = useRandomCard();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    refetch().then((result) => {
-      if (result.data?.data) {
-        navigate(`/cards/${result.data.data.card_number}`, { replace: true });
-      } else {
-        navigate("/", { replace: true });
-      }
-    });
-  }, [refetch, navigate]);
+    let cancelled = false;
 
-  return <div className="p-8 text-text-muted text-center">Finding a random card...</div>;
+    apiFetch<{ data: Card }>("/random")
+      .then((result) => {
+        if (cancelled) return;
+        navigate(`/cards/${result.data.card_number}`, { replace: true });
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        setErrorMessage(error instanceof Error ? error.message : "Unable to fetch a random card.");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate]);
+
+  if (errorMessage) {
+    return <ErrorState message={errorMessage} />;
+  }
+
+  return <div className="p-8 text-center" aria-live="polite"><span className="sr-only">Finding a random card</span></div>;
 }

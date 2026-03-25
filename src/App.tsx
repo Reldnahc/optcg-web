@@ -12,7 +12,9 @@ import { DonBrowser } from "./pages/DonBrowser";
 import { SyntaxHelp } from "./pages/SyntaxHelp";
 import { AdvancedSearch } from "./pages/AdvancedSearch";
 import { ApiDocs } from "./pages/ApiDocs";
+import { PrivacyPolicy } from "./pages/PrivacyPolicy";
 import { RandomRedirect } from "./pages/RandomRedirect";
+import { TermsOfUse } from "./pages/TermsOfUse";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -41,6 +43,8 @@ export default function App() {
             <Route path="/don" element={<DonBrowser />} />
             <Route path="/random-redirect" element={<RandomRedirect />} />
             <Route path="/api" element={<ApiDocs />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfUse />} />
           </Route>
         </Routes>
       </BrowserRouter>

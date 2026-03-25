@@ -5,7 +5,7 @@ import { PageContainer } from "../components/layout/PageContainer";
 export function FormatBrowser() {
   const { data, isLoading } = useFormats();
 
-  if (isLoading) return <div className="p-8 text-text-muted">Loading...</div>;
+  if (isLoading) return <div className="p-8" aria-live="polite"><span className="sr-only">Loading formats</span></div>;
 
   return (
     <PageContainer title="Formats">

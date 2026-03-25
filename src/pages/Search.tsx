@@ -2,6 +2,7 @@ import { useSearchParams } from "react-router-dom";
 import { useCardSearch } from "../api/hooks";
 import { CardGrid } from "../components/card/CardGrid";
 import { CardChecklist } from "../components/card/CardChecklist";
+import { ErrorState } from "../components/layout/ErrorState";
 
 export function Search() {
   const [params, setParams] = useSearchParams();
@@ -30,13 +31,16 @@ export function Search() {
     setParams(next);
   };
 
+  if (error) {
+    return <ErrorState message={(error as Error).message} />;
+  }
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-4">
       {/* Result count + controls */}
       <div className="flex flex-wrap items-center justify-between gap-2 mb-4 text-[13px]">
         <div className="text-text-secondary">
-          {isLoading && "Searching..."}
-          {error && <span className="text-banned">Error: {(error as Error).message}</span>}
+          {isLoading && <span className="sr-only">Searching</span>}
           {pagination && (
             <>
               {pagination.total.toLocaleString()} result{pagination.total !== 1 && "s"}

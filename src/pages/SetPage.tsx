@@ -1,14 +1,15 @@
 import { useParams } from "react-router-dom";
 import { useSet } from "../api/hooks";
 import { CardGrid } from "../components/card/CardGrid";
+import { ErrorState } from "../components/layout/ErrorState";
 import { PageContainer } from "../components/layout/PageContainer";
 
 export function SetPage() {
   const { set_code } = useParams<{ set_code: string }>();
   const { data, isLoading, error } = useSet(set_code!);
 
-  if (isLoading) return <div className="p-8 text-text-muted">Loading...</div>;
-  if (error) return <div className="p-8 text-banned">Error: {(error as Error).message}</div>;
+  if (isLoading) return <div className="p-8" aria-live="polite"><span className="sr-only">Loading set</span></div>;
+  if (error) return <ErrorState message={(error as Error).message} wide />;
   if (!data) return null;
 
   const set = data.data;

@@ -4,7 +4,7 @@ import { PageContainer } from "../components/layout/PageContainer";
 export function DonBrowser() {
   const { data, isLoading } = useDonCards();
 
-  if (isLoading) return <div className="p-8 text-text-muted">Loading...</div>;
+  if (isLoading) return <div className="p-8" aria-live="polite"><span className="sr-only">Loading DON cards</span></div>;
 
   const cards = data?.data ?? [];
 

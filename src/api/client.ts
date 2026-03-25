@@ -14,7 +14,10 @@ export async function apiFetch<T>(path: string, params?: Record<string, string>)
   const res = await fetch(buildApiUrl(path, params));
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body?.error?.message || `API error ${res.status}`);
+    const message = body?.error?.message
+      || body?.message
+      || (res.status === 429 ? "Rate limit exceeded" : `API error ${res.status}`);
+    throw new Error(message);
   }
   return res.json();
 }

@@ -30,8 +30,14 @@ export function Footer() {
             </ul>
           </div>
         </div>
-        <div className="mt-8 pt-4 border-t border-border text-xs text-text-muted leading-relaxed text-center">
+        <div className="mt-8 pt-4 border-t border-border text-center">
+          <div className="mb-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-text-muted">
+            <Link to="/terms" className="hover:text-text-secondary">Terms of Use</Link>
+            <Link to="/privacy" className="hover:text-text-secondary">Privacy Policy</Link>
+          </div>
+          <div className="text-xs text-text-muted leading-relaxed">
           <p>Card images and data &copy; Bandai Co., Ltd. Prices provided by TCGPlayer. poneglyph.one is not produced by, endorsed by, supported by, or affiliated with Bandai or TCGPlayer.</p>
+          </div>
         </div>
       </div>
     </footer>
