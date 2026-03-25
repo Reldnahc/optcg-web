@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { PageContainer } from "../components/layout/PageContainer";
-
-const API_DOCS_BASE = "https://api.poneglyph.one";
+import { buildApiUrl } from "../api/client";
 
 const ENDPOINTS = [
   {
@@ -165,7 +164,10 @@ function EndpointCard({ endpoint }: { endpoint: (typeof ENDPOINTS)[number] }) {
   const tryIt = async () => {
     setLoading(true);
     try {
-      const res = await fetch(new URL(endpoint.example, API_DOCS_BASE).toString());
+      const exampleUrl = new URL(endpoint.example, "https://placeholder.local");
+      const path = exampleUrl.pathname.replace(/^\/v1/, "");
+      const params = Object.fromEntries(exampleUrl.searchParams.entries());
+      const res = await fetch(buildApiUrl(path, params));
       const data = await res.json();
       setResponse(JSON.stringify(data, null, 2));
     } catch (e) {
