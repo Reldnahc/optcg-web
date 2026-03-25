@@ -157,20 +157,56 @@ function FieldRow({ name, type, desc }: { name: string; type: string; desc: stri
   );
 }
 
+function resolveTryItUrl(requestValue: string) {
+  const trimmed = requestValue.trim();
+  if (!trimmed) {
+    throw new Error("Enter a request path before trying it.");
+  }
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+
+  const parsed = new URL(trimmed.startsWith("/") ? trimmed : `/${trimmed}`, "https://placeholder.local");
+  const path = parsed.pathname.replace(/^\/v1/, "");
+  const params = Object.fromEntries(parsed.searchParams.entries());
+  return buildApiUrl(path, params);
+}
+
 function EndpointCard({ endpoint }: { endpoint: (typeof ENDPOINTS)[number] }) {
+  const [requestValue, setRequestValue] = useState(endpoint.example);
   const [response, setResponse] = useState<string | null>(null);
+  const [responseStatus, setResponseStatus] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
+
+  let resolvedUrl: string | null = null;
+  let requestError: string | null = null;
+  try {
+    resolvedUrl = resolveTryItUrl(requestValue);
+  } catch (error) {
+    requestError = (error as Error).message;
+  }
 
   const tryIt = async () => {
     setLoading(true);
+    setResponse(null);
+    setResponseStatus(null);
     try {
-      const exampleUrl = new URL(endpoint.example, "https://placeholder.local");
-      const path = exampleUrl.pathname.replace(/^\/v1/, "");
-      const params = Object.fromEntries(exampleUrl.searchParams.entries());
-      const res = await fetch(buildApiUrl(path, params));
-      const data = await res.json();
-      setResponse(JSON.stringify(data, null, 2));
+      const targetUrl = resolveTryItUrl(requestValue);
+      const res = await fetch(targetUrl);
+      const text = await res.text();
+      let formatted = text;
+
+      try {
+        formatted = JSON.stringify(JSON.parse(text), null, 2);
+      } catch {
+        // Keep non-JSON responses as plain text.
+      }
+
+      setResponseStatus(res.status);
+      setResponse(formatted);
     } catch (e) {
+      setResponseStatus(null);
       setResponse(`Error: ${(e as Error).message}`);
     }
     setLoading(false);
@@ -202,11 +238,34 @@ function EndpointCard({ endpoint }: { endpoint: (typeof ENDPOINTS)[number] }) {
         </div>
       )}
 
-      <div className="px-4 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3">
-        <code className="text-xs text-text-muted break-all min-w-0 flex-1">{endpoint.example}</code>
+      <div className="px-4 py-3 border-b border-border">
+        <p className="text-xs text-text-muted mb-2 font-semibold uppercase tracking-wider">Request</p>
+        <div className="rounded-lg border border-border bg-bg-primary p-3">
+          <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:gap-3">
+            <span className="text-xs font-bold bg-legal/20 text-legal px-2 py-1 rounded self-start">
+              {endpoint.method}
+            </span>
+            <div className="min-w-0 flex-1">
+              <input
+                className="w-full rounded-md border border-border bg-bg-card px-3 py-2 text-sm text-text-primary"
+                onChange={(event) => setRequestValue(event.target.value)}
+                spellCheck={false}
+                value={requestValue}
+              />
+              <p className="mt-2 text-xs text-text-muted break-all">
+                Actual request:{" "}
+                <code className="text-accent">{resolvedUrl || "Invalid request path"}</code>
+              </p>
+              {requestError ? <p className="mt-2 text-xs text-danger">{requestError}</p> : null}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="px-4 py-3 flex justify-end">
         <button
           onClick={tryIt}
-          disabled={loading}
+          disabled={loading || !resolvedUrl}
           className="text-xs bg-bg-tertiary hover:bg-bg-hover border border-border px-3 py-1.5 rounded text-text-primary self-start"
         >
           {loading ? "..." : "Try it"}
@@ -215,6 +274,7 @@ function EndpointCard({ endpoint }: { endpoint: (typeof ENDPOINTS)[number] }) {
 
       {response && (
         <pre className="px-4 py-3 bg-bg-primary text-xs text-text-secondary overflow-x-auto max-h-64 border-t border-border">
+          {responseStatus !== null ? `Status: ${responseStatus}\n\n` : ""}
           {response}
         </pre>
       )}
