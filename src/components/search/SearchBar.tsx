@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useDebounce } from "../../hooks/useDebounce";
 import { useAutocomplete } from "../../api/hooks";
 
@@ -105,16 +105,6 @@ export function SearchBar({ compact, initialQuery = "", autoFocus }: Props) {
             ? "bg-bg-secondary border-transparent border pl-8 pr-7 py-1.5 text-sm h-10"
             : "bg-bg-input border border-border pl-10 pr-10 py-2.5 text-base focus:border-accent/60"}`}
       />
-      <Link
-        to="/search/syntax"
-        className={`absolute top-1/2 -translate-y-1/2 text-text-muted hover:text-accent text-xs font-bold
-          hover:no-underline ${compact ? "right-2" : "right-3 text-sm"}`}
-        title="Search syntax help"
-        tabIndex={-1}
-      >
-        ?
-      </Link>
-
       {open && suggestions.length > 0 && (
         <ul className="absolute top-full left-0 right-0 mt-1 bg-bg-card border border-border rounded-md shadow-2xl z-50 overflow-hidden">
           {suggestions.map((name, i) => (

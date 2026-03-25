@@ -12,7 +12,7 @@ const ENDPOINTS = [
       { name: "set", desc: "Set code (e.g. OP01)" },
       { name: "color", desc: "Color filter (e.g. red,green)" },
       { name: "type", desc: "Card type (Leader, Character, Event, Stage)" },
-      { name: "rarity", desc: "Rarity code (C, UC, R, SR, SEC, L, SP, P)" },
+      { name: "rarity", desc: "Rarity code (L, C, UC, R, SR, SEC)" },
       { name: "cost", desc: "Exact cost value" },
       { name: "power", desc: "Exact power value" },
       { name: "counter", desc: "Exact counter value" },
@@ -101,10 +101,8 @@ export function ApiDocs() {
   return (
     <PageContainer
       title="API Documentation"
-      subtitle={<>The poneglyph.one API is free and public. Base URL: <code className="text-accent">https://api.poneglyph.one</code></>}
-      wide
+      subtitle={<>The poneglyph.one API is free and public. Base URL: <code className="text-accent break-all">https://api.poneglyph.one</code></>}
     >
-
       <div className="space-y-6">
         {ENDPOINTS.map((ep) => (
           <EndpointCard key={ep.path} endpoint={ep} />
@@ -126,7 +124,7 @@ export function ApiDocs() {
           <FieldRow name="released_at" type="string | null" desc="Release date (ISO)" />
           <FieldRow name="released" type="boolean" desc="Whether the card has been released" />
           <FieldRow name="card_type" type="string" desc="Leader, Character, Event, or Stage" />
-          <FieldRow name="rarity" type="string | null" desc="C, UC, R, SR, SEC, L, SP, or P" />
+          <FieldRow name="rarity" type="string | null" desc="L, C, UC, R, SR, SEC" />
           <FieldRow name="color" type="string[]" desc="Card colors" />
           <FieldRow name="cost" type="number | null" desc="Cost value" />
           <FieldRow name="power" type="number | null" desc="Power value" />
@@ -150,9 +148,9 @@ export function ApiDocs() {
 
 function FieldRow({ name, type, desc }: { name: string; type: string; desc: string }) {
   return (
-    <div className="px-4 py-2 flex items-baseline gap-4">
-      <code className="text-accent font-mono min-w-[180px]">{name}</code>
-      <span className="text-text-muted text-xs min-w-[120px]">{type}</span>
+    <div className="px-4 py-3 flex flex-col gap-1.5 sm:flex-row sm:items-baseline sm:gap-4">
+      <code className="text-accent font-mono break-all sm:min-w-[180px]">{name}</code>
+      <span className="text-text-muted text-xs break-all sm:min-w-[120px]">{type}</span>
       <span className="text-text-secondary">{desc}</span>
     </div>
   );
@@ -176,12 +174,12 @@ function EndpointCard({ endpoint }: { endpoint: (typeof ENDPOINTS)[number] }) {
 
   return (
     <div className="bg-bg-card border border-border rounded-lg overflow-hidden">
-      <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-bold bg-legal/20 text-legal px-2 py-0.5 rounded">
+      <div className="px-4 py-3 border-b border-border flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+          <span className="text-xs font-bold bg-legal/20 text-legal px-2 py-0.5 rounded self-start">
             {endpoint.method}
           </span>
-          <code className="text-sm text-accent">{endpoint.path}</code>
+          <code className="text-sm text-accent break-all">{endpoint.path}</code>
         </div>
         <span className="text-sm text-text-secondary">{endpoint.desc}</span>
       </div>
@@ -189,10 +187,10 @@ function EndpointCard({ endpoint }: { endpoint: (typeof ENDPOINTS)[number] }) {
       {endpoint.params.length > 0 && (
         <div className="px-4 py-3 border-b border-border">
           <p className="text-xs text-text-muted mb-2 font-semibold uppercase tracking-wider">Parameters</p>
-          <div className="space-y-1">
+          <div className="space-y-2">
             {endpoint.params.map((p) => (
-              <div key={p.name} className="flex items-baseline gap-3 text-sm">
-                <code className="text-accent">{p.name}</code>
+              <div key={p.name} className="flex flex-col gap-1 text-sm sm:flex-row sm:items-baseline sm:gap-3">
+                <code className="text-accent break-all sm:min-w-[72px]">{p.name}</code>
                 <span className="text-text-secondary">{p.desc}</span>
               </div>
             ))}
@@ -200,12 +198,12 @@ function EndpointCard({ endpoint }: { endpoint: (typeof ENDPOINTS)[number] }) {
         </div>
       )}
 
-      <div className="px-4 py-3 flex items-center gap-3">
-        <code className="text-xs text-text-muted flex-1 truncate">{endpoint.example}</code>
+      <div className="px-4 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3">
+        <code className="text-xs text-text-muted break-all min-w-0 flex-1">{endpoint.example}</code>
         <button
           onClick={tryIt}
           disabled={loading}
-          className="text-xs bg-bg-tertiary hover:bg-bg-hover border border-border px-3 py-1 rounded text-text-primary"
+          className="text-xs bg-bg-tertiary hover:bg-bg-hover border border-border px-3 py-1.5 rounded text-text-primary self-start"
         >
           {loading ? "..." : "Try it"}
         </button>

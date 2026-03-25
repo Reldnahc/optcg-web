@@ -42,7 +42,7 @@ export function CardDetailView({ card, initialVariant }: { card: CardDetailType;
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6">
+    <div className="max-w-6xl mx-auto px-4 pt-4 pb-6">
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Left: Card Image */}
         <div className="lg:w-[320px] xl:w-[360px] shrink-0">
@@ -115,7 +115,7 @@ export function CardDetailView({ card, initialVariant }: { card: CardDetailType;
                     className="grid grid-cols-[minmax(0,1.3fr)_minmax(4.75rem,auto)_minmax(4.75rem,auto)_auto] items-center gap-3 rounded-md border border-border bg-bg-card/45 px-3 py-2"
                   >
                     <div className="min-w-0">
-                      <p className="truncate text-[13px] font-medium text-text-primary">TCGplayer</p>
+                      <p className="truncate text-sm font-medium text-text-primary">TCGplayer</p>
                     </div>
                     <PriceStat label="Low" value={fmtPrice(price.low_price)} muted />
                     <PriceStat label="Market" value={fmtPrice(price.market_price)} />
@@ -176,7 +176,7 @@ export function CardDetailView({ card, initialVariant }: { card: CardDetailType;
             )}
           </div>
           <div className="bg-bg-card border border-border rounded-lg p-2.5 space-y-1.5 text-sm">
-            <p className="text-[11px] text-text-muted uppercase tracking-wider">
+            <p className="text-xs text-text-muted uppercase tracking-wider">
               {images.length > 1 ? "Variants" : "Variant"}
             </p>
             <div className="space-y-1">
@@ -202,10 +202,10 @@ export function CardDetailView({ card, initialVariant }: { card: CardDetailType;
                         images.length > 1 ? "hover:bg-black/5" : ""
                       }`}
                     >
-                      <p className="truncate text-[13px] font-medium text-text-primary">
+                      <p className="truncate text-sm font-medium text-text-primary">
                         {img.product_name || card.set_name}
                       </p>
-                      <div className="mt-px flex items-center gap-1 text-[11px] text-text-muted">
+                      <div className="mt-px flex items-center gap-1 text-xs text-text-muted">
                         <span className="shrink-0 font-medium text-text-primary">{marketLabel}</span>
                         <span className="text-text-muted/60">&middot;</span>
                         <span className="truncate">{img.label || `Variant ${img.variant_index}`}</span>
@@ -312,7 +312,7 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
 function PrintRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="text-[11px] text-text-muted uppercase tracking-wider mb-0.5">{label}</p>
+      <p className="text-xs text-text-muted uppercase tracking-wider mb-0.5">{label}</p>
       <p className="text-text-primary">{children}</p>
     </div>
   );
@@ -321,8 +321,8 @@ function PrintRow({ label, children }: { label: string; children: React.ReactNod
 function InlineMeta({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex min-w-0 flex-col items-center text-center rounded-md border border-border bg-bg-tertiary/25 px-2.5 py-1.5 whitespace-nowrap">
-      <span className="text-[11px] uppercase tracking-wider text-text-muted">{label}</span>
-      <span className="mt-0.5 text-[13px] font-medium text-text-primary">{children}</span>
+      <span className="text-xs uppercase tracking-wider text-text-muted">{label}</span>
+      <span className="mt-0.5 text-sm font-medium text-text-primary">{children}</span>
     </div>
   );
 }
@@ -335,16 +335,16 @@ function LegalityItem({ format, info }: { format: string; info: CardDetailType["
 
   return (
     <div className="rounded-md border border-border bg-bg-card/45 px-3 py-2">
-      <div className="flex items-start justify-between gap-3">
-        <Link to={`/formats/${encodeURIComponent(format)}`} className="text-[13px] leading-tight font-medium text-text-primary hover:text-link">
+      <div className="flex items-center justify-between gap-3">
+        <Link to={`/formats/${encodeURIComponent(format)}`} className="text-sm leading-tight font-medium text-text-primary hover:text-link">
           {format}
         </Link>
-        <span className={`inline-flex shrink-0 rounded-full border px-2 py-0.5 text-[11px] leading-tight font-medium ${STATUS_BADGE_STYLE[legality.tone] || "border-border text-text-muted"}`}>
+        <span className={`inline-flex shrink-0 rounded-full border px-2.5 py-1 text-xs leading-tight font-medium ${STATUS_BADGE_STYLE[legality.tone] || "border-border text-text-muted"}`}>
           {legality.label}
         </span>
       </div>
       {partners.length > 0 ? (
-        <p className="mt-1 flex flex-wrap items-baseline gap-x-1 text-[11px] text-text-muted">
+        <p className="mt-1 flex flex-wrap items-baseline gap-x-1 text-xs text-text-muted">
           <span className="whitespace-nowrap">Cannot be used with</span>
           {partners.map((card, i) => (
             <span key={card} className="whitespace-nowrap">
@@ -354,7 +354,7 @@ function LegalityItem({ format, info }: { format: string; info: CardDetailType["
           ))}
         </p>
       ) : legality.note ? (
-        <p className="mt-1 text-[11px] text-text-muted">
+        <p className="mt-1 text-xs text-text-muted">
           {legality.note}
         </p>
       ) : null}
@@ -364,9 +364,9 @@ function LegalityItem({ format, info }: { format: string; info: CardDetailType["
 
 function PriceStat({ label, value, muted = false }: { label: string; value: string; muted?: boolean }) {
   return (
-    <div className="text-right">
-      <p className="text-[10px] uppercase tracking-wider text-text-muted">{label}</p>
-      <p className={`mt-0.5 whitespace-nowrap tabular-nums text-[13px] font-medium ${muted ? "text-text-secondary" : "text-text-primary"}`}>
+    <div className="text-center">
+      <p className="text-[11px] uppercase tracking-wider text-text-muted">{label}</p>
+      <p className={`mt-0.5 whitespace-nowrap tabular-nums text-sm font-medium ${muted ? "text-text-secondary" : "text-text-primary"}`}>
         {value}
       </p>
     </div>
@@ -374,7 +374,7 @@ function PriceStat({ label, value, muted = false }: { label: string; value: stri
 }
 
 function TcgplayerButton({ href, label }: { href: string | null; label: string }) {
-  const className = "inline-flex shrink-0 items-center justify-center rounded-md border border-border bg-bg-card px-1.5 py-1 text-[10px] font-medium transition-colors";
+  const className = "inline-flex min-h-9 min-w-[6.5rem] shrink-0 items-center justify-center rounded-md border border-border bg-bg-card px-3 py-2 text-xs font-semibold transition-colors";
 
   if (!href) {
     return (
@@ -399,7 +399,7 @@ function TcgplayerButton({ href, label }: { href: string | null; label: string }
 }
 
 function ExternalButton({ href, label }: { href: string | null; label: string }) {
-  const className = "inline-flex items-center justify-center rounded-md border border-border bg-bg-card px-1.5 py-1 text-[10px] font-medium transition-colors";
+  const className = "inline-flex min-h-9 min-w-[6.5rem] items-center justify-center rounded-md border border-border bg-bg-card px-3 py-2 text-xs font-semibold transition-colors";
 
   if (!href) {
     return (

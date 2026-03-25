@@ -178,11 +178,11 @@ const SORT_EXAMPLES = [
 
 const COMBO_EXAMPLES = [
   { query: 'c:red t:character cost<=3 o:"draw"', desc: "Cheap red characters that draw cards", example: 'c:red t:character cost<=3 o:"draw"' },
-  { query: 'set:OP01 r:sr is:multicolor', desc: "Multicolor Super Rares from OP01", example: 'set:OP01 r:sr is:multicolor' },
-  { query: 't:leader life>=5 (c:red OR c:green)', desc: "Red or green Leaders with 5+ life", example: 't:leader life>=5 (c:red OR c:green)' },
-  { query: 'legal:standard o:blocker power>=6000', desc: "Standard-legal blockers with 6000+ power", example: 'legal:standard o:blocker power>=6000' },
+  { query: "set:OP01 r:sr is:multicolor", desc: "Multicolor Super Rares from OP01", example: "set:OP01 r:sr is:multicolor" },
+  { query: "t:leader life>=5 (c:red OR c:green)", desc: "Red or green Leaders with 5+ life", example: "t:leader life>=5 (c:red OR c:green)" },
+  { query: "legal:standard o:blocker power>=6000", desc: "Standard-legal blockers with 6000+ power", example: "legal:standard o:blocker power>=6000" },
   { query: 'trait:"Straw Hat Crew" -t:leader -t:event', desc: "Straw Hat characters and stages", example: 'trait:"Straw Hat Crew" -t:leader -t:event' },
-  { query: 'prints>=3 r:sr', desc: "Super Rares with 3+ printings", example: 'prints>=3 r:sr' },
+  { query: "prints>=3 r:sr", desc: "Super Rares with 3+ printings", example: "prints>=3 r:sr" },
 ];
 
 export function SyntaxHelp() {
@@ -191,44 +191,27 @@ export function SyntaxHelp() {
       title="Search Syntax"
       subtitle={<>Use these filters in the search bar to find exactly the cards you need. You can also use the <Link to="/advanced" className="text-link hover:text-link-hover">Advanced Search</Link> page to build queries visually.</>}
     >
-      {/* Operators */}
       <section className="mb-10">
         <h2 className="text-lg font-semibold mb-3">Operators</h2>
         <div className="bg-bg-card border border-border rounded-lg divide-y divide-border">
           {OPERATORS.map((o) => (
-            <div key={o.op} className="px-4 py-2 flex items-center gap-4 text-sm">
-              <code className="text-accent font-mono w-8">{o.op}</code>
-              <span className="text-text-secondary">{o.desc}</span>
-            </div>
+            <SimpleRow key={o.op} code={o.op} desc={o.desc} codeWidthClass="sm:w-8" />
           ))}
         </div>
-        <p className="text-xs text-text-muted mt-2">
+        <p className="text-xs text-text-muted mt-2 leading-relaxed">
           Not all operators apply to every field. Text fields use <code className="text-accent">:</code> for substring matching and <code className="text-accent">=</code> for exact matching. Numeric fields support all comparison operators.
         </p>
       </section>
 
-      {/* Boolean Logic */}
       <section className="mb-10">
         <h2 className="text-lg font-semibold mb-3">Boolean Logic</h2>
         <div className="bg-bg-card border border-border rounded-lg divide-y divide-border">
           {LOGIC.map((l) => (
-            <div key={l.syntax} className="px-4 py-2 flex items-center justify-between text-sm">
-              <div className="flex items-center gap-4">
-                <code className="text-accent font-mono min-w-[240px]">{l.syntax}</code>
-                <span className="text-text-secondary">{l.desc}</span>
-              </div>
-              <Link
-                to={`/search?q=${encodeURIComponent(l.example)}`}
-                className="text-xs text-link hover:text-link-hover shrink-0"
-              >
-                try it
-              </Link>
-            </div>
+            <QueryExampleRow key={l.syntax} code={l.syntax} desc={l.desc} example={l.example} codeWidthClass="sm:min-w-[240px]" />
           ))}
         </div>
       </section>
 
-      {/* Filters by category */}
       <section className="mb-10">
         <h2 className="text-lg font-semibold mb-3">Filters</h2>
         <div className="space-y-6">
@@ -237,18 +220,7 @@ export function SyntaxHelp() {
               <h3 className="text-sm font-semibold text-text-secondary mb-2">{section.title}</h3>
               <div className="bg-bg-card border border-border rounded-lg divide-y divide-border">
                 {section.filters.map((f) => (
-                  <div key={f.filter} className="px-4 py-2 flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-4 min-w-0">
-                      <code className="text-accent font-mono shrink-0">{f.filter}</code>
-                      <span className="text-text-secondary truncate">{f.desc}</span>
-                    </div>
-                    <Link
-                      to={`/search?q=${encodeURIComponent(f.example)}`}
-                      className="text-xs text-link hover:text-link-hover shrink-0 ml-2"
-                    >
-                      try it
-                    </Link>
-                  </div>
+                  <QueryExampleRow key={f.filter} code={f.filter} desc={f.desc} example={f.example} />
                 ))}
               </div>
             </div>
@@ -256,7 +228,6 @@ export function SyntaxHelp() {
         </div>
       </section>
 
-      {/* Display Modes */}
       <section className="mb-10">
         <h2 className="text-lg font-semibold mb-3">Display Modes</h2>
         <p className="text-sm text-text-secondary mb-3">
@@ -265,42 +236,17 @@ export function SyntaxHelp() {
 
         <h3 className="text-sm font-semibold text-text-secondary mb-2">Uniqueness</h3>
         <div className="bg-bg-card border border-border rounded-lg divide-y divide-border mb-4">
-          <div className="px-4 py-2 flex items-center justify-between text-sm">
-            <div className="flex items-center gap-4">
-              <code className="text-accent font-mono min-w-[140px]">unique=prints</code>
-              <span className="text-text-secondary">Each variant (Standard, Alternate Art, etc.) is a separate result (default)</span>
-            </div>
-            <Link to="/search?q=set:OP01&unique=prints" className="text-xs text-link hover:text-link-hover shrink-0">try it</Link>
-          </div>
-          <div className="px-4 py-2 flex items-center justify-between text-sm">
-            <div className="flex items-center gap-4">
-              <code className="text-accent font-mono min-w-[140px]">unique=cards</code>
-              <span className="text-text-secondary">One result per card number, regardless of how many variants exist</span>
-            </div>
-            <Link to="/search?q=set:OP01&unique=cards" className="text-xs text-link hover:text-link-hover shrink-0">try it</Link>
-          </div>
+          <QueryExampleRow code="unique=prints" desc="Each variant (Standard, Alternate Art, etc.) is a separate result (default)" example="set:OP01&unique=prints" rawQuery codeWidthClass="sm:min-w-[140px]" />
+          <QueryExampleRow code="unique=cards" desc="One result per card number, regardless of how many variants exist" example="set:OP01&unique=cards" rawQuery codeWidthClass="sm:min-w-[140px]" />
         </div>
 
         <h3 className="text-sm font-semibold text-text-secondary mb-2">View</h3>
         <div className="bg-bg-card border border-border rounded-lg divide-y divide-border">
-          <div className="px-4 py-2 flex items-center justify-between text-sm">
-            <div className="flex items-center gap-4">
-              <code className="text-accent font-mono min-w-[140px]">as=images</code>
-              <span className="text-text-secondary">Image grid with card thumbnails (default)</span>
-            </div>
-            <Link to="/search?q=set:OP01&as=images" className="text-xs text-link hover:text-link-hover shrink-0">try it</Link>
-          </div>
-          <div className="px-4 py-2 flex items-center justify-between text-sm">
-            <div className="flex items-center gap-4">
-              <code className="text-accent font-mono min-w-[140px]">as=checklist</code>
-              <span className="text-text-secondary">Compact table with card details</span>
-            </div>
-            <Link to="/search?q=set:OP01&as=checklist" className="text-xs text-link hover:text-link-hover shrink-0">try it</Link>
-          </div>
+          <QueryExampleRow code="as=images" desc="Image grid with card thumbnails (default)" example="set:OP01&as=images" rawQuery codeWidthClass="sm:min-w-[140px]" />
+          <QueryExampleRow code="as=checklist" desc="Compact table with card details" example="set:OP01&as=checklist" rawQuery codeWidthClass="sm:min-w-[140px]" />
         </div>
       </section>
 
-      {/* Sorting */}
       <section className="mb-10">
         <h2 className="text-lg font-semibold mb-3">Sorting</h2>
         <p className="text-sm text-text-secondary mb-3">
@@ -310,53 +256,24 @@ export function SyntaxHelp() {
         <h3 className="text-sm font-semibold text-text-secondary mb-2">Sort Fields</h3>
         <div className="bg-bg-card border border-border rounded-lg divide-y divide-border mb-4">
           {SORT_FIELDS.map((s) => (
-            <div key={s.value} className="px-4 py-2 flex items-center justify-between text-sm">
-              <div className="flex items-center gap-4">
-                <code className="text-accent font-mono min-w-[120px]">{s.value}</code>
-                <span className="text-text-secondary">{s.desc}</span>
-              </div>
-              <Link
-                to={`/search?q=${encodeURIComponent(s.example)}`}
-                className="text-xs text-link hover:text-link-hover shrink-0"
-              >
-                try it
-              </Link>
-            </div>
+            <QueryExampleRow key={s.value} code={s.value} desc={s.desc} example={s.example} codeWidthClass="sm:min-w-[120px]" />
           ))}
         </div>
 
         <h3 className="text-sm font-semibold text-text-secondary mb-2">Direction</h3>
         <div className="bg-bg-card border border-border rounded-lg divide-y divide-border mb-4">
-          <div className="px-4 py-2 flex items-center gap-4 text-sm">
-            <code className="text-accent font-mono min-w-[120px]">dir:asc</code>
-            <span className="text-text-secondary">Ascending — lowest first, A to Z, oldest first (default)</span>
-          </div>
-          <div className="px-4 py-2 flex items-center gap-4 text-sm">
-            <code className="text-accent font-mono min-w-[120px]">dir:desc</code>
-            <span className="text-text-secondary">Descending — highest first, Z to A, newest first</span>
-          </div>
+          <SimpleRow code="dir:asc" desc="Ascending - lowest first, A to Z, oldest first (default)" codeWidthClass="sm:min-w-[120px]" />
+          <SimpleRow code="dir:desc" desc="Descending - highest first, Z to A, newest first" codeWidthClass="sm:min-w-[120px]" />
         </div>
 
         <h3 className="text-sm font-semibold text-text-secondary mb-2">Examples</h3>
         <div className="bg-bg-card border border-border rounded-lg divide-y divide-border">
           {SORT_EXAMPLES.map((s) => (
-            <div key={s.query} className="px-4 py-2 flex items-center justify-between text-sm">
-              <div className="flex items-center gap-4 min-w-0">
-                <code className="text-accent font-mono shrink-0">{s.query}</code>
-                <span className="text-text-secondary truncate">{s.desc}</span>
-              </div>
-              <Link
-                to={`/search?q=${encodeURIComponent(s.example)}`}
-                className="text-xs text-link hover:text-link-hover shrink-0 ml-2"
-              >
-                try it
-              </Link>
-            </div>
+            <QueryExampleRow key={s.query} code={s.query} desc={s.desc} example={s.example} />
           ))}
         </div>
       </section>
 
-      {/* Example Combinations */}
       <section className="mb-10">
         <h2 className="text-lg font-semibold mb-3">Example Queries</h2>
         <p className="text-sm text-text-secondary mb-3">
@@ -364,23 +281,11 @@ export function SyntaxHelp() {
         </p>
         <div className="bg-bg-card border border-border rounded-lg divide-y divide-border">
           {COMBO_EXAMPLES.map((e) => (
-            <div key={e.query} className="px-4 py-2 flex items-center justify-between text-sm">
-              <div className="flex items-center gap-4 min-w-0">
-                <code className="text-accent font-mono shrink-0">{e.query}</code>
-                <span className="text-text-secondary truncate">{e.desc}</span>
-              </div>
-              <Link
-                to={`/search?q=${encodeURIComponent(e.example)}`}
-                className="text-xs text-link hover:text-link-hover shrink-0 ml-2"
-              >
-                try it
-              </Link>
-            </div>
+            <QueryExampleRow key={e.query} code={e.query} desc={e.desc} example={e.example} />
           ))}
         </div>
       </section>
 
-      {/* Field Aliases */}
       <section>
         <h2 className="text-lg font-semibold mb-3">Field Aliases</h2>
         <p className="text-sm text-text-secondary mb-3">
@@ -400,12 +305,61 @@ export function SyntaxHelp() {
   );
 }
 
+function SimpleRow({
+  code,
+  desc,
+  codeWidthClass,
+}: {
+  code: string;
+  desc: string;
+  codeWidthClass?: string;
+}) {
+  return (
+    <div className="px-4 py-3 flex flex-col gap-1.5 text-sm sm:flex-row sm:items-center sm:gap-4">
+      <code className={`text-accent font-mono rounded bg-bg-primary/60 px-2 py-1 self-start sm:bg-transparent sm:px-0 sm:py-0 ${codeWidthClass ?? ""}`}>
+        {code}
+      </code>
+      <span className="text-text-secondary">{desc}</span>
+    </div>
+  );
+}
+
+function QueryExampleRow({
+  code,
+  desc,
+  example,
+  codeWidthClass,
+  rawQuery = false,
+}: {
+  code: string;
+  desc: string;
+  example: string;
+  codeWidthClass?: string;
+  rawQuery?: boolean;
+}) {
+  const to = rawQuery ? `/search?q=${example}` : `/search?q=${encodeURIComponent(example)}`;
+
+  return (
+    <div className="px-4 py-3 flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+        <code className={`text-accent font-mono text-[13px] break-all rounded bg-bg-primary/60 px-2 py-1 self-start sm:text-sm sm:break-normal sm:bg-transparent sm:px-0 sm:py-0 ${codeWidthClass ?? ""}`}>
+          {code}
+        </code>
+        <span className="text-text-secondary">{desc}</span>
+      </div>
+      <Link to={to} className="text-xs text-link hover:text-link-hover self-start shrink-0 sm:ml-2">
+        try it
+      </Link>
+    </div>
+  );
+}
+
 function AliasRow({ short, full }: { short: string; full: string }) {
   return (
-    <div className="px-4 py-2 flex items-center gap-4">
-      <code className="text-accent font-mono w-8">{short}</code>
+    <div className="px-4 py-3 flex items-center gap-3">
+      <code className="text-accent font-mono rounded bg-bg-primary/60 px-2 py-1 w-10 text-center sm:w-8 sm:bg-transparent sm:px-0 sm:py-0">{short}</code>
       <span className="text-text-muted">&rarr;</span>
-      <code className="text-text-primary font-mono">{full}</code>
+      <code className="text-text-primary font-mono break-all">{full}</code>
     </div>
   );
 }

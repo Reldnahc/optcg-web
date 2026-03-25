@@ -96,9 +96,10 @@ a:hover {
   border-radius: 4px;
 }
 
-/* Card effect text styling — distinct from body text */
+/* Card effect text styling */
 .effect-text {
-  font-family: var(--font-serif);
-  font-size: 0.9rem;
-  line-height: 1.6;
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  line-height: 1.65;
+  letter-spacing: -0.005em;
 }

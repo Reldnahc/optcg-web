@@ -31,7 +31,7 @@ export function Search() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-4">
+    <div className="max-w-5xl mx-auto px-4 py-4">
       {/* Result count + controls */}
       <div className="flex flex-wrap items-center justify-between gap-2 mb-4 text-[13px]">
         <div className="text-text-secondary">

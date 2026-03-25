@@ -4,7 +4,7 @@ export function Footer() {
   return (
     <footer className="border-t border-border mt-auto bg-bg-secondary">
       <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-sm">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-6 text-sm">
           <div>
             <h4 className="text-text-primary font-semibold mb-2">Cards</h4>
             <ul className="space-y-1 text-text-muted">
@@ -25,12 +25,6 @@ export function Footer() {
             <h4 className="text-text-primary font-semibold mb-2">Developers</h4>
             <ul className="space-y-1 text-text-muted">
               <li><Link to="/api" className="hover:text-text-secondary">API Docs</Link></li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="text-text-primary font-semibold mb-2">poneglyph.one</h4>
-            <ul className="space-y-1 text-text-muted">
-              <li><a href="https://github.com/poneglyph-one" target="_blank" rel="noopener noreferrer" className="hover:text-text-secondary">GitHub</a></li>
             </ul>
           </div>
         </div>

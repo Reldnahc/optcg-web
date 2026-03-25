@@ -30,13 +30,13 @@ export function CardPage() {
   return (
     <div>
       {showSwitcher && (
-        <div className="max-w-6xl mx-auto px-4 pt-4 flex justify-end">
-          <div className="flex gap-0.5 bg-bg-card rounded-md p-0.5 border border-border">
+        <div className="max-w-6xl mx-auto px-4 pt-2.5 flex justify-end">
+          <div className="flex gap-px bg-bg-card rounded-md p-px border border-border">
             {available.map((code) => (
               <button
                 key={code}
                 onClick={() => switchLang(code)}
-                className={`px-2.5 py-1 text-xs font-medium rounded transition-colors
+                className={`min-w-9 px-2 py-0.75 text-[11px] font-medium rounded transition-colors
                   ${lang === code
                     ? "bg-accent text-bg-primary"
                     : "text-text-muted hover:text-text-primary"}`}

@@ -10,13 +10,13 @@ export function Header() {
   const headerQuery = location.pathname === "/search" ? (searchParams.get("q") || "") : "";
 
   return (
-    <header className="bg-bg-secondary border-b border-border sticky top-0 z-50">
-      <div className="max-w-6xl mx-auto px-4 h-16 flex items-center gap-4">
+    <header className="bg-bg-secondary border-b border-border">
+      <div className="max-w-6xl mx-auto px-4 h-14 flex items-center gap-4">
         <Link
           to="/"
-          className="[font-family:var(--font-display)] text-accent font-bold shrink-0 hover:text-accent-hover hover:no-underline tracking-tight"
+          className="inline-flex h-full items-center [font-family:var(--font-display)] text-accent font-bold shrink-0 hover:text-accent-hover hover:no-underline tracking-tight"
         >
-          <span className="hidden md:inline text-xl">poneglyph.one</span>
+          <span className="hidden md:flex h-full items-center text-xl leading-none">poneglyph.one</span>
           <img src="/favicon.svg" alt="" aria-hidden="true" className="md:hidden w-8 h-8" />
         </Link>
 
@@ -31,7 +31,7 @@ export function Header() {
           <NavLink to="/don">DON!!</NavLink>
           <button
             onClick={() => navigate("/random-redirect")}
-            className="px-3 py-1.5 rounded text-text-secondary hover:text-text-primary hover:bg-bg-tertiary cursor-pointer"
+            className="inline-flex h-9 items-center rounded-md px-3 font-semibold text-text-secondary transition-colors hover:bg-bg-tertiary/70 hover:text-text-primary cursor-pointer"
           >
             Random
           </button>
@@ -39,8 +39,9 @@ export function Header() {
 
         {/* Mobile menu toggle */}
         <button
-          className="md:hidden ml-auto text-text-secondary hover:text-text-primary"
+          className="md:hidden ml-auto inline-flex h-10 w-10 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-bg-tertiary/70 hover:text-text-primary"
           onClick={() => setMenuOpen(!menuOpen)}
+          aria-label={menuOpen ? "Close menu" : "Open menu"}
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
             <rect y="4" width="24" height="2.5" rx="1" />
@@ -51,7 +52,7 @@ export function Header() {
       </div>
 
       {menuOpen && (
-        <nav className="md:hidden border-t border-border px-4 py-2 flex flex-col text-sm">
+        <nav className="md:hidden border-t border-border px-4 py-3 flex flex-col text-sm">
           <MobileLink to="/advanced" onClick={() => setMenuOpen(false)}>Advanced Search</MobileLink>
           <MobileLink to="/search/syntax" onClick={() => setMenuOpen(false)}>Syntax Guide</MobileLink>
           <MobileLink to="/sets" onClick={() => setMenuOpen(false)}>All Sets</MobileLink>
@@ -66,7 +67,7 @@ function NavLink({ to, children }: { to: string; children: React.ReactNode }) {
   return (
     <Link
       to={to}
-      className="px-3 py-1.5 rounded text-text-secondary hover:text-text-primary hover:bg-bg-tertiary hover:no-underline"
+      className="inline-flex h-9 items-center rounded-md px-3 font-semibold text-text-secondary transition-colors hover:bg-bg-tertiary/70 hover:text-text-primary hover:no-underline"
     >
       {children}
     </Link>
@@ -75,7 +76,11 @@ function NavLink({ to, children }: { to: string; children: React.ReactNode }) {
 
 function MobileLink({ to, onClick, children }: { to: string; onClick: () => void; children: React.ReactNode }) {
   return (
-    <Link to={to} onClick={onClick} className="py-2 text-text-secondary hover:text-text-primary hover:no-underline">
+    <Link
+      to={to}
+      onClick={onClick}
+      className="rounded-md px-3 py-2 text-text-secondary transition-colors hover:bg-bg-tertiary/70 hover:text-text-primary hover:no-underline"
+    >
       {children}
     </Link>
   );
