@@ -1,0 +1,104 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&family=Literata:opsz,wght@7..72,500;600&display=swap");
+@import "tailwindcss";
+
+@theme {
+  --color-bg-primary: #1e2028;
+  --color-bg-secondary: #171920;
+  --color-bg-tertiary: #2a2d38;
+  --color-bg-card: #242731;
+  --color-bg-hover: #30343f;
+  --color-bg-input: #2a2d38;
+  --color-text-primary: #e8e9ed;
+  --color-text-secondary: #a8adb8;
+  --color-text-muted: #6b7080;
+  --color-accent: #d4a94c;
+  --color-accent-hover: #e2bc62;
+  --color-link: #7cacf0;
+  --color-link-hover: #a3c4f7;
+  --color-legal: #5ce88e;
+  --color-banned: #f07070;
+  --color-restricted: #f0b060;
+  --color-pair: #e0a0d0;
+  --color-not-legal: #6b7080;
+  --color-border: #353849;
+
+  --color-op-red: #ef4444;
+  --color-op-green: #22c55e;
+  --color-op-blue: #3b82f6;
+  --color-op-purple: #a855f7;
+  --color-op-black: #6b7280;
+  --color-op-yellow: #eab308;
+}
+
+html {
+  font-size: 19px;
+}
+
+:root {
+  --font-sans: "Manrope", "Segoe UI", sans-serif;
+  --font-display: "Space Grotesk", "Avenir Next", "Segoe UI", sans-serif;
+  --font-serif: "Literata", "Georgia", "Times New Roman", serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+  margin: 0;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display);
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+}
+
+a {
+  color: var(--color-link);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--color-link-hover);
+  text-decoration: underline;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-bg-secondary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-bg-tertiary);
+  border-radius: 4px;
+}
+
+/* Card effect text styling — distinct from body text */
+.effect-text {
+  font-family: var(--font-serif);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
