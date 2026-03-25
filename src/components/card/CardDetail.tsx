@@ -112,12 +112,14 @@ export function CardDetailView({ card, initialVariant }: { card: CardDetailType;
                 {Object.entries(currentImage.prices).map(([subType, price]) => (
                   <div
                     key={subType}
-                    className="grid grid-cols-[minmax(0,1.3fr)_minmax(4.75rem,auto)_minmax(4.75rem,auto)_auto] items-center gap-3 rounded-md border border-border bg-bg-card/45 px-3 py-2"
+                    className="grid grid-cols-[minmax(0,1fr)_minmax(4.5rem,auto)_auto] items-center gap-2.5 rounded-md border border-border bg-bg-card/45 px-3 py-2 sm:grid-cols-[minmax(0,1.3fr)_minmax(4.75rem,auto)_minmax(4.75rem,auto)_auto] sm:gap-3"
                   >
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-text-primary">TCGplayer</p>
+                      <p className="truncate text-[13px] font-medium text-text-primary sm:text-sm">TCGplayer</p>
                     </div>
-                    <PriceStat label="Low" value={fmtPrice(price.low_price)} muted />
+                    <div className="hidden sm:block">
+                      <PriceStat label="Low" value={fmtPrice(price.low_price)} muted />
+                    </div>
                     <PriceStat label="Market" value={fmtPrice(price.market_price)} />
                     <TcgplayerButton href={price.tcgplayer_url ?? currentImage.tcgplayer_url ?? null} label="Buy" />
                   </div>
@@ -374,7 +376,7 @@ function PriceStat({ label, value, muted = false }: { label: string; value: stri
 }
 
 function TcgplayerButton({ href, label }: { href: string | null; label: string }) {
-  const className = "inline-flex min-h-9 min-w-[6.5rem] shrink-0 items-center justify-center rounded-md border border-border bg-bg-card px-3 py-2 text-xs font-semibold transition-colors";
+  const className = "inline-flex min-h-8 min-w-[3.5rem] shrink-0 items-center justify-center rounded-md border border-border bg-bg-card px-1.5 py-1.5 text-[10px] font-semibold transition-colors sm:min-h-9 sm:min-w-[6.5rem] sm:px-3 sm:py-2 sm:text-xs";
 
   if (!href) {
     return (
