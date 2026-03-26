@@ -33,7 +33,7 @@ export function CardPage() {
   return (
     <div>
       {showSwitcher && (
-        <div className="max-w-6xl mx-auto px-4 pt-2.5 flex justify-end">
+        <div className="max-w-6xl mx-auto px-4 pt-2.5 flex justify-end sm:hidden">
           <div className="flex gap-px bg-bg-card rounded-md p-px border border-border">
             {available.map((code) => (
               <button
@@ -51,7 +51,18 @@ export function CardPage() {
         </div>
       )}
       {isLoading && <div className="p-8" aria-live="polite"><span className="sr-only">Loading card</span></div>}
-      {data && <CardDetailView card={data.data} initialVariant={variantParam != null ? parseInt(variantParam, 10) : undefined} />}
+      {data && (
+        <CardDetailView
+          card={data.data}
+          initialVariant={variantParam != null ? parseInt(variantParam, 10) : undefined}
+          languageSwitcher={showSwitcher ? {
+            current: lang,
+            available,
+            labels: LANGUAGE_LABELS,
+            onSelect: switchLang,
+          } : undefined}
+        />
+      )}
     </div>
   );
 }

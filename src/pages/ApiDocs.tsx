@@ -20,7 +20,7 @@ const ENDPOINTS = [
       { name: "artist", desc: "Artist name (substring match)" },
       { name: "lang", desc: "Language (en, ja, fr, zh). Default: en" },
       { name: "unique", desc: "prints (one row per variant, default) or cards (one per card number)" },
-      { name: "sort", desc: "Sort field: card_number (default), name, cost, power, released, rarity, color, artist, market_price" },
+      { name: "sort", desc: "Sort field: relevance (for q searches), card_number (default), name, cost, power, released, rarity, color, artist, market_price" },
       { name: "order", desc: "asc (default) or desc" },
       { name: "page", desc: "Page number. Default: 1" },
       { name: "limit", desc: "Results per page (1-100). Default: 20" },

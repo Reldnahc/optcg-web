@@ -1,6 +1,7 @@
 import { Link, useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { SearchBar } from "../search/SearchBar";
+import { BrandWordmark } from "./BrandWordmark";
 
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -14,9 +15,11 @@ export function Header() {
       <div className="max-w-6xl mx-auto px-4 h-14 flex items-center gap-4">
         <Link
           to="/"
-          className="inline-flex h-full items-center [font-family:var(--font-display)] text-accent font-bold shrink-0 hover:text-accent-hover hover:no-underline tracking-tight"
+          className="group inline-flex h-full items-center [font-family:var(--font-display)] font-bold shrink-0 hover:no-underline tracking-tight"
         >
-          <span className="hidden md:flex h-full items-center text-xl leading-none">poneglyph.one</span>
+          <span className="hidden md:flex h-full items-center text-xl leading-none">
+            <BrandWordmark />
+          </span>
           <img src="/favicon.svg" alt="" aria-hidden="true" className="md:hidden w-8 h-8" />
         </Link>
 

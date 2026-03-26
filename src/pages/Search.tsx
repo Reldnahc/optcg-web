@@ -8,25 +8,34 @@ export function Search() {
   const [params, setParams] = useSearchParams();
   const q = params.get("q") || "";
   const page = parseInt(params.get("page") || "1", 10);
-  const sort = params.get("sort") || "card_number";
+  const sortParam = params.get("sort");
+  const effectiveSort = q
+    ? (sortParam || "relevance")
+    : (sortParam || "card_number");
   const order = params.get("order") || "asc";
   const unique = params.get("unique") || "prints";
   const as = params.get("as") || "images";
 
-  const { data, isLoading, error } = useCardSearch({
+  const searchParams = {
     q,
     page: String(page),
     limit: "60",
-    sort,
-    order,
     unique,
-  });
+    ...(effectiveSort === "relevance"
+      ? { sort: "relevance" }
+      : { sort: effectiveSort, order }),
+  };
 
+  const { data, isLoading, error } = useCardSearch(searchParams);
   const pagination = data?.pagination;
 
   const setParam = (key: string, value: string) => {
     const next = new URLSearchParams(params);
-    next.set(key, value);
+    if (key === "sort" && value === "relevance") {
+      next.delete("sort");
+    } else {
+      next.set(key, value);
+    }
     if (key !== "page") next.set("page", "1");
     setParams(next);
   };
@@ -37,7 +46,6 @@ export function Search() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-4">
-      {/* Result count + controls */}
       <div className="flex flex-wrap items-center justify-between gap-2 mb-4 text-[13px]">
         <div className="text-text-secondary">
           {isLoading && <span className="sr-only">Searching</span>}
@@ -74,10 +82,11 @@ export function Search() {
 
           <ControlGroup label="Sorted by">
             <select
-              value={sort}
+              value={effectiveSort}
               onChange={(e) => setParam("sort", e.target.value)}
               className="bg-bg-input border border-border rounded px-1.5 py-0.5 text-text-primary text-[13px] focus:outline-none focus:border-accent/60"
             >
+              {q && <option value="relevance">Relevance</option>}
               <option value="card_number">Number</option>
               <option value="name">Name</option>
               <option value="cost">Cost</option>
@@ -88,13 +97,15 @@ export function Search() {
             </select>
           </ControlGroup>
 
-          <button
-            onClick={() => setParam("order", order === "asc" ? "desc" : "asc")}
-            className="text-text-muted hover:text-text-primary px-1"
-            title={order === "asc" ? "Ascending" : "Descending"}
-          >
-            {order === "asc" ? "\u25B2" : "\u25BC"}
-          </button>
+          {effectiveSort !== "relevance" && (
+            <button
+              onClick={() => setParam("order", order === "asc" ? "desc" : "asc")}
+              className="text-text-muted hover:text-text-primary px-1"
+              title={order === "asc" ? "Ascending" : "Descending"}
+            >
+              {order === "asc" ? "\u25B2" : "\u25BC"}
+            </button>
+          )}
         </div>
       </div>
 
@@ -104,7 +115,6 @@ export function Search() {
           : <CardGrid cards={data.data} />
       )}
 
-      {/* Pagination */}
       {pagination && pagination.total > 0 && (
         <div className="mt-6 flex items-center justify-center gap-4 text-sm">
           <button

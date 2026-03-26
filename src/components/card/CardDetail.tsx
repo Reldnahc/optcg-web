@@ -3,6 +3,13 @@ import { Link, useSearchParams } from "react-router-dom";
 import type { CardDetail as CardDetailType, CardImage } from "../../api/types";
 import { CardHoverPreviewLink } from "./CardHoverPreviewLink";
 
+type LanguageSwitcherConfig = {
+  current: string;
+  available: string[];
+  labels: Record<string, string>;
+  onSelect: (code: string) => void;
+};
+
 const STATUS_BADGE_STYLE: Record<string, string> = {
   legal: "border-legal/30 bg-legal/10 text-legal",
   banned: "border-banned/30 bg-banned/10 text-banned",
@@ -12,7 +19,15 @@ const STATUS_BADGE_STYLE: Record<string, string> = {
   unreleased: "border-accent/30 bg-accent/10 text-accent",
 };
 
-export function CardDetailView({ card, initialVariant }: { card: CardDetailType; initialVariant?: number }) {
+export function CardDetailView({
+  card,
+  initialVariant,
+  languageSwitcher,
+}: {
+  card: CardDetailType;
+  initialVariant?: number;
+  languageSwitcher?: LanguageSwitcherConfig;
+}) {
   const [, setSearchParams] = useSearchParams();
   const images = card.images; // API already returns images in display order (label priority)
   // Find the index in the images array that matches the requested variant_index
@@ -133,10 +148,37 @@ export function CardDetailView({ card, initialVariant }: { card: CardDetailType;
         {/* Right: Print info */}
         <div className="lg:w-[320px] xl:w-[360px] shrink-0 space-y-4">
           <div className="bg-bg-card border border-border rounded-lg p-4 space-y-3 text-sm">
-            {currentImage?.label && (
-              <PrintRow label="Variant">
-                {currentImage.label}
-              </PrintRow>
+            {(currentImage?.label || languageSwitcher) && (
+              <div className="flex items-start justify-between gap-3">
+                {currentImage?.label ? (
+                  <PrintRow label="Variant">
+                    {currentImage.label}
+                  </PrintRow>
+                ) : (
+                  <div />
+                )}
+                {languageSwitcher && (
+                  <div className="hidden shrink-0 text-right sm:block">
+                    <p className="mb-1 text-[11px] text-text-muted uppercase tracking-wider">Language</p>
+                    <div className="flex gap-px rounded-md border border-border bg-bg-tertiary/30 p-px">
+                      {languageSwitcher.available.map((code) => (
+                        <button
+                          key={code}
+                          type="button"
+                          onClick={() => languageSwitcher.onSelect(code)}
+                          className={`min-w-8 rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors ${
+                            languageSwitcher.current === code
+                              ? "bg-accent text-bg-primary"
+                              : "text-text-muted hover:text-text-primary"
+                          }`}
+                        >
+                          {languageSwitcher.labels[code] || code.toUpperCase()}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
             <PrintRow label="Set">
               <Link to={`/sets/${card.set}`} className="hover:underline">
