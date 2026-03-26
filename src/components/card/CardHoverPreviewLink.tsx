@@ -115,10 +115,10 @@ export function CardHoverPreviewLink({
 
       <span
         ref={previewRef}
-        className={`pointer-events-none absolute z-30 hidden w-[32rem] md:block ${isOpen ? "" : "md:hidden"} ${previewPositionClass}`}
+        className={`pointer-events-none absolute z-30 hidden w-[34rem] md:block ${isOpen ? "" : "md:hidden"} ${previewPositionClass}`}
       >
         <span className="block overflow-hidden rounded-xl border border-border bg-bg-secondary shadow-xl shadow-black/45">
-          <span className="flex items-start gap-4 p-4">
+          <span className="flex items-stretch gap-4 p-4">
             <span className="w-48 shrink-0 self-start overflow-hidden rounded-lg border border-border bg-bg-card">
               {thumbnailUrl ? (
                 <img src={thumbnailUrl} alt={preview?.name ?? cardNumber} className="block w-full" loading="lazy" />
@@ -129,29 +129,82 @@ export function CardHoverPreviewLink({
               )}
             </span>
 
-            <span className="min-w-0 flex-1">
-              <span className="block text-xs font-semibold uppercase tracking-wider text-text-muted">
-                {cardNumber}
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="flex flex-wrap items-center gap-1.5 text-xs">
+                {preview?.card_type ? (
+                  <span className="font-semibold uppercase tracking-[0.1em] text-text-secondary">
+                    {preview.card_type}
+                  </span>
+                ) : null}
+                {preview?.attribute?.length ? (
+                  <>
+                    <span className="text-text-muted/85">
+                      &middot;
+                    </span>
+                    <span className="font-medium text-text-secondary">
+                      {preview.attribute.join("/")}
+                    </span>
+                  </>
+                ) : null}
+                {preview?.color.length ? (
+                  <span className="text-text-muted/85">
+                    &middot;
+                  </span>
+                ) : null}
+                {preview?.color.length ? (
+                  <span className="font-medium text-text-secondary">
+                    {preview.color.join(" / ")}
+                  </span>
+                ) : null}
+                {preview?.cost != null ? (
+                  <>
+                    <span className="text-text-muted/85">
+                      &middot;
+                    </span>
+                    <span className="font-medium text-text-secondary">
+                      Cost {preview.cost}
+                    </span>
+                  </>
+                ) : null}
               </span>
-              <span className="mt-1 block text-base font-semibold leading-tight text-text-primary">
+              <span className="mt-1 block text-lg font-semibold leading-tight text-text-primary">
                 {preview?.name ?? "Loading card..."}
               </span>
               {preview ? (
                 <>
-                  <span className="mt-3 flex flex-wrap gap-2 text-sm">
-                    {preview.card_type ? <MetaPill label="Type" value={preview.card_type} /> : null}
-                    {preview.color.length > 0 ? <MetaPill label="Color" value={preview.color.join(" / ")} /> : null}
-                    {preview.cost != null ? <MetaPill label="Cost" value={String(preview.cost)} /> : null}
-                    {preview.counter != null ? <MetaPill label="Counter" value={`+${preview.counter}`} /> : null}
-                  </span>
+                  {preview.types.length > 0 ? (
+                    <MetaRow label="" value={preview.types.join("/")} />
+                  ) : null}
+                  {preview.counter != null ? (
+                    <MetaRow label="Counter" value={`+${preview.counter}`} />
+                  ) : null}
                   {effectText ? (
-                    <span className="mt-3 line-clamp-5 block text-[12px] leading-snug text-text-secondary">
+                    <span className="mt-3 line-clamp-5 block text-sm leading-6 text-text-primary/90">
                       {effectText}
                     </span>
                   ) : null}
                   {triggerText ? (
-                    <span className="mt-2 line-clamp-3 block text-[12px] leading-snug text-text-secondary">
+                    <span className="mt-2 line-clamp-3 block text-sm leading-6 text-text-primary/85">
                         {triggerText}
+                    </span>
+                  ) : null}
+                  {(preview.rarity || preview.block || cardNumber) ? (
+                    <span className="mt-auto flex flex-wrap items-center gap-1.5 border-t border-border/70 pt-2.5 text-xs uppercase tracking-[0.1em] text-text-secondary">
+                      {preview.rarity ? (
+                        <span>{preview.rarity}</span>
+                      ) : null}
+                      {preview.rarity && preview.block ? (
+                        <span>&middot;</span>
+                      ) : null}
+                      {preview.block ? (
+                        <span>Block {preview.block}</span>
+                      ) : null}
+                      {(preview.rarity || preview.block) && cardNumber ? (
+                        <span>&middot;</span>
+                      ) : null}
+                      {cardNumber ? (
+                        <span className="font-semibold uppercase tracking-wider">{cardNumber}</span>
+                      ) : null}
                     </span>
                   ) : null}
                 </>
@@ -168,11 +221,11 @@ export function CardHoverPreviewLink({
   );
 }
 
-function MetaPill({ label, value }: { label: string; value: string }) {
+function MetaRow({ label, value }: { label: string; value: string }) {
   return (
-    <span className="rounded-md border border-border bg-bg-card/70 px-2.5 py-1.5">
-      <span className="block text-[11px] uppercase tracking-wider text-text-muted">{label}</span>
-      <span className="mt-0.5 block font-medium text-text-primary">{value}</span>
+    <span className={`mt-1 grid items-start gap-2 text-sm ${label ? "grid-cols-[4.75rem_minmax(0,1fr)]" : "grid-cols-1"}`}>
+      {label ? <span className="text-text-muted">{label}</span> : null}
+      <span className="min-w-0 text-text-secondary">{value}</span>
     </span>
   );
 }
