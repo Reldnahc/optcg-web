@@ -494,23 +494,27 @@ function CardImageViewer({
       {/* Variant strip */}
       {images.length > 1 && (
         <div className={`grid gap-1.5 mt-3 ${images.length > 3 ? "grid-cols-3" : `grid-cols-${images.length}`}`}>
-          {images.map((img, i) => (
-            <button
-              key={i}
-              onClick={() => onSelect(i)}
-              className={`rounded-md overflow-hidden border-2 transition-colors
-                ${i === selected ? "border-accent" : "border-transparent hover:border-text-muted/40"}`}
-              title={img.label || `Variant ${i}`}
-            >
-              {img.image_url ? (
-                <img src={img.image_url} alt={img.label || `Variant ${i}`} className="w-full block" loading="lazy" />
-              ) : (
-                <div className="aspect-[63/88] bg-bg-tertiary text-text-muted text-[9px] flex items-center justify-center">
-                  {img.label || `v${i}`}
-                </div>
-              )}
-            </button>
-          ))}
+          {images.map((img, i) => {
+            const thumbnailUrl = img.thumbnail_url ?? img.image_url;
+
+            return (
+              <button
+                key={i}
+                onClick={() => onSelect(i)}
+                className={`rounded-md overflow-hidden border-2 transition-colors
+                  ${i === selected ? "border-accent" : "border-transparent hover:border-text-muted/40"}`}
+                title={img.label || `Variant ${i}`}
+              >
+                {thumbnailUrl ? (
+                  <img src={thumbnailUrl} alt={img.label || `Variant ${i}`} className="w-full block" loading="lazy" />
+                ) : (
+                  <div className="aspect-[63/88] bg-bg-tertiary text-text-muted text-[9px] flex items-center justify-center">
+                    {img.label || `v${i}`}
+                  </div>
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>

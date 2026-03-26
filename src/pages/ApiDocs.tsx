@@ -138,6 +138,7 @@ export function ApiDocs() {
           <FieldRow name="block" type="string | null" desc="Block number" />
           <FieldRow name="artist" type="string | null" desc="Card artist" />
           <FieldRow name="image_url" type="string | null" desc="Card image URL" />
+          <FieldRow name="thumbnail_url" type="string | null" desc="Thumbnail image URL" />
           <FieldRow name="label" type="string | null" desc="Variant label (unique=prints only): Standard, Alternate Art, etc." />
           <FieldRow name="variant_index" type="number" desc="Variant index (unique=prints only)" />
           <FieldRow name="variant_product_name" type="string | null" desc="Product name for this variant (unique=prints only)" />

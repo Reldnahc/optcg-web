@@ -25,15 +25,17 @@ function cardLink(card: Card): string {
 }
 
 function CardThumbnail({ card }: { card: Card }) {
+  const thumbnailUrl = card.thumbnail_url ?? card.image_url;
+
   return (
     <Link
       to={cardLink(card)}
       className="group block hover:no-underline"
     >
       <div className="relative rounded-lg overflow-hidden bg-bg-tertiary shadow-md group-hover:shadow-lg group-hover:shadow-black/30 transition-all duration-150 group-hover:-translate-y-0.5">
-        {card.image_url ? (
+        {thumbnailUrl ? (
           <img
-            src={card.image_url}
+            src={thumbnailUrl}
             alt={card.name}
             className="w-full block"
             loading="lazy"
