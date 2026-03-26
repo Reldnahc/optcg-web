@@ -90,18 +90,15 @@ export function CardDetailView({
             <Row label="Type" value={card.types.join(", ")} />
           </div>
 
-          {/* Effect */}
-          {card.effect && (
+          {/* Effect / Trigger */}
+          {(card.effect || card.trigger) && (
             <div className="mb-4 border border-border rounded bg-bg-card p-4">
-              <p className="effect-text whitespace-pre-line">{card.effect}</p>
-            </div>
-          )}
-
-          {/* Trigger */}
-          {card.trigger && (
-            <div className="mb-4 border border-border rounded bg-bg-card p-4">
-              <p className="text-xs text-text-muted uppercase font-semibold tracking-wider mb-1">Trigger</p>
-              <p className="effect-text whitespace-pre-line">{card.trigger}</p>
+              {card.effect ? (
+                <p className="effect-text whitespace-pre-line">{card.effect}</p>
+              ) : null}
+              {card.trigger ? (
+                <p className={`effect-text whitespace-pre-line ${card.effect ? "mt-3" : ""}`}>{card.trigger}</p>
+              ) : null}
             </div>
           )}
 
@@ -209,13 +206,13 @@ export function CardDetailView({
                 </InlineMeta>
               )}
             </div>
-            {card.artist && (
+            {(currentImage?.artist || card.artist) && (
               <PrintRow label="Artist">
                 <Link
-                  to={`/search?q=${encodeURIComponent(`artist:"${card.artist}"`)}`}
+                  to={`/search?q=${encodeURIComponent(`artist:"${currentImage?.artist || card.artist}"`)}`}
                   className="hover:underline"
                 >
-                  {card.artist}
+                  {currentImage?.artist || card.artist}
                 </Link>
               </PrintRow>
             )}
