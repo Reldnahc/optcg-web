@@ -32,6 +32,7 @@ export function useAutocomplete(q: string) {
     queryKey: ["autocomplete", q],
     queryFn: () => apiFetch<{ data: string[] }>("/cards/autocomplete", { q }),
     enabled: q.length >= 2,
+    placeholderData: (previousData) => previousData,
   });
 }
 
