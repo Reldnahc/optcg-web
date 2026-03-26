@@ -36,6 +36,7 @@ export function CardDetailView({
     : 0; // First image is already the best default (API sorts by label priority)
   const [selectedVariant, setSelectedVariant] = useState(initialIdx);
   const currentImage = images[selectedVariant] || images[0];
+  const displayedArtist = currentImage?.artist ?? null;
   const currentVariantMarket = currentImage ? getVariantMarketInfo(currentImage) : { marketPrice: null, tcgplayerUrl: null };
   const legalityEntries = Object.entries(card.legality);
   const featuredLegalityEntries = legalityEntries.filter(([format]) => isFeaturedFormat(format));
@@ -193,6 +194,18 @@ export function CardDetailView({
                 </Link>
               </PrintRow>
             )}
+            <div className="min-h-[2.5rem]">
+              {displayedArtist ? (
+                <PrintRow label="Artist">
+                  <Link
+                    to={`/search?q=${encodeURIComponent(`artist:"${displayedArtist}"`)}`}
+                    className="hover:underline"
+                  >
+                    {displayedArtist}
+                  </Link>
+                </PrintRow>
+              ) : null}
+            </div>
             <div className={`grid gap-2 ${card.block ? "grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)]" : "grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]"}`}>
               <InlineMeta label="Number">
                 <span className="font-mono">{card.card_number}</span>
@@ -206,16 +219,6 @@ export function CardDetailView({
                 </InlineMeta>
               )}
             </div>
-            {(currentImage?.artist || card.artist) && (
-              <PrintRow label="Artist">
-                <Link
-                  to={`/search?q=${encodeURIComponent(`artist:"${currentImage?.artist || card.artist}"`)}`}
-                  className="hover:underline"
-                >
-                  {currentImage?.artist || card.artist}
-                </Link>
-              </PrintRow>
-            )}
           </div>
           <div className="bg-bg-card border border-border rounded-lg p-2.5 space-y-1.5 text-sm">
             <p className="text-xs text-text-muted uppercase tracking-wider">

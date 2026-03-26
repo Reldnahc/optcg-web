@@ -25,7 +25,6 @@ export interface Card {
   effect: string | null;
   trigger: string | null;
   block: string | null;
-  artist: string | null;
   image_url?: string | null;
   thumbnail_url?: string | null;
   label?: string | null;

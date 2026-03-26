@@ -90,7 +90,7 @@ const FILTER_SECTIONS: FilterSection[] = [
     title: "Block & Artist",
     filters: [
       { filter: "block:1", desc: "Cards in block 1", example: "block:1" },
-      { filter: "artist:oda", desc: "Artist name contains 'oda'", example: "artist:oda" },
+      { filter: "artist:oda", desc: "Variant artist name contains 'oda'", example: "artist:oda" },
     ],
   },
   {
@@ -163,7 +163,7 @@ const SORT_FIELDS = [
   { value: "released", desc: "Release date", example: "order:released" },
   { value: "rarity", desc: "Rarity", example: "order:rarity" },
   { value: "color", desc: "Color", example: "order:color" },
-  { value: "artist", desc: "Artist name", example: "order:artist" },
+  { value: "artist", desc: "Artist name from the best matching print", example: "order:artist" },
   { value: "market_price", desc: "TCGPlayer market price", example: "order:market_price" },
 ];
 

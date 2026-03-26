@@ -17,7 +17,7 @@ const ENDPOINTS = [
       { name: "cost", desc: "Exact cost value" },
       { name: "power", desc: "Exact power value" },
       { name: "counter", desc: "Exact counter value" },
-      { name: "artist", desc: "Artist name (substring match)" },
+      { name: "artist", desc: "Variant artist name (substring match)" },
       { name: "lang", desc: "Language (en, ja, fr, zh). Default: en" },
       { name: "unique", desc: "prints (one row per variant, default) or cards (one per card number)" },
       { name: "sort", desc: "Sort field: relevance (for q searches), card_number (default), name, cost, power, released, rarity, color, artist, market_price" },
@@ -136,12 +136,28 @@ export function ApiDocs() {
           <FieldRow name="effect" type="string | null" desc="Effect text" />
           <FieldRow name="trigger" type="string | null" desc="Trigger text" />
           <FieldRow name="block" type="string | null" desc="Block number" />
-          <FieldRow name="artist" type="string | null" desc="Card artist" />
+          <FieldRow name="artist" type="string | null" desc="Best-known artist for the card or selected print" />
           <FieldRow name="image_url" type="string | null" desc="Card image URL" />
           <FieldRow name="thumbnail_url" type="string | null" desc="Thumbnail image URL" />
           <FieldRow name="label" type="string | null" desc="Variant label (unique=prints only): Standard, Alternate Art, etc." />
           <FieldRow name="variant_index" type="number" desc="Variant index (unique=prints only)" />
           <FieldRow name="variant_product_name" type="string | null" desc="Product name for this variant (unique=prints only)" />
+        </div>
+      </section>
+
+      <section className="mt-10">
+        <h2 className="text-lg font-semibold mb-3">Card Variant Object</h2>
+        <p className="text-sm text-text-secondary mb-3">
+          Card detail responses include an <code className="text-accent">images</code> array. Artist now lives on the variant/image object.
+        </p>
+        <div className="bg-bg-card border border-border rounded-lg divide-y divide-border text-sm">
+          <FieldRow name="variant_index" type="number" desc="Variant index for this print/image" />
+          <FieldRow name="label" type="string | null" desc="Variant label such as Standard, Alternate Art, SP, or TR" />
+          <FieldRow name="artist" type="string | null" desc="Artist for this specific variant" />
+          <FieldRow name="image_url" type="string | null" desc="Full-size image URL for this variant" />
+          <FieldRow name="thumbnail_url" type="string | null" desc="Thumbnail URL for this variant" />
+          <FieldRow name="scan_url" type="string | null" desc="Optional community scan URL for this variant" />
+          <FieldRow name="product_name" type="string | null" desc="Product name tied to this variant" />
         </div>
       </section>
     </PageContainer>

@@ -284,7 +284,7 @@ export function AdvancedSearch() {
               onChange={setArtist}
               mode={artistMode}
               onModeChange={setArtistMode}
-              placeholder="e.g. Oda"
+              placeholder="e.g. Oda (matches variant artist)"
             />
             <Field label="Block">
               <TextInput value={block} onChange={setBlock} placeholder="e.g. 2" />
