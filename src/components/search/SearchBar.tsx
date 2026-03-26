@@ -20,6 +20,7 @@ export function SearchBar({ compact, initialQuery = "", autoFocus }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const suggestions = data?.data ?? [];
+  const suggestionRowPadding = compact ? "px-[1.625rem]" : "px-4";
 
   const close = useCallback(() => {
     setOpen(false);
@@ -106,12 +107,12 @@ export function SearchBar({ compact, initialQuery = "", autoFocus }: Props) {
             : "bg-bg-input border border-border pl-10 pr-10 py-2.5 text-base focus:border-accent/60"}`}
       />
       {open && suggestions.length > 0 && (
-        <ul className="absolute top-full left-0 right-0 mt-1 bg-bg-card border border-border rounded-md shadow-2xl z-50 overflow-hidden">
+        <ul className="absolute top-full left-0 right-0 z-50 mt-[9.5px] max-h-80 overflow-y-auto rounded-b-md rounded-t-none border-x border-b border-border bg-bg-secondary/98 p-1.5 shadow-2xl shadow-black/45 backdrop-blur-sm">
           {suggestions.map((name, i) => (
             <li key={name}>
               <button
-                className={`w-full text-left px-3 py-1.5 text-sm
-                  ${i === highlightIdx ? "bg-accent/20 text-text-primary" : "text-text-primary hover:bg-bg-hover"}`}
+                className={`w-full rounded-sm ${suggestionRowPadding} py-2 text-left text-[13px] leading-snug transition-colors
+                  ${i === highlightIdx ? "bg-accent/15 text-text-primary" : "text-text-secondary hover:bg-bg-hover/70 hover:text-text-primary"}`}
                 onMouseDown={() => submit(name)}
                 onMouseEnter={() => setHighlightIdx(i)}
               >
