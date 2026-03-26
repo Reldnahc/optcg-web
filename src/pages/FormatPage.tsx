@@ -1,6 +1,7 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useFormat } from "../api/hooks";
 import type { FormatDetail } from "../api/types";
+import { CardHoverPreviewLink } from "../components/card/CardHoverPreviewLink";
 import { ErrorState } from "../components/layout/ErrorState";
 import { PageContainer } from "../components/layout/PageContainer";
 
@@ -76,11 +77,11 @@ export function FormatPage() {
               {displayBans.map((ban) => {
                 const isFuture = new Date(ban.banned_at) > new Date();
                 return (
-                  <tr key={`${ban.card_number}-${ban.type}-${ban.banned_at}`} className={`border-b border-border/50 ${isFuture ? "opacity-60" : ""}`}>
+                  <tr key={`${ban.card_number}-${ban.type}-${ban.banned_at}`} className="border-b border-border/50">
                     <td className="py-2">
-                      <Link to={`/cards/${ban.card_number}`} className="font-mono hover:text-link">
+                      <CardHoverPreviewLink cardNumber={ban.card_number} className={`font-mono hover:text-link ${isFuture ? "text-text-secondary" : ""}`} previewPosition="top">
                         {ban.card_number}
-                      </Link>
+                      </CardHoverPreviewLink>
                     </td>
                     <td className="py-2">
                       <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-medium ${
@@ -92,14 +93,14 @@ export function FormatPage() {
                         {isFuture ? "Upcoming" : ban.type === "pair" ? "Pair Ban" : ban.type === "restricted" ? `Restricted (${ban.max_copies ?? 1})` : "Banned"}
                       </span>
                     </td>
-                    <td className="py-2 text-text-muted">
+                    <td className={`py-2 ${isFuture ? "text-text-secondary" : "text-text-muted"}`}>
                       {formatUTCDate(ban.banned_at)}
                     </td>
-                    <td className="py-2 text-text-muted">
+                    <td className={`py-2 ${isFuture ? "text-text-secondary" : "text-text-muted"}`}>
                       {ban.type === "pair" && ban.paired_with.length > 0 ? (
                         <>
                           with{" "}
-                          {renderPairedCards(ban.paired_with)}
+                          {renderPairedCards(ban.paired_with, isFuture)}
                         </>
                       ) : ban.reason || "-"}
                     </td>
@@ -159,13 +160,17 @@ function formatUTCDate(dateStr: string): string {
   });
 }
 
-function renderPairedCards(cardNumbers: string[]) {
+function renderPairedCards(cardNumbers: string[], muted = false) {
   return cardNumbers.map((cardNumber, index) => (
     <span key={cardNumber}>
       {index > 0 && (index === cardNumbers.length - 1 ? " or " : ", ")}
-      <Link to={`/cards/${cardNumber}`} className="font-mono text-link hover:text-link-hover">
+      <CardHoverPreviewLink
+        cardNumber={cardNumber}
+        className={`font-mono text-link hover:text-link-hover ${muted ? "text-link/80" : ""}`}
+        previewPosition="top"
+      >
         {cardNumber}
-      </Link>
+      </CardHoverPreviewLink>
     </span>
   ));
 }

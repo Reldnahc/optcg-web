@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import type { CardDetail as CardDetailType, CardImage } from "../../api/types";
+import { CardHoverPreviewLink } from "./CardHoverPreviewLink";
 
 const STATUS_BADGE_STYLE: Record<string, string> = {
   legal: "border-legal/30 bg-legal/10 text-legal",
@@ -348,12 +349,14 @@ function LegalityItem({ format, info }: { format: string; info: CardDetailType["
       {partners.length > 0 ? (
         <p className="mt-1 flex flex-wrap items-baseline gap-x-1 text-xs text-text-muted">
           <span className="whitespace-nowrap">Cannot be used with</span>
-          {partners.map((card, i) => (
-            <span key={card} className="whitespace-nowrap">
-              {i > 0 && ", "}
-              <Link to={`/cards/${card}`} className="font-mono text-link hover:text-link-hover">{card}</Link>
-            </span>
-          ))}
+              {partners.map((card, i) => (
+                <span key={card} className="whitespace-nowrap">
+                  {i > 0 && ", "}
+                  <CardHoverPreviewLink cardNumber={card} className="font-mono text-link hover:text-link-hover">
+                    {card}
+                  </CardHoverPreviewLink>
+                </span>
+              ))}
         </p>
       ) : legality.note ? (
         <p className="mt-1 text-xs text-text-muted">
