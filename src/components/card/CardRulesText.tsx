@@ -1,4 +1,6 @@
-const BRACKET_TOKEN_REGEX = /(\[[^\]]+\])/g;
+import { Link } from "react-router-dom";
+
+const SPECIAL_TOKEN_REGEX = /(\[[^\]]+\]|\{[^}]+\}|"[^"]+")/g;
 const CIRCLED_NUMBER_REGEX = /([①-⑳⓪➀-➉])/g;
 
 export function CardRulesText({
@@ -42,6 +44,13 @@ function renderLine(line: string, compact: boolean) {
       return;
     }
 
+    if (segment.type === "card_name" || segment.type === "trait_exact" || segment.type === "trait_fuzzy") {
+      rendered.push(
+        <SearchSyntaxLink key={`${segment.value}-${segmentIndex}`} value={segment.value} kind={segment.type} />,
+      );
+      return;
+    }
+
     if (isTagDividerSegment(segments, segmentIndex)) {
       rendered.push(
         <span key={`${segment.value}-${segmentIndex}`} className="card-rules-copy card-rules-copy--tag-divider">
@@ -64,7 +73,7 @@ function renderLine(line: string, compact: boolean) {
 }
 
 function isTagDividerSegment(
-  segments: Array<{ type: "tag" | "text"; value: string }>,
+  segments: Array<{ type: "tag" | "card_name" | "trait_exact" | "trait_fuzzy" | "text"; value: string }>,
   index: number,
 ) {
   const segment = segments[index];
@@ -80,7 +89,7 @@ function isTagDividerSegment(
 }
 
 function hasColonAhead(
-  segments: Array<{ type: "tag" | "text"; value: string }>,
+  segments: Array<{ type: "tag" | "card_name" | "trait_exact" | "trait_fuzzy" | "text"; value: string }>,
   startIndex: number,
 ) {
   for (let i = startIndex; i < segments.length; i += 1) {
@@ -96,7 +105,7 @@ function hasColonAhead(
 function RulesTag({ value, compact }: { value: string; compact: boolean }) {
   const tone = getTagTone(value);
   if (!tone) {
-    return <span className="card-rules-copy">{value}</span>;
+    return <SearchSyntaxLink value={value} kind="card_name" />;
   }
 
   const label = value.replace(/^\[|\]$/g, "");
@@ -113,6 +122,30 @@ function RulesTag({ value, compact }: { value: string; compact: boolean }) {
         {tone === "don" ? <DonTagLabel label={label} /> : label}
       </span>
     </span>
+  );
+}
+
+function SearchSyntaxLink({
+  value,
+  kind,
+}: {
+  value: string;
+  kind: "card_name" | "trait_exact" | "trait_fuzzy";
+}) {
+  const inner = value.slice(1, -1);
+  const query = kind === "card_name"
+    ? `"${inner}"`
+    : kind === "trait_exact"
+      ? `trait="${inner}"`
+      : `trait:"${inner}"`;
+
+  return (
+    <Link
+      to={`/search?q=${encodeURIComponent(query)}`}
+      className="card-rules-copy text-link underline-offset-2 hover:text-link-hover hover:underline"
+    >
+      {value}
+    </Link>
   );
 }
 
@@ -133,14 +166,27 @@ function DonTagLabel({ label }: { label: string }) {
   );
 }
 
-function tokenizeLine(line: string): Array<{ type: "tag" | "text"; value: string }> {
+function tokenizeLine(
+  line: string,
+): Array<{ type: "tag" | "card_name" | "trait_exact" | "trait_fuzzy" | "text"; value: string }> {
   return line
-    .split(BRACKET_TOKEN_REGEX)
+    .split(SPECIAL_TOKEN_REGEX)
     .filter(Boolean)
-    .map((segment) => ({
-      type: segment.startsWith("[") && segment.endsWith("]") ? "tag" : "text",
-      value: segment,
-    }));
+    .map((segment) => {
+      if (segment.startsWith("[") && segment.endsWith("]")) {
+        return { type: "tag" as const, value: segment };
+      }
+
+      if (segment.startsWith("{") && segment.endsWith("}")) {
+        return { type: "trait_exact" as const, value: segment };
+      }
+
+      if (segment.startsWith("\"") && segment.endsWith("\"")) {
+        return { type: "trait_fuzzy" as const, value: segment };
+      }
+
+      return { type: "text" as const, value: segment };
+    });
 }
 
 function renderCopySegment(
@@ -242,7 +288,10 @@ function getTagTone(value: string): "don" | "blue" | "once" | "trigger" | "abili
   if (
     normalized === "[blocker]"
     || normalized === "[rush]"
+    || normalized === "[rush: character]"
     || normalized === "[double attack]"
+    || normalized === "[banish]"
+    || normalized === "[unblockable]"
   ) {
     return "ability";
   }
@@ -254,11 +303,13 @@ function getTagTone(value: string): "don" | "blue" | "once" | "trigger" | "abili
   if (
     normalized === "[when attacking]"
     || normalized === "[on your opponent's attack]"
+    || normalized === "[on block]"
     || normalized === "[activate: main]"
     || normalized === "[main]"
     || normalized === "[on play]"
     || normalized === "[on k.o.]"
     || normalized === "[your turn]"
+    || normalized === "[end of your turn]"
     || normalized === "[opponent's turn]"
     || normalized === "[opponents turn]"
   ) {

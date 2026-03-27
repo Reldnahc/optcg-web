@@ -168,6 +168,8 @@ a:hover {
 
 .card-rules-tag__label {
   display: block;
+  position: relative;
+  z-index: 1;
   transform: translateY(-0.04em);
 }
 
@@ -219,9 +221,30 @@ a:hover {
 }
 
 .card-rules-tag--ability {
+  position: relative;
   background: rgba(226, 136, 46, 0.98);
   color: #fff7ef;
   border-radius: 0;
-  padding-inline: 0.48rem;
-  clip-path: polygon(16% 0, 84% 0, 100% 50%, 84% 100%, 16% 100%, 0 50%);
+  margin-inline: 0.34rem;
+  padding-inline: 0.1rem;
+}
+
+.card-rules-tag--ability::before,
+.card-rules-tag--ability::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0.42rem;
+  background: rgba(226, 136, 46, 0.98);
+}
+
+.card-rules-tag--ability::before {
+  left: -0.42rem;
+  clip-path: polygon(0 50%, 100% 0, 100% 100%);
+}
+
+.card-rules-tag--ability::after {
+  right: -0.42rem;
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
 }

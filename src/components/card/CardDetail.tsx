@@ -100,14 +100,14 @@ export function CardDetailView({
           {/* Game stats */}
           <div className="space-y-1.5 text-sm mb-4">
             {(card.power !== null || card.counter !== null || (card.attribute && card.attribute.length > 0)) && (
-              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
                 {card.power !== null && <StatLine value={String(card.power)} suffix="Power" />}
                 {card.power !== null && card.attribute && card.attribute.length > 0 && (
-                  <span className="text-text-muted/60">&middot;</span>
+                  <DotSeparator />
                 )}
                 {card.attribute && card.attribute.length > 0 && <MetaLine value={card.attribute.join(" / ")} />}
                 {card.counter !== null && (card.power !== null || (card.attribute && card.attribute.length > 0)) && (
-                  <span className="text-text-muted/60">&middot;</span>
+                  <DotSeparator />
                 )}
                 {card.counter !== null && <StatLine value={`+${card.counter}`} suffix="Counter" />}
               </div>
@@ -356,7 +356,7 @@ function isFeaturedFormat(format: string): boolean {
 
 function StatLine({ value, suffix }: { value: React.ReactNode; suffix: string }) {
   return (
-    <div className="flex items-baseline gap-1.5">
+    <div className="flex items-baseline gap-1">
       <span className="text-text-primary font-medium">{value}</span>
       <span className="text-text-secondary">{suffix}</span>
     </div>
@@ -365,6 +365,10 @@ function StatLine({ value, suffix }: { value: React.ReactNode; suffix: string })
 
 function MetaLine({ value }: { value: React.ReactNode }) {
   return <div className="text-text-primary">{value}</div>;
+}
+
+function DotSeparator() {
+  return <span className="h-1.25 w-1.25 shrink-0 rounded-full bg-text-muted/60" aria-hidden="true" />;
 }
 
 function PrintRow({ label, children }: { label: string; children: React.ReactNode }) {
