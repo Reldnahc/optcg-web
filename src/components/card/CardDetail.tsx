@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import type { CardDetail as CardDetailType, CardImage } from "../../api/types";
+import { CopyButton } from "../CopyButton";
 import { CardHoverPreviewLink } from "./CardHoverPreviewLink";
 import { CardRulesText } from "./CardRulesText";
 
@@ -37,7 +38,6 @@ export function CardDetailView({
     : 0; // First image is already the best default (API sorts by label priority)
   const [selectedVariant, setSelectedVariant] = useState(initialIdx);
   const currentImage = images[selectedVariant] || images[0];
-  const displayedArtist = currentImage?.artist ?? null;
   const currentVariantMarket = currentImage ? getVariantMarketInfo(currentImage) : { marketPrice: null, tcgplayerUrl: null };
   const legalityEntries = Object.entries(card.legality);
   const featuredLegalityEntries = legalityEntries.filter(([format]) => isFeaturedFormat(format));
@@ -76,20 +76,42 @@ export function CardDetailView({
         <div className="min-w-0 flex-[1.15]">
           {/* Name + type line */}
           <div className="border-b border-border pb-3 mb-4">
-            <h1 className="text-xl font-bold">{card.name}</h1>
+            <div className="flex items-baseline gap-3">
+              <h1 className="min-w-0 text-xl font-bold">{card.name}</h1>
+              {card.rarity && (
+                <span className="shrink-0 text-sm text-text-secondary">{card.rarity}</span>
+              )}
+              <div className="inline-flex shrink-0 items-center gap-1.5">
+                <span className="font-mono text-sm text-text-muted">{card.card_number}</span>
+                <CopyButton
+                  value={card.card_number}
+                  label="Copy card number"
+                  copiedLabel="Card number copied"
+                />
+              </div>
+            </div>
             <p className="text-sm text-text-secondary mt-0.5">
               {card.color.join(" / ")} &middot; {card.card_type}
               {card.cost !== null && <> &middot; Cost {card.cost}</>}
+              {card.life !== null && <> &middot; {card.life} life</>}
             </p>
           </div>
 
           {/* Game stats */}
           <div className="space-y-1.5 text-sm mb-4">
-            {card.power !== null && <Row label="Power" value={String(card.power)} />}
-            {card.counter !== null && <Row label="Counter" value={`+${card.counter}`} />}
-            {card.life !== null && <Row label="Life" value={String(card.life)} />}
-            {card.attribute && card.attribute.length > 0 && <Row label="Attribute" value={card.attribute.join(" / ")} />}
-            <Row label="Type" value={card.types.join(", ")} />
+            {(card.power !== null || card.counter !== null || (card.attribute && card.attribute.length > 0)) && (
+              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                {card.power !== null && <StatLine value={String(card.power)} suffix="Power" />}
+                {card.power !== null && card.attribute && card.attribute.length > 0 && (
+                  <span className="text-text-muted/60">&middot;</span>
+                )}
+                {card.attribute && card.attribute.length > 0 && <MetaLine value={card.attribute.join(" / ")} />}
+                {card.counter !== null && (card.power !== null || (card.attribute && card.attribute.length > 0)) && (
+                  <span className="text-text-muted/60">&middot;</span>
+                )}
+                {card.counter !== null && <StatLine value={`+${card.counter}`} suffix="Counter" />}
+              </div>
+            )}
           </div>
 
           {/* Effect / Trigger */}
@@ -106,8 +128,19 @@ export function CardDetailView({
             </div>
           )}
 
+          <Section title="Type" inlineTitle>
+            <MetaLine value={card.types.join("/")} />
+          </Section>
+
           {/* Legality */}
-          <Section title="Legality">
+          <Section
+            title="Legality"
+            headerRight={card.block ? (
+              <span className="text-xs uppercase tracking-wider text-text-muted">
+                Block <span className="text-text-primary">{card.block}</span>
+              </span>
+            ) : null}
+          >
             <div className="space-y-2">
               {featuredLegalityEntries.length > 0 && (
                 <div className="grid gap-2 sm:grid-cols-2">
@@ -149,36 +182,27 @@ export function CardDetailView({
         {/* Right: Print info */}
         <div className="lg:w-[320px] xl:w-[360px] shrink-0 space-y-4">
           <div className="bg-bg-card border border-border rounded-lg p-4 space-y-3 text-sm">
-            {(currentImage?.label || languageSwitcher) && (
-              <div className="flex items-start justify-between gap-3">
-                {currentImage?.label ? (
-                  <PrintRow label="Variant">
-                    {currentImage.label}
-                  </PrintRow>
-                ) : (
-                  <div />
-                )}
-                {languageSwitcher && (
-                  <div className="hidden shrink-0 text-right sm:block">
-                    <p className="mb-1 text-[11px] text-text-muted uppercase tracking-wider">Language</p>
-                    <div className="flex gap-px rounded-md border border-border bg-bg-tertiary/30 p-px">
-                      {languageSwitcher.available.map((code) => (
-                        <button
-                          key={code}
-                          type="button"
-                          onClick={() => languageSwitcher.onSelect(code)}
-                          className={`min-w-8 rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors ${
-                            languageSwitcher.current === code
-                              ? "bg-accent text-bg-primary"
-                              : "text-text-muted hover:text-text-primary"
-                          }`}
-                        >
-                          {languageSwitcher.labels[code] || code.toUpperCase()}
-                        </button>
-                      ))}
-                    </div>
+            {languageSwitcher && (
+              <div className="hidden sm:flex sm:justify-end">
+                <div className="shrink-0 text-right">
+                  <p className="mb-1 text-[11px] text-text-muted uppercase tracking-wider">Language</p>
+                  <div className="flex gap-px rounded-md border border-border bg-bg-tertiary/30 p-px">
+                    {languageSwitcher.available.map((code) => (
+                      <button
+                        key={code}
+                        type="button"
+                        onClick={() => languageSwitcher.onSelect(code)}
+                        className={`min-w-8 rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors ${
+                          languageSwitcher.current === code
+                            ? "bg-accent text-bg-primary"
+                            : "text-text-muted hover:text-text-primary"
+                        }`}
+                      >
+                        {languageSwitcher.labels[code] || code.toUpperCase()}
+                      </button>
+                    ))}
                   </div>
-                )}
+                </div>
               </div>
             )}
             <PrintRow label="Set">
@@ -197,31 +221,6 @@ export function CardDetailView({
                 </Link>
               </PrintRow>
             )}
-            <div className="min-h-[2.5rem]">
-              {displayedArtist ? (
-                <PrintRow label="Artist">
-                  <Link
-                    to={`/search?q=${encodeURIComponent(`artist:"${displayedArtist}"`)}`}
-                    className="hover:underline"
-                  >
-                    {displayedArtist}
-                  </Link>
-                </PrintRow>
-              ) : null}
-            </div>
-            <div className={`grid gap-2 ${card.block ? "grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)]" : "grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]"}`}>
-              <InlineMeta label="Number">
-                <span className="font-mono">{card.card_number}</span>
-              </InlineMeta>
-              <InlineMeta label="Rarity">
-                {card.rarity || "N/A"}
-              </InlineMeta>
-              {card.block && (
-                <InlineMeta label="Block">
-              {card.block}
-                </InlineMeta>
-              )}
-            </div>
           </div>
           <div className="bg-bg-card border border-border rounded-lg p-2.5 space-y-1.5 text-sm">
             <p className="text-xs text-text-muted uppercase tracking-wider">
@@ -236,7 +235,7 @@ export function CardDetailView({
                 return (
                   <div
                     key={img.variant_index}
-                    className={`flex items-center gap-1 rounded-md border px-1 py-0.5 transition-colors ${
+                    className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-md border px-1 py-0.5 transition-colors ${
                       isSelected
                         ? "border-accent bg-accent/10"
                         : "border-border bg-bg-tertiary/20"
@@ -259,6 +258,16 @@ export function CardDetailView({
                         <span className="truncate">{img.label || `Variant ${img.variant_index}`}</span>
                       </div>
                     </button>
+                    {img.artist ? (
+                      <Link
+                        to={`/search?q=${encodeURIComponent(`artist:"${img.artist}"`)}`}
+                        className="min-w-0 truncate rounded px-1 py-0.5 text-xs text-text-muted transition-colors hover:text-text-primary"
+                      >
+                        {img.artist}
+                      </Link>
+                    ) : (
+                      <span />
+                    )}
                   </div>
                 );
               })}
@@ -348,13 +357,17 @@ function isFeaturedFormat(format: string): boolean {
   return format === "Standard" || format === "Extra Regulation";
 }
 
-function Row({ label, value }: { label: string; value: React.ReactNode }) {
+function StatLine({ value, suffix }: { value: React.ReactNode; suffix: string }) {
   return (
-    <div className="flex items-baseline">
-      <span className="text-text-muted w-20 shrink-0">{label}</span>
-      <span className="text-text-primary">{value}</span>
+    <div className="flex items-baseline gap-1.5">
+      <span className="text-text-primary font-medium">{value}</span>
+      <span className="text-text-secondary">{suffix}</span>
     </div>
   );
+}
+
+function MetaLine({ value }: { value: React.ReactNode }) {
+  return <div className="text-text-primary">{value}</div>;
 }
 
 function PrintRow({ label, children }: { label: string; children: React.ReactNode }) {
@@ -362,15 +375,6 @@ function PrintRow({ label, children }: { label: string; children: React.ReactNod
     <div>
       <p className="text-xs text-text-muted uppercase tracking-wider mb-0.5">{label}</p>
       <p className="text-text-primary">{children}</p>
-    </div>
-  );
-}
-
-function InlineMeta({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex min-w-0 flex-col items-center text-center rounded-md border border-border bg-bg-tertiary/25 px-2.5 py-1.5 whitespace-nowrap">
-      <span className="text-xs uppercase tracking-wider text-text-muted">{label}</span>
-      <span className="mt-0.5 text-sm font-medium text-text-primary">{children}</span>
     </div>
   );
 }
@@ -477,11 +481,33 @@ function buildEbaySearchUrl(cardNumber: string, variantLabel: string | null | un
 }
 
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  children,
+  inlineTitle = false,
+  headerRight = null,
+}: {
+  title: string;
+  children: React.ReactNode;
+  inlineTitle?: boolean;
+  headerRight?: React.ReactNode;
+}) {
   return (
     <div className="mt-5 pt-4 border-t border-border">
-      <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider mb-2.5">{title}</h3>
-      {children}
+      {inlineTitle ? (
+        <div className="flex items-baseline gap-2">
+          <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider">{title}</h3>
+          <div className="min-w-0 text-sm text-text-primary">{children}</div>
+        </div>
+      ) : (
+        <>
+          <div className="mb-2.5 flex items-baseline gap-2">
+            <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider">{title}</h3>
+            {headerRight}
+          </div>
+          {children}
+        </>
+      )}
     </div>
   );
 }
