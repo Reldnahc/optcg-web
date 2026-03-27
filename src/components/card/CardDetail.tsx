@@ -87,7 +87,7 @@ export function CardDetailView({
                 <span className="font-mono text-sm text-text-muted">{card.card_number}</span>
               </div>
             </div>
-            <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-text-secondary">
+            <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm leading-none text-text-secondary">
               {card.rarity && card.rarity !== "L" && (
                 <>
                   <span>{card.rarity}</span>
