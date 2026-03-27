@@ -78,19 +78,17 @@ export function CardDetailView({
           <div className="border-b border-border pb-3 mb-4">
             <div className="flex items-baseline gap-3">
               <h1 className="min-w-0 text-xl font-bold">{card.name}</h1>
-              {card.rarity && (
-                <span className="shrink-0 text-sm text-text-secondary">{card.rarity}</span>
-              )}
-              <div className="inline-flex shrink-0 items-center gap-1.5">
-                <span className="font-mono text-sm text-text-muted">{card.card_number}</span>
+              <div className="ml-auto inline-flex shrink-0 items-center gap-1.5">
                 <CopyButton
                   value={card.card_number}
                   label="Copy card number"
                   copiedLabel="Card number copied"
                 />
+                <span className="font-mono text-sm text-text-muted">{card.card_number}</span>
               </div>
             </div>
             <p className="text-sm text-text-secondary mt-0.5">
+              {card.rarity && card.rarity !== "L" && <>{card.rarity} &middot; </>}
               {card.color.join(" / ")} &middot; {card.card_type}
               {card.cost !== null && <> &middot; Cost {card.cost}</>}
               {card.life !== null && <> &middot; {card.life} life</>}
