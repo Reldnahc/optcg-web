@@ -14,10 +14,15 @@ interface FilterSection {
 
 const FILTER_SECTIONS: FilterSection[] = [
   {
-    title: "Card Name",
+    title: "Free Text",
     filters: [
       { filter: "luffy", desc: "Free-text search for 'luffy' across name, text, set, product, artist, and more", example: "luffy" },
       { filter: '"Monkey D. Luffy"', desc: "Free-text phrase search. Quotes keep the words together, but this still searches more than just the card name.", example: '"Monkey D. Luffy"' },
+    ],
+  },
+  {
+    title: "Card Name",
+    filters: [
       { filter: "name:luffy", desc: "Card name contains 'luffy'", example: "name:luffy" },
       { filter: 'name="Monkey D. Luffy"', desc: "Exact card name match", example: 'name="Monkey D. Luffy"' },
       { filter: "n:luffy", desc: "Short alias: card name includes 'luffy'", example: "n:luffy" },
