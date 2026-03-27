@@ -181,30 +181,27 @@ export function CardDetailView({
 
         {/* Right: Print info */}
         <div className="lg:w-[320px] xl:w-[360px] shrink-0 space-y-4">
-          <div className="bg-bg-card border border-border rounded-lg p-4 space-y-3 text-sm">
-            {languageSwitcher && (
-              <div className="hidden sm:flex sm:justify-end">
-                <div className="shrink-0 text-right">
-                  <p className="mb-1 text-[11px] text-text-muted uppercase tracking-wider">Language</p>
-                  <div className="flex gap-px rounded-md border border-border bg-bg-tertiary/30 p-px">
-                    {languageSwitcher.available.map((code) => (
-                      <button
-                        key={code}
-                        type="button"
-                        onClick={() => languageSwitcher.onSelect(code)}
-                        className={`min-w-8 rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors ${
-                          languageSwitcher.current === code
-                            ? "bg-accent text-bg-primary"
-                            : "text-text-muted hover:text-text-primary"
-                        }`}
-                      >
-                        {languageSwitcher.labels[code] || code.toUpperCase()}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+          {languageSwitcher && (
+            <div className="hidden sm:flex sm:justify-end">
+              <div className="flex gap-px rounded-md border border-border bg-bg-tertiary/30 p-px">
+                {languageSwitcher.available.map((code) => (
+                  <button
+                    key={code}
+                    type="button"
+                    onClick={() => languageSwitcher.onSelect(code)}
+                    className={`min-w-8 rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors ${
+                      languageSwitcher.current === code
+                        ? "bg-accent text-bg-primary"
+                        : "text-text-muted hover:text-text-primary"
+                    }`}
+                  >
+                    {languageSwitcher.labels[code] || code.toUpperCase()}
+                  </button>
+                ))}
               </div>
-            )}
+            </div>
+          )}
+          <div className="bg-bg-card border border-border rounded-lg p-4 space-y-3 text-sm">
             <PrintRow label="Set">
               <Link to={`/sets/${card.set}`} className="hover:underline">
                 {card.set_name}
