@@ -16,8 +16,12 @@ const FILTER_SECTIONS: FilterSection[] = [
   {
     title: "Card Name",
     filters: [
-      { filter: "luffy", desc: "Cards with 'luffy' in the name", example: "luffy" },
-      { filter: '"Monkey D. Luffy"', desc: "Exact name phrase", example: '"Monkey D. Luffy"' },
+      { filter: "luffy", desc: "Free-text search for 'luffy' across name, text, set, product, artist, and more", example: "luffy" },
+      { filter: '"Monkey D. Luffy"', desc: "Free-text phrase search. Quotes keep the words together, but this still searches more than just the card name.", example: '"Monkey D. Luffy"' },
+      { filter: "name:luffy", desc: "Card name contains 'luffy'", example: "name:luffy" },
+      { filter: 'name="Monkey D. Luffy"', desc: "Exact card name match", example: 'name="Monkey D. Luffy"' },
+      { filter: "n:luffy", desc: "Short alias: card name includes 'luffy'", example: "n:luffy" },
+      { filter: 'n="Monkey D. Luffy"', desc: "Short alias: exact card name match", example: 'n="Monkey D. Luffy"' },
     ],
   },
   {
@@ -201,6 +205,9 @@ export function SyntaxHelp() {
         <p className="text-xs text-text-muted mt-2 leading-relaxed">
           Not all operators apply to every field. Text fields use <code className="text-accent">:</code> for substring matching and <code className="text-accent">=</code> for exact matching. Numeric fields support all comparison operators.
         </p>
+        <p className="text-xs text-text-muted mt-2 leading-relaxed">
+          Bare words and quoted phrases are free-text searches. To search only the card name, use <code className="text-accent">name:</code>/<code className="text-accent">name=</code> or the short alias <code className="text-accent">n:</code>/<code className="text-accent">n=</code>.
+        </p>
       </section>
 
       <section className="mb-10">
@@ -292,6 +299,7 @@ export function SyntaxHelp() {
           Many fields have shorter aliases for convenience:
         </p>
         <div className="bg-bg-card border border-border rounded-lg divide-y divide-border text-sm">
+          <AliasRow short="n" full="name" />
           <AliasRow short="c" full="color" />
           <AliasRow short="t" full="type" />
           <AliasRow short="r" full="rarity" />

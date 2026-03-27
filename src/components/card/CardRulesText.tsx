@@ -134,7 +134,7 @@ function SearchSyntaxLink({
 }) {
   const inner = value.slice(1, -1);
   const query = kind === "card_name"
-    ? `"${inner}"`
+    ? `n="${inner}"`
     : kind === "trait_exact"
       ? `trait="${inner}"`
       : `trait:"${inner}"`;
