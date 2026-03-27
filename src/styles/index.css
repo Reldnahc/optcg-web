@@ -103,3 +103,125 @@ a:hover {
   line-height: 1.65;
   letter-spacing: -0.005em;
 }
+
+.card-rules-text {
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  line-height: 1.65;
+  letter-spacing: -0.005em;
+}
+
+.card-rules-text--compact {
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.card-rules-line + .card-rules-line {
+  margin-top: 0.2rem;
+}
+
+.card-rules-copy--lead {
+  font-weight: 700;
+}
+
+.card-rules-copy--italic {
+  font-style: italic;
+}
+
+.card-rules-copy--tag-divider {
+  display: inline-block;
+  margin-inline: 0.14rem;
+}
+
+.card-rules-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.02rem;
+  margin-bottom: 0.14rem;
+  border: none;
+  border-radius: 0.34rem;
+  min-height: 1.3em;
+  padding: 0.01rem 0.3rem;
+  font-family: var(--font-sans);
+  font-size: 0.85em;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0;
+  text-align: center;
+  vertical-align: baseline;
+}
+
+.card-rules-tag--compact {
+  margin-right: 0.01rem;
+  min-height: 1.2em;
+  padding: 0.01rem 0.26rem;
+}
+
+.card-rules-tag--don {
+  background: rgba(22, 24, 30, 0.98);
+  color: #f5f7fb;
+  border-radius: 0;
+  padding-inline: 0.42rem;
+  clip-path: polygon(6% 0, 94% 0, 100% 24%, 100% 76%, 94% 100%, 6% 100%, 0 76%, 0 24%);
+}
+
+.card-rules-tag__label {
+  display: block;
+  transform: translateY(-0.04em);
+}
+
+.card-rules-tag__don-x {
+  display: inline-block;
+  font-size: 0.62em;
+  line-height: 1;
+  vertical-align: middle;
+  transform: translateY(-0.04em);
+}
+
+.card-rules-tag__don-gap {
+  display: inline-block;
+}
+
+.card-rules-tag__don-gap--before {
+  width: 0.08em;
+}
+
+.card-rules-tag__don-gap--after {
+  width: 0.08em;
+}
+
+.card-rules-tag--blue {
+  background: rgba(82, 111, 182, 0.96);
+  border-radius: 0.24rem;
+  color: #f7fbff;
+}
+
+.card-rules-tag--counter {
+  background: rgba(186, 80, 92, 0.97);
+  border-radius: 0.24rem;
+  color: #fff8f8;
+}
+
+.card-rules-tag--once {
+  background: rgba(166, 66, 78, 0.97);
+  border-radius: 999px;
+  color: #fff8f8;
+}
+
+.card-rules-tag--trigger {
+  /* TODO: Refine Trigger badge shape/color against more card scan references. */
+  background: rgba(241, 218, 73, 0.98);
+  color: #17150d;
+  border-radius: 0;
+  padding-inline: 0.34rem;
+  clip-path: polygon(8% 0, 95% 0, 100% 32%, 94% 100%, 7% 100%, 0 68%);
+}
+
+.card-rules-tag--ability {
+  background: rgba(226, 136, 46, 0.98);
+  color: #fff7ef;
+  border-radius: 0;
+  padding-inline: 0.48rem;
+  clip-path: polygon(16% 0, 84% 0, 100% 50%, 84% 100%, 16% 100%, 0 50%);
+}

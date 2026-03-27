@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import type { CardDetail as CardDetailType, CardImage } from "../../api/types";
 import { CardHoverPreviewLink } from "./CardHoverPreviewLink";
+import { CardRulesText } from "./CardRulesText";
 
 type LanguageSwitcherConfig = {
   current: string;
@@ -95,10 +96,12 @@ export function CardDetailView({
           {(card.effect || card.trigger) && (
             <div className="mb-4 border border-border rounded bg-bg-card p-4">
               {card.effect ? (
-                <p className="effect-text whitespace-pre-line">{card.effect}</p>
+                <CardRulesText text={card.effect} />
               ) : null}
               {card.trigger ? (
-                <p className={`effect-text whitespace-pre-line ${card.effect ? "mt-3" : ""}`}>{card.trigger}</p>
+                <div className={card.effect ? "mt-3" : ""}>
+                  <CardRulesText text={card.trigger} />
+                </div>
               ) : null}
             </div>
           )}
