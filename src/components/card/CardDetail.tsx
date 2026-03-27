@@ -84,7 +84,7 @@ export function CardDetailView({
                   label="Copy card number"
                   copiedLabel="Card number copied"
                 />
-                <span className="font-mono text-sm text-text-muted">{card.card_number}</span>
+                <span className="font-mono text-sm text-text-secondary">{card.card_number}</span>
               </div>
             </div>
             <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm leading-none text-text-secondary">
