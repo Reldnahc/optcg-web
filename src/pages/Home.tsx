@@ -24,7 +24,7 @@ export function Home() {
 
       <div className="relative flex min-h-screen flex-col items-center justify-center px-4">
         <div className="-mt-16 mb-8 text-center">
-          <h1 className="text-5xl sm:text-6xl font-extrabold tracking-[-0.055em]">
+          <h1 className="px-3 text-[clamp(1.85rem,11vw,3.75rem)] font-extrabold leading-[0.95] tracking-[-0.04em] sm:px-2 sm:text-6xl sm:tracking-[-0.055em]">
             <BrandWordmark glow />
           </h1>
           <p className="text-text-secondary mt-3 text-lg">
