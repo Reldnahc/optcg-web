@@ -380,7 +380,7 @@ export function AdvancedSearch() {
 }
 
 function formatNameClause(value: string, mode: TextOp): string {
-  return mode === "=" ? quoteValue(value) : formatFieldValue(value);
+  return `name${mode}${formatFieldValue(value, mode === "=")}`;
 }
 
 function pushTextClause(parts: string[], field: string, value: string, mode: TextOp) {
