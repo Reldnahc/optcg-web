@@ -87,12 +87,29 @@ export function CardDetailView({
                 <span className="font-mono text-sm text-text-muted">{card.card_number}</span>
               </div>
             </div>
-            <p className="text-sm text-text-secondary mt-0.5">
-              {card.rarity && card.rarity !== "L" && <>{card.rarity} &middot; </>}
-              {card.color.join(" / ")} &middot; {card.card_type}
-              {card.cost !== null && <> &middot; Cost {card.cost}</>}
-              {card.life !== null && <> &middot; {card.life} life</>}
-            </p>
+            <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-text-secondary">
+              {card.rarity && card.rarity !== "L" && (
+                <>
+                  <span>{card.rarity}</span>
+                  <DotSeparator size="sm" />
+                </>
+              )}
+              <span>{card.color.join(" / ")}</span>
+              <DotSeparator size="sm" />
+              <span>{card.card_type}</span>
+              {card.cost !== null && (
+                <>
+                  <DotSeparator size="sm" />
+                  <span>Cost {card.cost}</span>
+                </>
+              )}
+              {card.life !== null && (
+                <>
+                  <DotSeparator size="sm" />
+                  <span>{card.life} life</span>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Game stats */}
@@ -365,8 +382,13 @@ function MetaLine({ value }: { value: React.ReactNode }) {
   return <div className="text-text-primary">{value}</div>;
 }
 
-function DotSeparator() {
-  return <span className="h-1.25 w-1.25 shrink-0 rounded-full bg-text-muted/60" aria-hidden="true" />;
+function DotSeparator({ size = "md" }: { size?: "sm" | "md" }) {
+  return (
+    <span
+      className={`${size === "sm" ? "h-1 w-1" : "h-1.25 w-1.25"} shrink-0 rounded-full bg-text-muted/60`}
+      aria-hidden="true"
+    />
+  );
 }
 
 function PrintRow({ label, children }: { label: string; children: React.ReactNode }) {
