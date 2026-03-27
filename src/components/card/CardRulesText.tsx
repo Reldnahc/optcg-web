@@ -35,7 +35,7 @@ function renderLine(line: string, compact: boolean) {
       );
 
       if (tone === "blue") {
-        shouldBoldLeadAfterBlue = hasColonBeforeNextTag(segments, segmentIndex + 1);
+        shouldBoldLeadAfterBlue = hasColonAhead(segments, segmentIndex + 1);
         finishedBlueLead = false;
       }
 
@@ -79,17 +79,13 @@ function isTagDividerSegment(
   );
 }
 
-function hasColonBeforeNextTag(
+function hasColonAhead(
   segments: Array<{ type: "tag" | "text"; value: string }>,
   startIndex: number,
 ) {
   for (let i = startIndex; i < segments.length; i += 1) {
     const segment = segments[i];
-    if (segment.type === "tag") {
-      return false;
-    }
-
-    if (segment.value.includes(":")) {
+    if (segment.type === "text" && segment.value.includes(":")) {
       return true;
     }
   }
@@ -243,7 +239,11 @@ function getTagTone(value: string): "don" | "blue" | "once" | "trigger" | "abili
     return "trigger";
   }
 
-  if (normalized === "[blocker]" || normalized === "[rush]") {
+  if (
+    normalized === "[blocker]"
+    || normalized === "[rush]"
+    || normalized === "[double attack]"
+  ) {
     return "ability";
   }
 
