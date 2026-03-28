@@ -28,6 +28,7 @@ function renderLine(line: string, compact: boolean) {
   const rendered: React.ReactNode[] = [];
   let shouldBoldLeadAfterBlue = false;
   let finishedBlueLead = false;
+  let previousWasTag = false;
 
   segments.forEach((segment, segmentIndex) => {
     if (segment.type === "tag") {
@@ -41,6 +42,7 @@ function renderLine(line: string, compact: boolean) {
         finishedBlueLead = false;
       }
 
+      previousWasTag = true;
       return;
     }
 
@@ -48,6 +50,7 @@ function renderLine(line: string, compact: boolean) {
       rendered.push(
         <SearchSyntaxLink key={`${segment.value}-${segmentIndex}`} value={segment.value} kind={segment.type} />,
       );
+      previousWasTag = false;
       return;
     }
 
@@ -57,12 +60,18 @@ function renderLine(line: string, compact: boolean) {
           /
         </span>,
       );
+      previousWasTag = false;
       return;
     }
 
     const renderMode = shouldBoldLeadAfterBlue && !finishedBlueLead ? "blue-lead" : "default";
-    const { nodes, consumedColon } = renderCopySegment(segment.value, segmentIndex, renderMode);
+    const { nodes, consumedColon } = renderCopySegment(
+      bindLeadingPunctuationAfterTag(segment.value, previousWasTag),
+      segmentIndex,
+      renderMode,
+    );
     rendered.push(...nodes);
+    previousWasTag = false;
 
     if (renderMode === "blue-lead" && consumedColon) {
       finishedBlueLead = true;
@@ -268,6 +277,11 @@ function renderLeadTextNodes(value: string, keyPrefix: string): React.ReactNode[
 
 function isCircledNumber(value: string) {
   return /^[①-⑳⓪➀-➉]$/.test(value);
+}
+
+function bindLeadingPunctuationAfterTag(value: string, previousWasTag: boolean) {
+  if (!previousWasTag) return value;
+  return value.replace(/^([.,!?;]+)/, "\u2060$1");
 }
 
 function getTagTone(value: string): "don" | "blue" | "once" | "trigger" | "ability" | "counter" | null {
