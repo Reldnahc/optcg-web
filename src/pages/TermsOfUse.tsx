@@ -1,6 +1,6 @@
 import { PageContainer } from "../components/layout/PageContainer";
 
-const UPDATED_AT = "March 25, 2026";
+const UPDATED_AT = "March 28, 2026";
 
 export function TermsOfUse() {
   return (
@@ -24,11 +24,15 @@ export function TermsOfUse() {
         <TermsSection title="About the Site">
           <p>
             poneglyph.one is an independent One Piece Card Game database, reference site, and public API. It is not
-            produced by, endorsed by, supported by, or affiliated with Bandai, TCGPlayer, or eBay.
+            produced by, endorsed by, supported by, or affiliated with Bandai.
           </p>
           <p>
             Card data, images, prices, legality information, and other materials may change, be incomplete, contain
             errors, or be removed at any time.
+          </p>
+          <p>
+            Some outbound shopping links may be affiliate links, including TCGPlayer links. If you purchase through
+            those links, poneglyph.one may earn a commission.
           </p>
         </TermsSection>
 

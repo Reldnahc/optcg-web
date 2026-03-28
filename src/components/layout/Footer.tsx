@@ -36,7 +36,7 @@ export function Footer() {
             <Link to="/privacy" className="hover:text-text-secondary">Privacy Policy</Link>
           </div>
           <div className="text-xs text-text-muted leading-relaxed">
-          <p>Card images and data &copy; Bandai Co., Ltd. Prices provided by TCGPlayer. poneglyph.one is not produced by, endorsed by, supported by, or affiliated with Bandai or TCGPlayer.</p>
+          <p>Card images and data &copy; Bandai Co., Ltd. Prices provided by TCGPlayer. poneglyph.one is independent and not produced by, endorsed by, supported by, or affiliated with Bandai. Some shopping links may be affiliate links, including TCGPlayer links, and may earn poneglyph.one a commission.</p>
           </div>
         </div>
       </div>

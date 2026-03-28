@@ -1,6 +1,6 @@
 import { PageContainer } from "../components/layout/PageContainer";
 
-const UPDATED_AT = "March 25, 2026";
+const UPDATED_AT = "March 28, 2026";
 
 export function PrivacyPolicy() {
   return (
@@ -56,7 +56,20 @@ export function PrivacyPolicy() {
             <li>To monitor reliability, performance, and overall usage patterns.</li>
             <li>To respond to support, privacy, legal, moderation, or takedown requests.</li>
             <li>To review, moderate, host, display, credit, edit, or remove submitted scans or other user-provided content.</li>
+            <li>To route outbound affiliate links, including TCGPlayer links, and receive referral-based commissions when applicable.</li>
           </ul>
+        </PolicySection>
+
+        <PolicySection title="Third-Party and Affiliate Links">
+          <p>
+            poneglyph.one may link to third-party sites, including affiliate shopping links. If you click one of those
+            links, the destination site and related partners may receive information such as the page request, referral
+            data, and standard browser or device metadata according to their own policies.
+          </p>
+          <p>
+            We do not control third-party privacy practices. Review the privacy policies and terms of any third-party
+            site you visit through poneglyph.one.
+          </p>
         </PolicySection>
 
         <PolicySection title="Cookies and Analytics">
@@ -64,8 +77,8 @@ export function PrivacyPolicy() {
             poneglyph.one does not use cookies for accounts, advertising, or behavioral tracking.
           </p>
           <p>
-            We do use Cloudflare Analytics and related infrastructure-level measurement and security tools to understand
-            aggregate site traffic, monitor performance, and protect the site from abuse.
+            We may use infrastructure-level logs, traffic measurement, CDN, and security tools to understand aggregate
+            site traffic, monitor performance, and protect the site from abuse.
           </p>
         </PolicySection>
 
