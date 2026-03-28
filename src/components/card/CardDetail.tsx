@@ -20,6 +20,7 @@ const STATUS_BADGE_STYLE: Record<string, string> = {
   not_legal: "border-not-legal/30 bg-not-legal/10 text-text-secondary",
   unreleased: "border-accent/30 bg-accent/10 text-accent",
 };
+const TCGPLAYER_AFFILIATE_BASE_URL = "https://partner.tcgplayer.com/poneglyph";
 
 export function CardDetailView({
   card,
@@ -450,8 +451,9 @@ function PriceStat({ label, value, muted = false }: { label: string; value: stri
 
 function TcgplayerButton({ href, label }: { href: string | null; label: string }) {
   const className = "inline-flex min-h-8 min-w-[3.5rem] shrink-0 items-center justify-center rounded-md border border-border bg-bg-card px-1.5 py-1.5 text-[10px] font-semibold transition-colors sm:min-h-9 sm:min-w-[6.5rem] sm:px-3 sm:py-2 sm:text-xs";
+  const affiliateHref = buildTcgplayerAffiliateUrl(href);
 
-  if (!href) {
+  if (!affiliateHref) {
     return (
       <span className={`${className} text-text-muted`}>
         {label}
@@ -461,7 +463,7 @@ function TcgplayerButton({ href, label }: { href: string | null; label: string }
 
   return (
     <a
-      href={href}
+      href={affiliateHref}
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Open listing on TCGplayer"
@@ -471,6 +473,23 @@ function TcgplayerButton({ href, label }: { href: string | null; label: string }
       {label}
     </a>
   );
+}
+
+function buildTcgplayerAffiliateUrl(href: string | null): string | null {
+  if (!href) return null;
+
+  try {
+    const targetUrl = new URL(href);
+    if (targetUrl.hostname === "partner.tcgplayer.com") {
+      return href;
+    }
+
+    const affiliateUrl = new URL(TCGPLAYER_AFFILIATE_BASE_URL);
+    affiliateUrl.searchParams.set("u", targetUrl.toString());
+    return affiliateUrl.toString();
+  } catch {
+    return href;
+  }
 }
 
 function ExternalButton({ href, label }: { href: string | null; label: string }) {
