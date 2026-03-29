@@ -21,6 +21,7 @@ const STATUS_BADGE_STYLE: Record<string, string> = {
   unreleased: "border-accent/30 bg-accent/10 text-accent",
 };
 const TCGPLAYER_AFFILIATE_BASE_URL = "https://partner.tcgplayer.com/poneglyph";
+const IMAGE_AUTO_PREFERENCE_STORAGE_KEY = "optcg.imageDisplayAutoPreference";
 
 export function CardDetailView({
   card,
@@ -552,6 +553,16 @@ function Section({
   );
 }
 
+function getVariantStripGridClass(count: number): string {
+  if (count >= 7) return "grid-cols-4";
+  if (count >= 4) return "grid-cols-3";
+  if (count === 2) return "grid-cols-2";
+  return "grid-cols-1";
+}
+
+type ImageDisplayMode = "auto" | "digital" | "scan";
+type ImageAutoPreference = "digital" | "scan";
+
 function CardImageViewer({
   images,
   selected,
@@ -564,9 +575,16 @@ function CardImageViewer({
   cardName: string;
 }) {
   const current = images[selected];
-  const hasScan = !!current?.scan_url;
-  const [showScan, setShowScan] = useState(false);
-  const displayUrl = showScan && hasScan ? current.scan_url : current?.image_url;
+  const hasCurrentScan = !!current?.scan_url;
+  const hasAnyScans = images.some((img) => !!img.scan_url);
+  const [displayMode, setDisplayMode] = useState<ImageDisplayMode>("auto");
+  const [autoPreference, setAutoPreference] = useState<ImageAutoPreference>(getStoredImageAutoPreference);
+
+  useEffect(() => {
+    window.localStorage.setItem(IMAGE_AUTO_PREFERENCE_STORAGE_KEY, autoPreference);
+  }, [autoPreference]);
+
+  const displayUrl = resolveImageDisplayUrl(current, displayMode, autoPreference);
 
   return (
     <div>
@@ -585,47 +603,104 @@ function CardImageViewer({
         )}
       </div>
 
-      {/* Digital / Scan toggle */}
-      {hasScan && (
-        <div className="flex gap-0.5 mt-2 bg-bg-card rounded-md p-0.5 border border-border">
-          <button
-            onClick={() => setShowScan(false)}
-            className={`flex-1 px-2 py-1 text-xs font-medium rounded transition-colors
-              ${!showScan ? "bg-accent text-bg-primary" : "text-text-muted hover:text-text-primary"}`}
-          >
-            Digital
-          </button>
-          <button
-            onClick={() => setShowScan(true)}
-            className={`flex-1 px-2 py-1 text-xs font-medium rounded transition-colors
-              ${showScan ? "bg-accent text-bg-primary" : "text-text-muted hover:text-text-primary"}`}
-          >
-            Scan
-          </button>
+      {/* Auto / Digital / Scan toggle */}
+      {hasAnyScans && (
+        <div className="mt-2 space-y-1.5">
+          <div className="flex gap-0.5 rounded-md border border-border bg-bg-card p-0.5">
+            <button
+              type="button"
+              onClick={() => setDisplayMode("auto")}
+              className={`flex-1 px-2 py-1 text-xs font-medium rounded transition-colors
+                ${displayMode === "auto" ? "bg-accent text-bg-primary" : "text-text-muted hover:text-text-primary"}`}
+            >
+              Auto
+            </button>
+            <button
+              type="button"
+              onClick={() => setDisplayMode("digital")}
+              className={`flex-1 px-2 py-1 text-xs font-medium rounded transition-colors
+                ${displayMode === "digital" ? "bg-accent text-bg-primary" : "text-text-muted hover:text-text-primary"}`}
+            >
+              Digital
+            </button>
+            <button
+              type="button"
+              onClick={() => setDisplayMode("scan")}
+              disabled={!hasCurrentScan}
+              className={`flex-1 px-2 py-1 text-xs font-medium rounded transition-colors ${
+                !hasCurrentScan
+                  ? "cursor-not-allowed text-text-muted/40"
+                  : displayMode === "scan"
+                    ? "bg-accent text-bg-primary"
+                    : "text-text-muted hover:text-text-primary"
+              }`}
+            >
+              Scan
+            </button>
+          </div>
+          <div className="flex items-center justify-between gap-2 rounded-md border border-border bg-bg-card/55 px-2 py-1">
+            <span className="text-[10px] font-medium uppercase tracking-wider text-text-muted">Auto prefers</span>
+            <div className="flex gap-0.5 rounded bg-bg-tertiary/35 p-0.5">
+              <button
+                type="button"
+                onClick={() => setAutoPreference("scan")}
+                className={`rounded px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                  autoPreference === "scan"
+                    ? "bg-accent text-bg-primary"
+                    : "text-text-muted hover:text-text-primary"
+                }`}
+              >
+                Scans
+              </button>
+              <button
+                type="button"
+                onClick={() => setAutoPreference("digital")}
+                className={`rounded px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                  autoPreference === "digital"
+                    ? "bg-accent text-bg-primary"
+                    : "text-text-muted hover:text-text-primary"
+                }`}
+              >
+                Digital
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
       {/* Variant strip */}
       {images.length > 1 && (
-        <div className={`grid gap-1.5 mt-3 ${images.length > 3 ? "grid-cols-3" : `grid-cols-${images.length}`}`}>
+        <div className={`grid gap-1.5 mt-3 ${getVariantStripGridClass(images.length)}`}>
           {images.map((img, i) => {
             const thumbnailUrl = img.thumbnail_url ?? img.image_url;
+            const market = getVariantMarketInfo(img);
+            const marketLabel = fmtPrice(market.marketPrice);
+            const variantLabel = img.label || `Variant ${img.variant_index}`;
 
             return (
               <button
                 key={i}
                 onClick={() => onSelect(i)}
-                className={`rounded-md overflow-hidden border-2 transition-colors
-                  ${i === selected ? "border-accent" : "border-transparent hover:border-text-muted/40"}`}
-                title={img.label || `Variant ${i}`}
+                className="min-w-0 text-left"
+                title={variantLabel}
               >
-                {thumbnailUrl ? (
-                  <img src={thumbnailUrl} alt={img.label || `Variant ${i}`} className="w-full block" loading="lazy" />
-                ) : (
-                  <div className="aspect-[63/88] bg-bg-tertiary text-text-muted text-[9px] flex items-center justify-center">
-                    {img.label || `v${i}`}
-                  </div>
-                )}
+                <div
+                  className={`rounded-md overflow-hidden border-2 transition-colors ${
+                    i === selected ? "border-accent" : "border-transparent hover:border-text-muted/40"
+                  }`}
+                >
+                  {thumbnailUrl ? (
+                    <img src={thumbnailUrl} alt={variantLabel} className="w-full block" loading="lazy" />
+                  ) : (
+                    <div className="aspect-[63/88] bg-bg-tertiary text-text-muted text-[9px] flex items-center justify-center">
+                      {img.label || `v${i}`}
+                    </div>
+                  )}
+                </div>
+                <div className="mt-1 px-0.5 text-[10px] leading-tight">
+                  <p className="truncate font-medium text-text-primary">{marketLabel}</p>
+                  <p className="truncate text-text-muted">{variantLabel}</p>
+                </div>
               </button>
             );
           })}
@@ -633,4 +708,31 @@ function CardImageViewer({
       )}
     </div>
   );
+}
+
+function resolveImageDisplayUrl(
+  image: CardImage | undefined,
+  displayMode: ImageDisplayMode,
+  autoPreference: ImageAutoPreference,
+): string | null | undefined {
+  if (!image) return null;
+
+  if (displayMode === "digital") {
+    return image.image_url ?? image.scan_url;
+  }
+
+  if (displayMode === "scan") {
+    return image.scan_url ?? image.image_url;
+  }
+
+  return autoPreference === "scan"
+    ? image.scan_url ?? image.image_url
+    : image.image_url ?? image.scan_url;
+}
+
+function getStoredImageAutoPreference(): ImageAutoPreference {
+  if (typeof window === "undefined") return "scan";
+
+  const stored = window.localStorage.getItem(IMAGE_AUTO_PREFERENCE_STORAGE_KEY);
+  return stored === "digital" ? "digital" : "scan";
 }
