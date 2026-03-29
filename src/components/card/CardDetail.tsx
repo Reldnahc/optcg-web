@@ -387,7 +387,7 @@ function MetaLine({ value }: { value: React.ReactNode }) {
 function DotSeparator({ size = "md" }: { size?: "sm" | "md" }) {
   return (
     <span
-      className={`${size === "sm" ? "h-1 w-1" : "h-1.25 w-1.25"} shrink-0 rounded-full bg-text-muted/60`}
+      className={`${size === "sm" ? "h-1 w-1 translate-y-px" : "h-1.25 w-1.25"} shrink-0 self-center rounded-full bg-text-muted/60`}
       aria-hidden="true"
     />
   );
@@ -605,12 +605,12 @@ function CardImageViewer({
 
       {/* Auto / Digital / Scan toggle */}
       {hasAnyScans && (
-        <div className="mt-2 space-y-1.5">
-          <div className="flex gap-0.5 rounded-md border border-border bg-bg-card p-0.5">
+        <div className="mt-2 flex flex-wrap items-center gap-1 rounded-md border border-border bg-bg-card/70 p-1">
+          <div className="flex min-w-0 flex-1 gap-px rounded bg-bg-tertiary/25 p-px">
             <button
               type="button"
               onClick={() => setDisplayMode("auto")}
-              className={`flex-1 px-2 py-1 text-xs font-medium rounded transition-colors
+              className={`flex-1 rounded px-1.5 py-0.75 text-[10px] font-medium transition-colors
                 ${displayMode === "auto" ? "bg-accent text-bg-primary" : "text-text-muted hover:text-text-primary"}`}
             >
               Auto
@@ -618,7 +618,7 @@ function CardImageViewer({
             <button
               type="button"
               onClick={() => setDisplayMode("digital")}
-              className={`flex-1 px-2 py-1 text-xs font-medium rounded transition-colors
+              className={`flex-1 rounded px-1.5 py-0.75 text-[10px] font-medium transition-colors
                 ${displayMode === "digital" ? "bg-accent text-bg-primary" : "text-text-muted hover:text-text-primary"}`}
             >
               Digital
@@ -627,7 +627,7 @@ function CardImageViewer({
               type="button"
               onClick={() => setDisplayMode("scan")}
               disabled={!hasCurrentScan}
-              className={`flex-1 px-2 py-1 text-xs font-medium rounded transition-colors ${
+              className={`flex-1 rounded px-1.5 py-0.75 text-[10px] font-medium transition-colors ${
                 !hasCurrentScan
                   ? "cursor-not-allowed text-text-muted/40"
                   : displayMode === "scan"
@@ -638,13 +638,13 @@ function CardImageViewer({
               Scan
             </button>
           </div>
-          <div className="flex items-center justify-between gap-2 rounded-md border border-border bg-bg-card/55 px-2 py-1">
-            <span className="text-[10px] font-medium uppercase tracking-wider text-text-muted">Auto prefers</span>
-            <div className="flex gap-0.5 rounded bg-bg-tertiary/35 p-0.5">
+          <div className="ml-auto flex items-center gap-1 text-[9px] uppercase tracking-wider text-text-muted">
+            <span className="shrink-0">Prefer</span>
+            <div className="flex gap-px rounded bg-bg-tertiary/35 p-px">
               <button
                 type="button"
                 onClick={() => setAutoPreference("scan")}
-                className={`rounded px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                className={`rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors ${
                   autoPreference === "scan"
                     ? "bg-accent text-bg-primary"
                     : "text-text-muted hover:text-text-primary"
@@ -655,7 +655,7 @@ function CardImageViewer({
               <button
                 type="button"
                 onClick={() => setAutoPreference("digital")}
-                className={`rounded px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                className={`rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors ${
                   autoPreference === "digital"
                     ? "bg-accent text-bg-primary"
                     : "text-text-muted hover:text-text-primary"
@@ -672,7 +672,7 @@ function CardImageViewer({
       {images.length > 1 && (
         <div className={`grid gap-1.5 mt-3 ${getVariantStripGridClass(images.length)}`}>
           {images.map((img, i) => {
-            const thumbnailUrl = img.thumbnail_url ?? img.image_url;
+            const thumbnailUrl = resolveVariantThumbnailUrl(img, displayMode, autoPreference);
             const market = getVariantMarketInfo(img);
             const marketLabel = fmtPrice(market.marketPrice);
             const variantLabel = img.label || `Variant ${img.variant_index}`;
@@ -728,6 +728,24 @@ function resolveImageDisplayUrl(
   return autoPreference === "scan"
     ? image.scan_url ?? image.image_url
     : image.image_url ?? image.scan_url;
+}
+
+function resolveVariantThumbnailUrl(
+  image: CardImage,
+  displayMode: ImageDisplayMode,
+  autoPreference: ImageAutoPreference,
+): string | null | undefined {
+  if (displayMode === "digital") {
+    return image.thumbnail_url ?? image.image_url ?? image.scan_url;
+  }
+
+  if (displayMode === "scan") {
+    return image.scan_url ?? image.thumbnail_url ?? image.image_url;
+  }
+
+  return autoPreference === "scan"
+    ? image.scan_url ?? image.thumbnail_url ?? image.image_url
+    : image.thumbnail_url ?? image.image_url ?? image.scan_url;
 }
 
 function getStoredImageAutoPreference(): ImageAutoPreference {
