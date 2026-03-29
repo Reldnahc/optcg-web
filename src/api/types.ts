@@ -37,6 +37,7 @@ export interface CardImage {
   image_url: string | null;
   thumbnail_url?: string | null;
   scan_url?: string | null;
+  scan_thumb_url?: string | null;
   artist?: string | null;
   label: string | null;
   product_name: string | null;

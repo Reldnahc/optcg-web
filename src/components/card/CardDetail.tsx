@@ -736,16 +736,16 @@ function resolveVariantThumbnailUrl(
   autoPreference: ImageAutoPreference,
 ): string | null | undefined {
   if (displayMode === "digital") {
-    return image.thumbnail_url ?? image.image_url ?? image.scan_url;
+    return image.thumbnail_url ?? image.image_url ?? image.scan_thumb_url ?? image.scan_url;
   }
 
   if (displayMode === "scan") {
-    return image.scan_url ?? image.thumbnail_url ?? image.image_url;
+    return image.scan_thumb_url ?? image.scan_url ?? image.thumbnail_url ?? image.image_url;
   }
 
   return autoPreference === "scan"
-    ? image.scan_url ?? image.thumbnail_url ?? image.image_url
-    : image.thumbnail_url ?? image.image_url ?? image.scan_url;
+    ? image.scan_thumb_url ?? image.scan_url ?? image.thumbnail_url ?? image.image_url
+    : image.thumbnail_url ?? image.image_url ?? image.scan_thumb_url ?? image.scan_url;
 }
 
 function getStoredImageAutoPreference(): ImageAutoPreference {
