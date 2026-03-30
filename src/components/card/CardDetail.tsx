@@ -71,7 +71,7 @@ export function CardDetailView({
     });
   }
   toolActions.push({ key: "json", kind: "json", href: cardApiJsonUrl, label: "JSON" });
-  toolActions.push({ key: "report", kind: "report", label: "Report", mock: true });
+  toolActions.push({ key: "report", kind: "report", label: "Report issue", mock: true });
   const legalityEntries = Object.entries(card.legality);
   const featuredLegalityEntries = legalityEntries.filter(([format]) => isFeaturedFormat(format));
   const otherLegalityEntries = legalityEntries.filter(([format]) => !isFeaturedFormat(format));
@@ -226,7 +226,7 @@ export function CardDetailView({
           )}
 
           <Section title="Tools">
-            <InfoPanel title="Actions">
+            <InfoPanel title="Actions" compact>
               <div className="space-y-1.5">
                 {toolActions.map((action) => (
                   <ToolActionRow key={action.key} action={action} />
@@ -555,13 +555,15 @@ function buildVariantDownloadName(
 function InfoPanel({
   title,
   children,
+  compact = false,
 }: {
   title: string;
   children: React.ReactNode;
+  compact?: boolean;
 }) {
   return (
-    <section className="rounded-lg border border-border bg-bg-card/35 px-3 py-2.5">
-      <h3 className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-text-muted">{title}</h3>
+    <section className={`rounded-lg border border-border bg-bg-card/35 ${compact ? "px-2.5 py-2" : "px-3 py-2.5"}`}>
+      <h3 className={`text-[11px] font-bold uppercase tracking-wider text-text-muted ${compact ? "mb-1" : "mb-1.5"}`}>{title}</h3>
       {children}
     </section>
   );
@@ -571,24 +573,26 @@ function ToolActionRow({ action }: { action: ToolAction }) {
   const isReport = action.kind === "report";
   const content = (
     <>
-      <span className={`flex h-4 w-4 shrink-0 items-center justify-center ${isReport ? "text-banned" : "text-text-secondary"}`}>
+      <span className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center ${isReport ? "text-banned" : "text-text-secondary"}`}>
         <ToolIcon kind={action.kind} />
       </span>
       <span className="min-w-0 flex-1 truncate">{action.label}</span>
     </>
   );
 
-  const className = `flex w-full items-center gap-2 py-0.5 text-sm no-underline transition-colors hover:underline ${isReport ? "text-banned hover:text-banned" : "text-text-secondary hover:text-text-primary"}`;
+  const className = `flex w-full items-center gap-1.5 py-px text-[13px] leading-tight no-underline transition-colors hover:underline ${isReport ? "text-banned visited:text-banned hover:text-banned" : "text-text-secondary hover:text-text-primary"}`;
 
   if (action.mock || !action.href) {
     return (
-      <button
-        type="button"
-        className={`${className} cursor-pointer appearance-none border-0 bg-transparent p-0 text-left font-inherit`}
+      <a
+        href="#"
+        onClick={(event) => event.preventDefault()}
+        className={className}
         title={action.mock ? "Coming soon" : undefined}
+        style={isReport ? { color: "var(--color-banned)" } : undefined}
       >
         {content}
-      </button>
+      </a>
     );
   }
 
