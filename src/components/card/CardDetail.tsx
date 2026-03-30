@@ -561,11 +561,16 @@ function Section({
   );
 }
 
-function getVariantStripGridClass(count: number): string {
-  if (count >= 7) return "grid-cols-4";
-  if (count >= 3) return "grid-cols-3";
-  if (count === 2) return "grid-cols-2";
-  return "grid-cols-1";
+function getVariantStripContainerClass(count: number): string {
+  if (count >= 5) return "mt-3 flex gap-1.5 overflow-x-auto pb-1";
+  if (count >= 4) return "mt-3 grid gap-1.5 grid-cols-4";
+  if (count >= 2) return "mt-3 grid gap-1.5 grid-cols-3";
+  return "mt-3 grid gap-1.5 grid-cols-1";
+}
+
+function getVariantStripItemClass(count: number): string {
+  if (count >= 5) return "w-[calc((100%-1.125rem)/4)] min-w-[calc((100%-1.125rem)/4)] shrink-0 text-left";
+  return "min-w-0 text-left";
 }
 
 type ImageDisplayMode = "auto" | "digital" | "scan";
@@ -678,7 +683,7 @@ function CardImageViewer({
 
       {/* Variant strip */}
       {variants.length > 1 && (
-        <div className={`grid gap-1.5 mt-3 ${getVariantStripGridClass(variants.length)}`}>
+        <div className={getVariantStripContainerClass(variants.length)}>
           {variants.map((variant, i) => {
             const thumbnailUrl = resolveVariantThumbnailUrl(variant, displayMode, autoPreference);
             const market = getVariantMarketInfo(variant);
@@ -692,7 +697,7 @@ function CardImageViewer({
               <button
                 key={i}
                 onClick={() => onSelect(i)}
-                className="min-w-0 text-left"
+                className={getVariantStripItemClass(variants.length)}
                 title={variantLabel}
               >
                 <div
