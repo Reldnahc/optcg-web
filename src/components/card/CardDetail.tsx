@@ -562,15 +562,20 @@ function Section({
 }
 
 function getVariantStripContainerClass(count: number): string {
-  if (count >= 5) return "mt-3 flex gap-1.5 overflow-x-auto pb-1";
-  if (count >= 4) return "mt-3 grid gap-1.5 grid-cols-4";
+  if (count >= 4) return "mt-3 flex gap-1.5 overflow-x-auto pb-1";
   if (count >= 2) return "mt-3 grid gap-1.5 grid-cols-3";
   return "mt-3 grid gap-1.5 grid-cols-1";
 }
 
 function getVariantStripItemClass(count: number): string {
-  if (count >= 5) return "w-[calc((100%-1.125rem)/4)] min-w-[calc((100%-1.125rem)/4)] shrink-0 text-left";
+  if (count >= 4) return "w-[calc((100%-1.125rem)/4)] min-w-[calc((100%-1.125rem)/4)] shrink-0 text-left";
   return "min-w-0 text-left";
+}
+
+function abbreviateVariantStripLabel(label: string): string {
+  const words = label.match(/[A-Za-z0-9]+/g) ?? [];
+  if (words.length <= 1) return label;
+  return words.map((word) => word[0]?.toUpperCase() ?? "").join("");
 }
 
 type ImageDisplayMode = "auto" | "digital" | "scan";
@@ -606,7 +611,7 @@ function CardImageViewer({
   }, [autoPreference]);
 
   const displayUrl = resolveImageDisplayUrl(current, displayMode, autoPreference);
-  const isScrollableVariantStrip = variants.length >= 5;
+  const isScrollableVariantStrip = variants.length >= 4;
 
   const handleVariantStripPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (!isScrollableVariantStrip || event.button !== 0) return;
@@ -760,9 +765,10 @@ function CardImageViewer({
             const market = getVariantMarketInfo(variant);
             const marketLabel = fmtPrice(market.marketPrice);
             const variantLabel = variant.label || `Variant ${variant.variant_index}`;
+            const variantStripLabel = abbreviateVariantStripLabel(variantLabel);
             const variantMetaLabel = variant.product.set_code
-              ? `${variantLabel} (${variant.product.set_code})`
-              : variantLabel;
+              ? `${variantStripLabel} (${variant.product.set_code})`
+              : variantStripLabel;
 
             return (
               <button
@@ -777,7 +783,13 @@ function CardImageViewer({
                   }`}
                 >
                   {thumbnailUrl ? (
-                    <img src={thumbnailUrl} alt={variantLabel} className="w-full block" loading="lazy" />
+                    <img
+                      src={thumbnailUrl}
+                      alt={variantLabel}
+                      className="pointer-events-none w-full block"
+                      loading="lazy"
+                      draggable={false}
+                    />
                   ) : (
                     <div className="aspect-[63/88] bg-bg-tertiary text-text-muted text-[9px] flex items-center justify-center">
                       {variant.label || `v${i}`}
