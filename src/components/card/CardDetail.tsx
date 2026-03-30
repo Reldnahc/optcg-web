@@ -569,7 +569,7 @@ function getVariantStripContainerClass(count: number): string {
 
 function getVariantStripItemClass(count: number, scrollable: boolean): string {
   const cursorClass = scrollable ? "cursor-grab active:cursor-grabbing" : "";
-  if (count >= 4) return `w-[calc((100%-1.125rem)/4)] min-w-[calc((100%-1.125rem)/4)] shrink-0 text-left ${cursorClass}`.trim();
+  if (count >= 4) return `w-[calc((100%-0.75rem)/3)] min-w-[calc((100%-0.75rem)/3)] shrink-0 text-left ${cursorClass}`.trim();
   return `min-w-0 text-left ${cursorClass}`.trim();
 }
 
@@ -599,8 +599,8 @@ function CardImageViewer({
   const [displayMode, setDisplayMode] = useState<ImageDisplayMode>("auto");
   const [autoPreference, setAutoPreference] = useState<ImageAutoPreference>(getStoredImageAutoPreference);
   const stripRef = useRef<HTMLDivElement | null>(null);
-  const dragStateRef = useRef<{ pointerId: number | null; startX: number; startScrollLeft: number; moved: boolean }>({
-    pointerId: null,
+  const dragStateRef = useRef<{ dragging: boolean; startX: number; startScrollLeft: number; moved: boolean }>({
+    dragging: false,
     startX: 0,
     startScrollLeft: 0,
     moved: false,
@@ -614,26 +614,26 @@ function CardImageViewer({
   const displayUrl = resolveImageDisplayUrl(current, displayMode, autoPreference);
   const isScrollableVariantStrip = variants.length >= 4;
 
-  const handleVariantStripPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+  const handleVariantStripMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
     if (!isScrollableVariantStrip || event.button !== 0) return;
     const strip = stripRef.current;
     if (!strip) return;
     suppressClickRef.current = false;
 
     dragStateRef.current = {
-      pointerId: event.pointerId,
+      dragging: true,
       startX: event.clientX,
       startScrollLeft: strip.scrollLeft,
       moved: false,
     };
-    strip.setPointerCapture(event.pointerId);
+    event.preventDefault();
   };
 
-  const handleVariantStripPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+  const handleVariantStripMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
     if (!isScrollableVariantStrip) return;
     const strip = stripRef.current;
     const dragState = dragStateRef.current;
-    if (!strip || dragState.pointerId !== event.pointerId) return;
+    if (!strip || !dragState.dragging) return;
 
     const deltaX = event.clientX - dragState.startX;
     if (Math.abs(deltaX) > 4) {
@@ -644,18 +644,14 @@ function CardImageViewer({
     strip.scrollLeft = dragState.startScrollLeft - deltaX;
   };
 
-  const finishVariantStripPointer = (event: React.PointerEvent<HTMLDivElement>) => {
+  const finishVariantStripDrag = () => {
     if (!isScrollableVariantStrip) return;
-    const strip = stripRef.current;
     const dragState = dragStateRef.current;
-    if (!strip || dragState.pointerId !== event.pointerId) return;
+    if (!dragState.dragging) return;
 
     suppressClickRef.current = dragState.moved;
-    if (strip.hasPointerCapture(event.pointerId)) {
-      strip.releasePointerCapture(event.pointerId);
-    }
     dragStateRef.current = {
-      pointerId: null,
+      dragging: false,
       startX: 0,
       startScrollLeft: 0,
       moved: false,
@@ -760,10 +756,10 @@ function CardImageViewer({
         <div
           ref={stripRef}
           className={`${getVariantStripContainerClass(variants.length)} ${isScrollableVariantStrip ? "cursor-grab select-none active:cursor-grabbing" : ""}`}
-          onPointerDown={handleVariantStripPointerDown}
-          onPointerMove={handleVariantStripPointerMove}
-          onPointerUp={finishVariantStripPointer}
-          onPointerCancel={finishVariantStripPointer}
+          onMouseDown={handleVariantStripMouseDown}
+          onMouseMove={handleVariantStripMouseMove}
+          onMouseUp={finishVariantStripDrag}
+          onMouseLeave={finishVariantStripDrag}
         >
           {variants.map((variant, i) => {
             const thumbnailUrl = resolveVariantThumbnailUrl(variant, displayMode, autoPreference);
