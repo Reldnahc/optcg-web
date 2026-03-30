@@ -20,6 +20,7 @@ type ToolAction = {
   href?: string;
   downloadName?: string;
   mock?: boolean;
+  size?: number | null;
 };
 
 const STATUS_BADGE_STYLE: Record<string, string> = {
@@ -72,6 +73,38 @@ export function CardDetailView({
   }
   toolActions.push({ key: "json", kind: "json", href: cardApiJsonUrl, label: "JSON" });
   toolActions.push({ key: "report", kind: "report", label: "Report issue", mock: true });
+
+  const [fileSizes, setFileSizes] = useState<Record<string, number | null>>({});
+  useEffect(() => {
+    const urls: { key: string; url: string }[] = [];
+    if (currentVariant?.media.image_url) urls.push({ key: "image", url: currentVariant.media.image_url });
+    if (currentVariant?.media.scan_url) urls.push({ key: "scan", url: currentVariant.media.scan_url });
+    if (urls.length === 0) return;
+
+    setFileSizes({});
+    let cancelled = false;
+    Promise.all(
+      urls.map(({ key, url }) =>
+        fetch(url, { method: "HEAD" })
+          .then((res) => {
+            const len = res.headers.get("content-length");
+            return { key, size: len ? parseInt(len, 10) : null };
+          })
+          .catch(() => ({ key, size: null })),
+      ),
+    ).then((results) => {
+      if (cancelled) return;
+      const sizes: Record<string, number | null> = {};
+      for (const { key, size } of results) sizes[key] = size;
+      setFileSizes(sizes);
+    });
+    return () => { cancelled = true; };
+  }, [currentVariant?.media.image_url, currentVariant?.media.scan_url]);
+
+  const resolvedToolActions = toolActions.map((a) =>
+    a.kind === "image" || a.kind === "scan" ? { ...a, size: fileSizes[a.kind] ?? undefined } : a,
+  );
+
   const legalityEntries = Object.entries(card.legality);
   const featuredLegalityEntries = legalityEntries.filter(([format]) => isFeaturedFormat(format));
   const otherLegalityEntries = legalityEntries.filter(([format]) => !isFeaturedFormat(format));
@@ -228,7 +261,7 @@ export function CardDetailView({
           <Section title="Tools">
             <InfoPanel title="Actions" compact>
               <div className="space-y-1.5">
-                {toolActions.map((action) => (
+                {resolvedToolActions.map((action) => (
                   <ToolActionRow key={action.key} action={action} />
                 ))}
               </div>
@@ -569,14 +602,38 @@ function InfoPanel({
   );
 }
 
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${Math.round(kb)} KB`;
+  return `${(kb / 1024).toFixed(1)} MB`;
+}
+
+function triggerBlobDownload(url: string, filename: string) {
+  fetch(url)
+    .then((res) => res.blob())
+    .then((blob) => {
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(blobUrl);
+    });
+}
+
 function ToolActionRow({ action }: { action: ToolAction }) {
   const isReport = action.kind === "report";
+  const isDownload = action.kind === "image" || action.kind === "scan";
+  const sizeLabel = isDownload && action.size ? ` (${formatFileSize(action.size)})` : "";
   const content = (
     <>
       <span className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center ${isReport ? "text-banned" : "text-text-secondary"}`}>
         <ToolIcon kind={action.kind} />
       </span>
-      <span className="min-w-0 flex-1 truncate">{action.label}</span>
+      <span className="min-w-0 flex-1 truncate">{action.label}{sizeLabel && <span className="text-text-muted">{sizeLabel}</span>}</span>
     </>
   );
 
@@ -596,12 +653,23 @@ function ToolActionRow({ action }: { action: ToolAction }) {
     );
   }
 
+  if (isDownload && action.downloadName) {
+    return (
+      <button
+        type="button"
+        onClick={() => triggerBlobDownload(action.href!, action.downloadName!)}
+        className={className}
+      >
+        {content}
+      </button>
+    );
+  }
+
   return (
     <a
       href={action.href}
       target="_blank"
       rel="noopener noreferrer"
-      download={action.downloadName}
       className={className}
     >
       {content}
