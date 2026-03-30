@@ -49,8 +49,8 @@ export function SetBrowser() {
 
   return (
     <PageContainer title="All Sets" subtitle={`${sets.length} sets found`}>
-      <div className="overflow-x-auto">
-        <table className="min-w-[720px] table-fixed text-sm">
+      <div className="w-full overflow-x-auto">
+        <table className="w-full min-w-[720px] table-fixed text-sm">
           <thead>
             <tr className="border-b border-border text-[12px] uppercase tracking-wider text-text-muted">
               <SortableHeader
