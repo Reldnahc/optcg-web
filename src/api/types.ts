@@ -118,6 +118,18 @@ export interface PaginatedResponse<T> {
   };
 }
 
+export interface CardSearchMeta {
+  sort_requested: "relevance" | "name" | "cost" | "power" | "card_number" | "released" | "rarity" | "color" | "market_price" | "artist";
+  sort_applied: "relevance" | "name" | "cost" | "power" | "card_number" | "released" | "rarity" | "color" | "market_price" | "artist";
+  order_requested: "asc" | "desc";
+  order_applied: "asc" | "desc";
+  relevance_active: boolean;
+}
+
+export interface CardSearchResponse<T> extends PaginatedResponse<T> {
+  meta: CardSearchMeta;
+}
+
 export type JsonSchema = Record<string, unknown>;
 
 export interface OpenApiMediaType {

@@ -3,19 +3,19 @@ import { apiFetch, apiRootFetch } from "./client";
 import type {
   Card,
   CardDetail,
+  CardSearchResponse,
   SetInfo,
   SetDetail,
   DonCard,
   FormatInfo,
   FormatDetail,
-  PaginatedResponse,
   OpenApiDocument,
 } from "./types";
 
 export function useCardSearch(params: Record<string, string>) {
   return useQuery({
     queryKey: ["cards", params],
-    queryFn: () => apiFetch<PaginatedResponse<Card>>("/cards", params),
+    queryFn: () => apiFetch<CardSearchResponse<Card>>("/cards", params),
     enabled: Object.values(params).some(Boolean),
   });
 }

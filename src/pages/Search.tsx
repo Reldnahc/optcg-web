@@ -4,6 +4,19 @@ import { CardGrid } from "../components/card/CardGrid";
 import { CardChecklist } from "../components/card/CardChecklist";
 import { ErrorState } from "../components/layout/ErrorState";
 
+const SORT_LABELS: Record<string, string> = {
+  relevance: "Relevance",
+  card_number: "Number",
+  name: "Name",
+  cost: "Cost",
+  power: "Power",
+  released: "Released",
+  rarity: "Rarity",
+  color: "Color",
+  artist: "Artist",
+  market_price: "Market Price",
+};
+
 export function Search() {
   const [params, setParams] = useSearchParams();
   const q = params.get("q") || "";
@@ -28,6 +41,14 @@ export function Search() {
 
   const { data, isLoading, error } = useCardSearch(searchParams);
   const pagination = data?.pagination;
+  const appliedSortMeta = data?.meta;
+  const showsAppliedSortNote = Boolean(
+    appliedSortMeta
+      && (
+        appliedSortMeta.sort_requested !== appliedSortMeta.sort_applied
+        || appliedSortMeta.order_requested !== appliedSortMeta.order_applied
+      ),
+  );
 
   const setParam = (key: string, value: string) => {
     const next = new URLSearchParams(params);
@@ -53,6 +74,17 @@ export function Search() {
             <>
               {pagination.total.toLocaleString()} result{pagination.total !== 1 && "s"}
               {q && <> where <span className="text-text-primary">{q}</span></>}
+              {showsAppliedSortNote && appliedSortMeta && (
+                <>
+                  {" "}&middot; applied sort{" "}
+                  <span className="text-text-primary">
+                    {SORT_LABELS[appliedSortMeta.sort_applied] || appliedSortMeta.sort_applied}
+                  </span>
+                  {appliedSortMeta.sort_applied !== "relevance" && (
+                    <> ({appliedSortMeta.order_applied})</>
+                  )}
+                </>
+              )}
             </>
           )}
         </div>
