@@ -25,6 +25,7 @@ export function Footer() {
           <div className="w-full max-w-[12rem] text-center">
             <h4 className="text-text-primary font-semibold mb-2">Resources</h4>
             <ul className="space-y-1 text-text-muted">
+              <li><Link to="/mission" className="hover:text-text-secondary">Mission</Link></li>
               <li><Link to="/search/syntax" className="hover:text-text-secondary">Syntax Guide</Link></li>
               <li><Link to="/api" className="hover:text-text-secondary">API Docs</Link></li>
             </ul>
