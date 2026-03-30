@@ -567,9 +567,10 @@ function getVariantStripContainerClass(count: number): string {
   return "mt-3 grid gap-1.5 grid-cols-1";
 }
 
-function getVariantStripItemClass(count: number): string {
-  if (count >= 4) return "w-[calc((100%-1.125rem)/4)] min-w-[calc((100%-1.125rem)/4)] shrink-0 text-left";
-  return "min-w-0 text-left";
+function getVariantStripItemClass(count: number, scrollable: boolean): string {
+  const cursorClass = scrollable ? "cursor-grab active:cursor-grabbing" : "";
+  if (count >= 4) return `w-[calc((100%-1.125rem)/4)] min-w-[calc((100%-1.125rem)/4)] shrink-0 text-left ${cursorClass}`.trim();
+  return `min-w-0 text-left ${cursorClass}`.trim();
 }
 
 function abbreviateVariantStripLabel(label: string): string {
@@ -617,6 +618,7 @@ function CardImageViewer({
     if (!isScrollableVariantStrip || event.button !== 0) return;
     const strip = stripRef.current;
     if (!strip) return;
+    suppressClickRef.current = false;
 
     dragStateRef.current = {
       pointerId: event.pointerId,
@@ -660,11 +662,15 @@ function CardImageViewer({
     };
   };
 
-  const handleVariantStripClickCapture = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (!suppressClickRef.current) return;
-    suppressClickRef.current = false;
-    event.preventDefault();
-    event.stopPropagation();
+  const handleVariantButtonClick = (index: number) => (event: React.MouseEvent<HTMLButtonElement>) => {
+    if (suppressClickRef.current) {
+      suppressClickRef.current = false;
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+
+    onSelect(index);
   };
 
   return (
@@ -754,7 +760,6 @@ function CardImageViewer({
         <div
           ref={stripRef}
           className={`${getVariantStripContainerClass(variants.length)} ${isScrollableVariantStrip ? "cursor-grab select-none active:cursor-grabbing" : ""}`}
-          onClickCapture={handleVariantStripClickCapture}
           onPointerDown={handleVariantStripPointerDown}
           onPointerMove={handleVariantStripPointerMove}
           onPointerUp={finishVariantStripPointer}
@@ -773,8 +778,8 @@ function CardImageViewer({
             return (
               <button
                 key={i}
-                onClick={() => onSelect(i)}
-                className={getVariantStripItemClass(variants.length)}
+                onClick={handleVariantButtonClick(i)}
+                className={getVariantStripItemClass(variants.length, isScrollableVariantStrip)}
                 title={variantLabel}
               >
                 <div
