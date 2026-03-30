@@ -1,6 +1,8 @@
 const BASE = import.meta.env.VITE_API_URL || "";
 
-export function buildApiRootUrl(path: string, params?: Record<string, string>) {
+type QueryParams = Record<string, string | undefined>;
+
+export function buildApiRootUrl(path: string, params?: QueryParams) {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   const origin = BASE ? BASE.replace(/\/+$/, "") : window.location.origin;
   const url = new URL(normalizedPath, `${origin}/`);
@@ -12,7 +14,7 @@ export function buildApiRootUrl(path: string, params?: Record<string, string>) {
   return url.toString();
 }
 
-export function buildApiUrl(path: string, params?: Record<string, string>) {
+export function buildApiUrl(path: string, params?: QueryParams) {
   return buildApiRootUrl(`/v1${path}`, params);
 }
 
@@ -28,10 +30,10 @@ async function fetchJson<T>(url: string): Promise<T> {
   return res.json();
 }
 
-export async function apiFetch<T>(path: string, params?: Record<string, string>): Promise<T> {
+export async function apiFetch<T>(path: string, params?: QueryParams): Promise<T> {
   return fetchJson<T>(buildApiUrl(path, params));
 }
 
-export async function apiRootFetch<T>(path: string, params?: Record<string, string>): Promise<T> {
+export async function apiRootFetch<T>(path: string, params?: QueryParams): Promise<T> {
   return fetchJson<T>(buildApiRootUrl(path, params));
 }

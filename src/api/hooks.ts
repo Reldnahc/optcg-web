@@ -6,6 +6,8 @@ import type {
   CardSearchResponse,
   SetInfo,
   SetDetail,
+  SetSort,
+  SortOrder,
   DonCard,
   FormatInfo,
   FormatDetail,
@@ -37,10 +39,10 @@ export function useAutocomplete(q: string) {
   });
 }
 
-export function useSets() {
+export function useSets(params?: { sort?: SetSort; order?: SortOrder }) {
   return useQuery({
-    queryKey: ["sets"],
-    queryFn: () => apiFetch<{ data: SetInfo[] }>("/sets"),
+    queryKey: ["sets", params],
+    queryFn: () => apiFetch<{ data: SetInfo[] }>("/sets", params),
   });
 }
 

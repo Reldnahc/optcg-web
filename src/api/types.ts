@@ -74,6 +74,9 @@ export interface SetInfo {
   card_count: number;
 }
 
+export type SetSort = "name" | "card_count" | "released" | "set_code";
+export type SortOrder = "asc" | "desc";
+
 export interface SetDetail {
   code: string;
   name: string;
