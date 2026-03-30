@@ -688,8 +688,7 @@ function abbreviateVariantStripLabel(label: string): string {
   return words.map((word) => word[0]?.toUpperCase() ?? "").join("");
 }
 
-type ImageDisplayMode = "auto" | "digital" | "scan";
-type ImageAutoPreference = "digital" | "scan";
+type ImagePreference = "digital" | "scan";
 
 function CardImageViewer({
   variants,
@@ -703,12 +702,8 @@ function CardImageViewer({
   cardName: string;
 }) {
   const current = variants[selected];
-  const hasCurrentScan = !!current?.media.scan_url;
   const hasAnyScans = variants.some((variant) => !!variant.media.scan_url);
-  const [displayMode, setDisplayMode] = useState<ImageDisplayMode>("auto");
-  const [autoPreference, setAutoPreference] = useState<ImageAutoPreference>(getStoredImageAutoPreference);
-  const [stripCanScrollLeft, setStripCanScrollLeft] = useState(false);
-  const [stripCanScrollRight, setStripCanScrollRight] = useState(false);
+  const [imagePreference, setImagePreference] = useState<ImagePreference>(getStoredImagePreference);
   const stripRef = useRef<HTMLDivElement | null>(null);
   const dragStateRef = useRef<{ dragging: boolean; startX: number; startScrollLeft: number; moved: boolean }>({
     dragging: false,
@@ -719,38 +714,11 @@ function CardImageViewer({
   const suppressClickRef = useRef(false);
 
   useEffect(() => {
-    window.localStorage.setItem(IMAGE_AUTO_PREFERENCE_STORAGE_KEY, autoPreference);
-  }, [autoPreference]);
+    window.localStorage.setItem(IMAGE_AUTO_PREFERENCE_STORAGE_KEY, imagePreference);
+  }, [imagePreference]);
 
-  const displayUrl = resolveImageDisplayUrl(current, displayMode, autoPreference);
+  const displayUrl = resolveImageDisplayUrl(current, imagePreference);
   const isScrollableVariantStrip = variants.length >= 4;
-
-  const updateVariantStripScrollState = () => {
-    const strip = stripRef.current;
-    if (!strip || !isScrollableVariantStrip) {
-      setStripCanScrollLeft(false);
-      setStripCanScrollRight(false);
-      return;
-    }
-
-    const maxScrollLeft = Math.max(0, strip.scrollWidth - strip.clientWidth);
-    setStripCanScrollLeft(strip.scrollLeft > 2);
-    setStripCanScrollRight(strip.scrollLeft < maxScrollLeft - 2);
-  };
-
-  useEffect(() => {
-    updateVariantStripScrollState();
-    if (!isScrollableVariantStrip) return;
-
-    const handleResize = () => updateVariantStripScrollState();
-    window.addEventListener("resize", handleResize);
-    const frame = window.requestAnimationFrame(updateVariantStripScrollState);
-
-    return () => {
-      window.cancelAnimationFrame(frame);
-      window.removeEventListener("resize", handleResize);
-    };
-  }, [isScrollableVariantStrip, variants.length]);
 
   const handleVariantStripMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
     if (!isScrollableVariantStrip || event.button !== 0) return;
@@ -780,7 +748,6 @@ function CardImageViewer({
     if (!dragState.moved) return;
 
     strip.scrollLeft = dragState.startScrollLeft - deltaX;
-    updateVariantStripScrollState();
   };
 
   const finishVariantStripDrag = () => {
@@ -825,67 +792,32 @@ function CardImageViewer({
         )}
       </div>
 
-      {/* Auto / Digital / Scan toggle */}
+      {/* Digital / Scan toggle */}
       {hasAnyScans && (
-        <div className="mt-2 flex flex-wrap items-center gap-1 rounded-md border border-border bg-bg-card/70 p-1">
-          <div className="flex min-w-0 flex-1 gap-px rounded bg-bg-tertiary/25 p-px">
+        <div className="mt-2 flex justify-end">
+          <div className="flex gap-px rounded-md bg-bg-tertiary/35 p-px">
             <button
               type="button"
-              onClick={() => setDisplayMode("auto")}
-              className={`flex-1 rounded px-1.5 py-0.75 text-[10px] font-medium transition-colors
-                ${displayMode === "auto" ? "bg-accent text-bg-primary" : "text-text-muted hover:text-text-primary"}`}
-            >
-              Auto
-            </button>
-            <button
-              type="button"
-              onClick={() => setDisplayMode("digital")}
-              className={`flex-1 rounded px-1.5 py-0.75 text-[10px] font-medium transition-colors
-                ${displayMode === "digital" ? "bg-accent text-bg-primary" : "text-text-muted hover:text-text-primary"}`}
+              onClick={() => setImagePreference("digital")}
+              className={`rounded-md px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                imagePreference === "digital"
+                  ? "bg-accent text-bg-primary"
+                  : "text-text-muted hover:text-text-primary"
+              }`}
             >
               Digital
             </button>
             <button
               type="button"
-              onClick={() => setDisplayMode("scan")}
-              disabled={!hasCurrentScan}
-              className={`flex-1 rounded px-1.5 py-0.75 text-[10px] font-medium transition-colors ${
-                !hasCurrentScan
-                  ? "cursor-not-allowed text-text-muted/40"
-                  : displayMode === "scan"
-                    ? "bg-accent text-bg-primary"
-                    : "text-text-muted hover:text-text-primary"
+              onClick={() => setImagePreference("scan")}
+              className={`rounded-md px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                imagePreference === "scan"
+                  ? "bg-accent text-bg-primary"
+                  : "text-text-muted hover:text-text-primary"
               }`}
             >
               Scan
             </button>
-          </div>
-          <div className="ml-auto flex items-center gap-1 text-[9px] uppercase tracking-wider text-text-muted">
-            <span className="shrink-0">Prefer</span>
-            <div className="flex gap-px rounded bg-bg-tertiary/35 p-px">
-              <button
-                type="button"
-                onClick={() => setAutoPreference("scan")}
-                className={`rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors ${
-                  autoPreference === "scan"
-                    ? "bg-accent text-bg-primary"
-                    : "text-text-muted hover:text-text-primary"
-                }`}
-              >
-                Scans
-              </button>
-              <button
-                type="button"
-                onClick={() => setAutoPreference("digital")}
-                className={`rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors ${
-                  autoPreference === "digital"
-                    ? "bg-accent text-bg-primary"
-                    : "text-text-muted hover:text-text-primary"
-                }`}
-              >
-                Digital
-              </button>
-            </div>
           </div>
         </div>
       )}
@@ -895,16 +827,14 @@ function CardImageViewer({
         <div className="relative mt-3">
           <div
             ref={stripRef}
-            className={`${getVariantStripContainerClass(variants.length)} ${isScrollableVariantStrip ? "cursor-grab select-none active:cursor-grabbing [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" : ""}`}
+            className={`${getVariantStripContainerClass(variants.length)} ${isScrollableVariantStrip ? "cursor-grab select-none active:cursor-grabbing" : ""}`}
             onMouseDown={handleVariantStripMouseDown}
             onMouseMove={handleVariantStripMouseMove}
             onMouseUp={finishVariantStripDrag}
             onMouseLeave={finishVariantStripDrag}
-            onScroll={updateVariantStripScrollState}
-            style={isScrollableVariantStrip ? { scrollbarWidth: "none", msOverflowStyle: "none" } : undefined}
           >
             {variants.map((variant, i) => {
-              const thumbnailUrl = resolveVariantThumbnailUrl(variant, displayMode, autoPreference);
+              const thumbnailUrl = resolveVariantThumbnailUrl(variant, imagePreference);
               const market = getVariantMarketInfo(variant);
               const marketLabel = fmtPrice(market.marketPrice);
               const variantLabel = variant.label || `Variant ${variant.variant_index}`;
@@ -947,18 +877,6 @@ function CardImageViewer({
               );
             })}
           </div>
-
-          {isScrollableVariantStrip && stripCanScrollLeft && (
-            <div className="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-bg to-transparent" />
-          )}
-          {isScrollableVariantStrip && stripCanScrollRight && (
-            <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-bg to-transparent" />
-          )}
-          {isScrollableVariantStrip && (
-            <div className="mt-1 text-right text-[10px] uppercase tracking-wider text-text-muted">
-              Drag to scroll
-            </div>
-          )}
         </div>
       )}
     </div>
@@ -967,44 +885,20 @@ function CardImageViewer({
 
 function resolveImageDisplayUrl(
   variant: CardVariant | undefined,
-  displayMode: ImageDisplayMode,
-  autoPreference: ImageAutoPreference,
+  preference: ImagePreference,
 ): string | null | undefined {
   if (!variant) return null;
 
-  if (displayMode === "digital") {
-    return variant.media.image_url ?? variant.media.scan_url;
-  }
-
-  if (displayMode === "scan") {
-    return variant.media.scan_url ?? variant.media.image_url;
-  }
-
-  return autoPreference === "scan"
+  return preference === "scan"
     ? variant.media.scan_url ?? variant.media.image_url
     : variant.media.image_url ?? variant.media.scan_url;
 }
 
 function resolveVariantThumbnailUrl(
   variant: CardVariant,
-  displayMode: ImageDisplayMode,
-  autoPreference: ImageAutoPreference,
+  preference: ImagePreference,
 ): string | null | undefined {
-  if (displayMode === "digital") {
-    return variant.media.thumbnail_url
-      ?? variant.media.image_url
-      ?? variant.media.scan_thumbnail_url
-      ?? variant.media.scan_url;
-  }
-
-  if (displayMode === "scan") {
-    return variant.media.scan_thumbnail_url
-      ?? variant.media.scan_url
-      ?? variant.media.thumbnail_url
-      ?? variant.media.image_url;
-  }
-
-  return autoPreference === "scan"
+  return preference === "scan"
     ? variant.media.scan_thumbnail_url
       ?? variant.media.scan_url
       ?? variant.media.thumbnail_url
@@ -1015,7 +909,7 @@ function resolveVariantThumbnailUrl(
       ?? variant.media.scan_url;
 }
 
-function getStoredImageAutoPreference(): ImageAutoPreference {
+function getStoredImagePreference(): ImagePreference {
   if (typeof window === "undefined") return "scan";
 
   const stored = window.localStorage.getItem(IMAGE_AUTO_PREFERENCE_STORAGE_KEY);
