@@ -7,6 +7,9 @@ export default defineConfig({
   server: {
     proxy: {
       "/v1": "http://localhost:3000",
+      "/openapi.json": "http://localhost:3000",
+      "/docs": "http://localhost:3000",
+      "/health": "http://localhost:3000",
     },
   },
 });

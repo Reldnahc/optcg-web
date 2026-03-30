@@ -40,8 +40,8 @@ export function CardHoverPreviewLink({
   const preview = data?.data;
   const thumbnailUrl = preview?.thumbnail_url
     ?? preview?.image_url
-    ?? preview?.images[0]?.thumbnail_url
-    ?? preview?.images[0]?.image_url
+    ?? preview?.variants?.[0]?.media.thumbnail_url
+    ?? preview?.variants?.[0]?.media.image_url
     ?? null;
   const effectText = preview?.effect ?? null;
   const triggerText = preview?.trigger ?? null;

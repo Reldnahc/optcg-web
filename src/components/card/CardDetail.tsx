@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import type { CardDetail as CardDetailType, CardImage } from "../../api/types";
+import type { CardDetail as CardDetailType, CardVariant } from "../../api/types";
 import { CopyButton } from "../CopyButton";
 import { CardHoverPreviewLink } from "./CardHoverPreviewLink";
 import { CardRulesText } from "./CardRulesText";
@@ -33,14 +33,14 @@ export function CardDetailView({
   languageSwitcher?: LanguageSwitcherConfig;
 }) {
   const [, setSearchParams] = useSearchParams();
-  const images = card.images; // API already returns images in display order (label priority)
-  // Find the index in the images array that matches the requested variant_index
+  const variants = card.variants;
+  // API already returns variants in display order.
   const initialIdx = initialVariant != null
-    ? Math.max(0, images.findIndex((img) => img.variant_index === initialVariant))
-    : 0; // First image is already the best default (API sorts by label priority)
+    ? Math.max(0, variants.findIndex((variant) => variant.variant_index === initialVariant))
+    : 0;
   const [selectedVariant, setSelectedVariant] = useState(initialIdx);
-  const currentImage = images[selectedVariant] || images[0];
-  const currentVariantMarket = currentImage ? getVariantMarketInfo(currentImage) : { marketPrice: null, tcgplayerUrl: null };
+  const currentVariant = variants[selectedVariant] || variants[0];
+  const currentVariantMarket = currentVariant ? getVariantMarketInfo(currentVariant) : { marketPrice: null, tcgplayerUrl: null };
   const legalityEntries = Object.entries(card.legality);
   const featuredLegalityEntries = legalityEntries.filter(([format]) => isFeaturedFormat(format));
   const otherLegalityEntries = legalityEntries.filter(([format]) => !isFeaturedFormat(format));
@@ -51,11 +51,11 @@ export function CardDetailView({
 
   const selectVariant = (i: number) => {
     setSelectedVariant(i);
-    const img = images[i];
-    if (img) {
+    const variant = variants[i];
+    if (variant) {
       setSearchParams((prev) => {
         const next = new URLSearchParams(prev);
-        next.set("variant", String(img.variant_index));
+        next.set("variant", String(variant.variant_index));
         return next;
       }, { replace: true });
     }
@@ -67,7 +67,7 @@ export function CardDetailView({
         {/* Left: Card Image */}
         <div className="lg:w-[320px] xl:w-[360px] shrink-0">
           <CardImageViewer
-            images={images}
+            variants={variants}
             selected={selectedVariant}
             onSelect={selectVariant}
             cardName={card.name}
@@ -173,10 +173,10 @@ export function CardDetailView({
           </Section>
 
           {/* Prices */}
-          {currentImage && Object.keys(currentImage.prices).length > 0 && (
+          {currentVariant && Object.keys(currentVariant.market.prices).length > 0 && (
             <Section title="Prices">
               <div className="space-y-2">
-                {Object.entries(currentImage.prices).map(([subType, price]) => (
+                {Object.entries(currentVariant.market.prices).map(([subType, price]) => (
                   <div
                     key={subType}
                     className="grid grid-cols-[minmax(0,1fr)_minmax(4.5rem,auto)_auto] items-center gap-2.5 rounded-md border border-border bg-bg-card/45 px-3 py-2 sm:grid-cols-[minmax(0,1.3fr)_minmax(4.75rem,auto)_minmax(4.75rem,auto)_auto] sm:gap-3"
@@ -188,7 +188,7 @@ export function CardDetailView({
                       <PriceStat label="Low" value={fmtPrice(price.low_price)} muted />
                     </div>
                     <PriceStat label="Market" value={fmtPrice(price.market_price)} />
-                    <TcgplayerButton href={price.tcgplayer_url ?? currentImage.tcgplayer_url ?? null} label="Buy" />
+                    <TcgplayerButton href={price.tcgplayer_url ?? currentVariant.market.tcgplayer_url ?? null} label="Buy" />
                   </div>
                 ))}
               </div>
@@ -225,30 +225,30 @@ export function CardDetailView({
                 <span className="text-text-muted ml-1">({card.set})</span>
               </Link>
             </PrintRow>
-            {currentImage?.product_name && (
+            {currentVariant?.product.name && (
               <PrintRow label="Product">
                 <Link
-                  to={`/search?q=${encodeURIComponent(`product="${currentImage.product_name}"`)}`}
+                  to={`/search?q=${encodeURIComponent(`product="${currentVariant.product.name}"`)}`}
                   className="hover:underline"
                 >
-                  {currentImage.product_name}
+                  {currentVariant.product.name}
                 </Link>
               </PrintRow>
             )}
           </div>
           <div className="bg-bg-card border border-border rounded-lg p-2.5 space-y-1.5 text-sm">
             <p className="text-xs text-text-muted uppercase tracking-wider">
-              {images.length > 1 ? "Variants" : "Variant"}
+              {variants.length > 1 ? "Variants" : "Variant"}
             </p>
             <div className="space-y-1">
-              {images.map((img, i) => {
-                const market = getVariantMarketInfo(img);
+              {variants.map((variant, i) => {
+                const market = getVariantMarketInfo(variant);
                 const marketLabel = fmtPrice(market.marketPrice);
                 const isSelected = i === selectedVariant;
 
                 return (
                   <div
-                    key={img.variant_index}
+                    key={variant.variant_index}
                     className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-md border px-1 py-0.5 transition-colors ${
                       isSelected
                         ? "border-accent bg-accent/10"
@@ -258,26 +258,26 @@ export function CardDetailView({
                     <button
                       type="button"
                       onClick={() => selectVariant(i)}
-                      disabled={images.length <= 1}
+                      disabled={variants.length <= 1}
                       className={`min-w-0 flex-1 rounded px-1.5 py-0.75 text-left transition-colors ${
-                        images.length > 1 ? "hover:bg-black/5" : ""
+                        variants.length > 1 ? "hover:bg-black/5" : ""
                       }`}
                     >
                       <p className="truncate text-sm font-medium text-text-primary">
-                        {img.product_name || card.set_name}
+                        {variant.product.name || card.set_name}
                       </p>
                       <div className="mt-px flex items-center gap-1 text-xs text-text-muted">
                         <span className="shrink-0 font-medium text-text-primary">{marketLabel}</span>
                         <span className="text-text-muted/60">&middot;</span>
-                        <span className="truncate">{img.label || `Variant ${img.variant_index}`}</span>
+                        <span className="truncate">{variant.label || `Variant ${variant.variant_index}`}</span>
                       </div>
                     </button>
-                    {img.artist ? (
+                    {variant.artist ? (
                       <Link
-                        to={`/search?q=${encodeURIComponent(`artist:"${img.artist}"`)}`}
+                        to={`/search?q=${encodeURIComponent(`artist:"${variant.artist}"`)}`}
                         className="min-w-0 truncate rounded px-1 py-0.5 text-xs text-text-muted transition-colors hover:text-text-primary"
                       >
-                        {img.artist}
+                        {variant.artist}
                       </Link>
                     ) : (
                       <span />
@@ -288,7 +288,7 @@ export function CardDetailView({
             </div>
             <div className="grid grid-cols-2 gap-1 pt-0.5">
               <TcgplayerButton href={currentVariantMarket.tcgplayerUrl} label="Buy on TCGPlayer" />
-              <ExternalButton href={buildEbaySearchUrl(card.card_number, currentImage?.label)} label="Buy on eBay" />
+              <ExternalButton href={buildEbaySearchUrl(card.card_number, currentVariant?.label)} label="Buy on eBay" />
             </div>
           </div>
         </div>
@@ -302,19 +302,19 @@ function fmtPrice(val: string | null): string {
   return `$${parseFloat(val).toFixed(2)}`;
 }
 
-function getVariantMarketInfo(image: CardImage): { marketPrice: string | null; tcgplayerUrl: string | null } {
-  for (const price of Object.values(image.prices)) {
+function getVariantMarketInfo(variant: CardVariant): { marketPrice: string | null; tcgplayerUrl: string | null } {
+  for (const price of Object.values(variant.market.prices)) {
     if (price.market_price || price.tcgplayer_url) {
       return {
         marketPrice: price.market_price,
-        tcgplayerUrl: price.tcgplayer_url ?? image.tcgplayer_url ?? null,
+        tcgplayerUrl: price.tcgplayer_url ?? variant.market.tcgplayer_url ?? null,
       };
     }
   }
 
   return {
     marketPrice: null,
-    tcgplayerUrl: image.tcgplayer_url ?? null,
+    tcgplayerUrl: variant.market.tcgplayer_url ?? null,
   };
 }
 
@@ -564,19 +564,19 @@ type ImageDisplayMode = "auto" | "digital" | "scan";
 type ImageAutoPreference = "digital" | "scan";
 
 function CardImageViewer({
-  images,
+  variants,
   selected,
   onSelect,
   cardName,
 }: {
-  images: CardImage[];
+  variants: CardVariant[];
   selected: number;
   onSelect: (i: number) => void;
   cardName: string;
 }) {
-  const current = images[selected];
-  const hasCurrentScan = !!current?.scan_url;
-  const hasAnyScans = images.some((img) => !!img.scan_url);
+  const current = variants[selected];
+  const hasCurrentScan = !!current?.media.scan_url;
+  const hasAnyScans = variants.some((variant) => !!variant.media.scan_url);
   const [displayMode, setDisplayMode] = useState<ImageDisplayMode>("auto");
   const [autoPreference, setAutoPreference] = useState<ImageAutoPreference>(getStoredImageAutoPreference);
 
@@ -669,13 +669,13 @@ function CardImageViewer({
       )}
 
       {/* Variant strip */}
-      {images.length > 1 && (
-        <div className={`grid gap-1.5 mt-3 ${getVariantStripGridClass(images.length)}`}>
-          {images.map((img, i) => {
-            const thumbnailUrl = resolveVariantThumbnailUrl(img, displayMode, autoPreference);
-            const market = getVariantMarketInfo(img);
+      {variants.length > 1 && (
+        <div className={`grid gap-1.5 mt-3 ${getVariantStripGridClass(variants.length)}`}>
+          {variants.map((variant, i) => {
+            const thumbnailUrl = resolveVariantThumbnailUrl(variant, displayMode, autoPreference);
+            const market = getVariantMarketInfo(variant);
             const marketLabel = fmtPrice(market.marketPrice);
-            const variantLabel = img.label || `Variant ${img.variant_index}`;
+            const variantLabel = variant.label || `Variant ${variant.variant_index}`;
 
             return (
               <button
@@ -693,7 +693,7 @@ function CardImageViewer({
                     <img src={thumbnailUrl} alt={variantLabel} className="w-full block" loading="lazy" />
                   ) : (
                     <div className="aspect-[63/88] bg-bg-tertiary text-text-muted text-[9px] flex items-center justify-center">
-                      {img.label || `v${i}`}
+                      {variant.label || `v${i}`}
                     </div>
                   )}
                 </div>
@@ -711,41 +711,53 @@ function CardImageViewer({
 }
 
 function resolveImageDisplayUrl(
-  image: CardImage | undefined,
+  variant: CardVariant | undefined,
   displayMode: ImageDisplayMode,
   autoPreference: ImageAutoPreference,
 ): string | null | undefined {
-  if (!image) return null;
+  if (!variant) return null;
 
   if (displayMode === "digital") {
-    return image.image_url ?? image.scan_url;
+    return variant.media.image_url ?? variant.media.scan_url;
   }
 
   if (displayMode === "scan") {
-    return image.scan_url ?? image.image_url;
+    return variant.media.scan_url ?? variant.media.image_url;
   }
 
   return autoPreference === "scan"
-    ? image.scan_url ?? image.image_url
-    : image.image_url ?? image.scan_url;
+    ? variant.media.scan_url ?? variant.media.image_url
+    : variant.media.image_url ?? variant.media.scan_url;
 }
 
 function resolveVariantThumbnailUrl(
-  image: CardImage,
+  variant: CardVariant,
   displayMode: ImageDisplayMode,
   autoPreference: ImageAutoPreference,
 ): string | null | undefined {
   if (displayMode === "digital") {
-    return image.thumbnail_url ?? image.image_url ?? image.scan_thumb_url ?? image.scan_url;
+    return variant.media.thumbnail_url
+      ?? variant.media.image_url
+      ?? variant.media.scan_thumbnail_url
+      ?? variant.media.scan_url;
   }
 
   if (displayMode === "scan") {
-    return image.scan_thumb_url ?? image.scan_url ?? image.thumbnail_url ?? image.image_url;
+    return variant.media.scan_thumbnail_url
+      ?? variant.media.scan_url
+      ?? variant.media.thumbnail_url
+      ?? variant.media.image_url;
   }
 
   return autoPreference === "scan"
-    ? image.scan_thumb_url ?? image.scan_url ?? image.thumbnail_url ?? image.image_url
-    : image.thumbnail_url ?? image.image_url ?? image.scan_thumb_url ?? image.scan_url;
+    ? variant.media.scan_thumbnail_url
+      ?? variant.media.scan_url
+      ?? variant.media.thumbnail_url
+      ?? variant.media.image_url
+    : variant.media.thumbnail_url
+      ?? variant.media.image_url
+      ?? variant.media.scan_thumbnail_url
+      ?? variant.media.scan_url;
 }
 
 function getStoredImageAutoPreference(): ImageAutoPreference {

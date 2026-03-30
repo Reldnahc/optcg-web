@@ -32,27 +32,38 @@ export interface Card {
   variant_product_name?: string | null;
 }
 
-export interface CardImage {
+export interface CardVariantPrice {
+  market_price: string | null;
+  low_price: string | null;
+  mid_price: string | null;
+  high_price: string | null;
+  tcgplayer_url: string | null;
+}
+
+export interface CardVariant {
   variant_index: number;
-  image_url: string | null;
-  thumbnail_url?: string | null;
-  scan_url?: string | null;
-  scan_thumb_url?: string | null;
-  artist?: string | null;
   label: string | null;
-  product_name: string | null;
-  tcgplayer_url?: string | null;
-  prices: Record<string, {
-    market_price: string | null;
-    low_price: string | null;
-    mid_price: string | null;
-    high_price: string | null;
+  is_default: boolean;
+  artist: string | null;
+  product: {
+    name: string | null;
+    set_code: string | null;
+    released_at: string | null;
+  };
+  media: {
+    image_url: string | null;
+    thumbnail_url: string | null;
+    scan_url: string | null;
+    scan_thumbnail_url: string | null;
+  };
+  market: {
     tcgplayer_url: string | null;
-  }>;
+    prices: Record<string, CardVariantPrice>;
+  };
 }
 
 export interface CardDetail extends Card {
-  images: CardImage[];
+  variants: CardVariant[];
   legality: Record<string, { status: string; banned_at?: string; reason?: string; max_copies?: number; paired_with?: string[] }>;
   available_languages: string[];
 }
@@ -105,4 +116,60 @@ export interface PaginatedResponse<T> {
     total: number;
     has_more: boolean;
   };
+}
+
+export type JsonSchema = Record<string, unknown>;
+
+export interface OpenApiMediaType {
+  schema?: JsonSchema;
+}
+
+export interface OpenApiParameter {
+  name: string;
+  in: string;
+  required?: boolean;
+  description?: string;
+  schema?: JsonSchema;
+}
+
+export interface OpenApiRequestBody {
+  description?: string;
+  required?: boolean;
+  content?: Record<string, OpenApiMediaType>;
+}
+
+export interface OpenApiResponse {
+  description?: string;
+  content?: Record<string, OpenApiMediaType>;
+}
+
+export interface OpenApiOperation {
+  tags?: string[];
+  summary?: string;
+  description?: string;
+  operationId?: string;
+  parameters?: OpenApiParameter[];
+  requestBody?: OpenApiRequestBody;
+  responses?: Record<string, OpenApiResponse>;
+}
+
+export interface OpenApiTag {
+  name: string;
+  description?: string;
+}
+
+export interface OpenApiDocument {
+  openapi: string;
+  info: {
+    title: string;
+    version: string;
+    description?: string;
+  };
+  servers?: Array<{
+    url: string;
+    description?: string;
+  }>;
+  tags?: OpenApiTag[];
+  paths: Record<string, Record<string, OpenApiOperation>>;
+  components?: Record<string, unknown>;
 }

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { apiFetch } from "./client";
+import { apiFetch, apiRootFetch } from "./client";
 import type {
   Card,
   CardDetail,
@@ -9,6 +9,7 @@ import type {
   FormatInfo,
   FormatDetail,
   PaginatedResponse,
+  OpenApiDocument,
 } from "./types";
 
 export function useCardSearch(params: Record<string, string>) {
@@ -76,5 +77,13 @@ export function useFormat(name: string) {
   return useQuery({
     queryKey: ["format", name],
     queryFn: () => apiFetch<{ data: FormatDetail }>(`/formats/${name}`),
+  });
+}
+
+export function useOpenApiDocument() {
+  return useQuery({
+    queryKey: ["openapi"],
+    queryFn: () => apiRootFetch<OpenApiDocument>("/openapi.json"),
+    staleTime: 60 * 60 * 1000,
   });
 }
