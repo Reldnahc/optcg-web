@@ -598,6 +598,8 @@ function CardImageViewer({
   const hasAnyScans = variants.some((variant) => !!variant.media.scan_url);
   const [displayMode, setDisplayMode] = useState<ImageDisplayMode>("auto");
   const [autoPreference, setAutoPreference] = useState<ImageAutoPreference>(getStoredImageAutoPreference);
+  const [stripCanScrollLeft, setStripCanScrollLeft] = useState(false);
+  const [stripCanScrollRight, setStripCanScrollRight] = useState(false);
   const stripRef = useRef<HTMLDivElement | null>(null);
   const dragStateRef = useRef<{ dragging: boolean; startX: number; startScrollLeft: number; moved: boolean }>({
     dragging: false,
@@ -613,6 +615,33 @@ function CardImageViewer({
 
   const displayUrl = resolveImageDisplayUrl(current, displayMode, autoPreference);
   const isScrollableVariantStrip = variants.length >= 4;
+
+  const updateVariantStripScrollState = () => {
+    const strip = stripRef.current;
+    if (!strip || !isScrollableVariantStrip) {
+      setStripCanScrollLeft(false);
+      setStripCanScrollRight(false);
+      return;
+    }
+
+    const maxScrollLeft = Math.max(0, strip.scrollWidth - strip.clientWidth);
+    setStripCanScrollLeft(strip.scrollLeft > 2);
+    setStripCanScrollRight(strip.scrollLeft < maxScrollLeft - 2);
+  };
+
+  useEffect(() => {
+    updateVariantStripScrollState();
+    if (!isScrollableVariantStrip) return;
+
+    const handleResize = () => updateVariantStripScrollState();
+    window.addEventListener("resize", handleResize);
+    const frame = window.requestAnimationFrame(updateVariantStripScrollState);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [isScrollableVariantStrip, variants.length]);
 
   const handleVariantStripMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
     if (!isScrollableVariantStrip || event.button !== 0) return;
@@ -642,6 +671,7 @@ function CardImageViewer({
     if (!dragState.moved) return;
 
     strip.scrollLeft = dragState.startScrollLeft - deltaX;
+    updateVariantStripScrollState();
   };
 
   const finishVariantStripDrag = () => {
@@ -753,57 +783,73 @@ function CardImageViewer({
 
       {/* Variant strip */}
       {variants.length > 1 && (
-        <div
-          ref={stripRef}
-          className={`${getVariantStripContainerClass(variants.length)} ${isScrollableVariantStrip ? "cursor-grab select-none active:cursor-grabbing" : ""}`}
-          onMouseDown={handleVariantStripMouseDown}
-          onMouseMove={handleVariantStripMouseMove}
-          onMouseUp={finishVariantStripDrag}
-          onMouseLeave={finishVariantStripDrag}
-        >
-          {variants.map((variant, i) => {
-            const thumbnailUrl = resolveVariantThumbnailUrl(variant, displayMode, autoPreference);
-            const market = getVariantMarketInfo(variant);
-            const marketLabel = fmtPrice(market.marketPrice);
-            const variantLabel = variant.label || `Variant ${variant.variant_index}`;
-            const variantStripLabel = abbreviateVariantStripLabel(variantLabel);
-            const variantMetaLabel = variant.product.set_code
-              ? `${variantStripLabel} (${variant.product.set_code})`
-              : variantStripLabel;
+        <div className="relative mt-3">
+          <div
+            ref={stripRef}
+            className={`${getVariantStripContainerClass(variants.length)} ${isScrollableVariantStrip ? "cursor-grab select-none active:cursor-grabbing [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" : ""}`}
+            onMouseDown={handleVariantStripMouseDown}
+            onMouseMove={handleVariantStripMouseMove}
+            onMouseUp={finishVariantStripDrag}
+            onMouseLeave={finishVariantStripDrag}
+            onScroll={updateVariantStripScrollState}
+            style={isScrollableVariantStrip ? { scrollbarWidth: "none", msOverflowStyle: "none" } : undefined}
+          >
+            {variants.map((variant, i) => {
+              const thumbnailUrl = resolveVariantThumbnailUrl(variant, displayMode, autoPreference);
+              const market = getVariantMarketInfo(variant);
+              const marketLabel = fmtPrice(market.marketPrice);
+              const variantLabel = variant.label || `Variant ${variant.variant_index}`;
+              const variantStripLabel = abbreviateVariantStripLabel(variantLabel);
+              const variantMetaLabel = variant.product.set_code
+                ? `${variantStripLabel} (${variant.product.set_code})`
+                : variantStripLabel;
 
-            return (
-              <button
-                key={i}
-                onClick={handleVariantButtonClick(i)}
-                className={getVariantStripItemClass(variants.length, isScrollableVariantStrip)}
-                title={variantLabel}
-              >
-                <div
-                  className={`rounded-md overflow-hidden border-2 transition-colors ${
-                    i === selected ? "border-accent" : "border-transparent hover:border-text-muted/40"
-                  }`}
+              return (
+                <button
+                  key={i}
+                  onClick={handleVariantButtonClick(i)}
+                  className={getVariantStripItemClass(variants.length, isScrollableVariantStrip)}
+                  title={variantLabel}
                 >
-                  {thumbnailUrl ? (
-                    <img
-                      src={thumbnailUrl}
-                      alt={variantLabel}
-                      className="pointer-events-none w-full block"
-                      loading="lazy"
-                      draggable={false}
-                    />
-                  ) : (
-                    <div className="aspect-[63/88] bg-bg-tertiary text-text-muted text-[9px] flex items-center justify-center">
-                      {variant.label || `v${i}`}
-                    </div>
-                  )}
-                </div>
-                <div className="mt-1 px-0.5 text-[10px] leading-tight">
-                  <p className="truncate font-medium text-text-primary">{marketLabel}</p>
-                  <p className="truncate text-text-muted">{variantMetaLabel}</p>
-                </div>
-              </button>
-            );
-          })}
+                  <div
+                    className={`rounded-md overflow-hidden border-2 transition-colors ${
+                      i === selected ? "border-accent" : "border-transparent hover:border-text-muted/40"
+                    }`}
+                  >
+                    {thumbnailUrl ? (
+                      <img
+                        src={thumbnailUrl}
+                        alt={variantLabel}
+                        className="pointer-events-none w-full block"
+                        loading="lazy"
+                        draggable={false}
+                      />
+                    ) : (
+                      <div className="aspect-[63/88] bg-bg-tertiary text-text-muted text-[9px] flex items-center justify-center">
+                        {variant.label || `v${i}`}
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-1 px-0.5 text-[10px] leading-tight">
+                    <p className="truncate font-medium text-text-primary">{marketLabel}</p>
+                    <p className="truncate text-text-muted">{variantMetaLabel}</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {isScrollableVariantStrip && stripCanScrollLeft && (
+            <div className="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-bg to-transparent" />
+          )}
+          {isScrollableVariantStrip && stripCanScrollRight && (
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-bg to-transparent" />
+          )}
+          {isScrollableVariantStrip && (
+            <div className="mt-1 text-right text-[10px] uppercase tracking-wider text-text-muted">
+              Drag to scroll
+            </div>
+          )}
         </div>
       )}
     </div>
