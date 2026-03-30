@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { buildApiUrl } from "../../api/client";
 import type { CardDetail as CardDetailType, CardVariant } from "../../api/types";
 import { CopyButton } from "../CopyButton";
 import { CardHoverPreviewLink } from "./CardHoverPreviewLink";
@@ -10,6 +11,15 @@ type LanguageSwitcherConfig = {
   available: string[];
   labels: Record<string, string>;
   onSelect: (code: string) => void;
+};
+
+type ToolAction = {
+  key: string;
+  label: string;
+  kind: "image" | "scan" | "json" | "report";
+  href?: string;
+  downloadName?: string;
+  mock?: boolean;
 };
 
 const STATUS_BADGE_STYLE: Record<string, string> = {
@@ -40,7 +50,28 @@ export function CardDetailView({
     : 0;
   const [selectedVariant, setSelectedVariant] = useState(initialIdx);
   const currentVariant = variants[selectedVariant] || variants[0];
-  const currentVariantMarket = currentVariant ? getVariantMarketInfo(currentVariant) : { marketPrice: null, tcgplayerUrl: null };
+  const cardApiJsonUrl = buildApiUrl(`/cards/${card.card_number}`, { lang: card.language });
+  const toolActions: ToolAction[] = [];
+  if (currentVariant?.media.image_url) {
+    toolActions.push({
+      key: "image",
+      kind: "image",
+      href: currentVariant.media.image_url,
+      downloadName: buildVariantDownloadName(card.card_number, currentVariant.label, "image"),
+      label: "Download image",
+    });
+  }
+  if (currentVariant?.media.scan_url) {
+    toolActions.push({
+      key: "scan",
+      kind: "scan",
+      href: currentVariant.media.scan_url,
+      downloadName: buildVariantDownloadName(card.card_number, currentVariant.label, "scan"),
+      label: "Download scan",
+    });
+  }
+  toolActions.push({ key: "json", kind: "json", href: cardApiJsonUrl, label: "JSON" });
+  toolActions.push({ key: "report", kind: "report", label: "Report", mock: true });
   const legalityEntries = Object.entries(card.legality);
   const featuredLegalityEntries = legalityEntries.filter(([format]) => isFeaturedFormat(format));
   const otherLegalityEntries = legalityEntries.filter(([format]) => !isFeaturedFormat(format));
@@ -172,7 +203,6 @@ export function CardDetailView({
             </div>
           </Section>
 
-          {/* Prices */}
           {currentVariant && Object.keys(currentVariant.market.prices).length > 0 && (
             <Section title="Prices">
               <div className="space-y-2">
@@ -194,6 +224,16 @@ export function CardDetailView({
               </div>
             </Section>
           )}
+
+          <Section title="Tools">
+            <InfoPanel title="Actions">
+              <div className="space-y-1.5">
+                {toolActions.map((action) => (
+                  <ToolActionRow key={action.key} action={action} />
+                ))}
+              </div>
+            </InfoPanel>
+          </Section>
         </div>
 
         {/* Right: Print info */}
@@ -294,13 +334,10 @@ export function CardDetailView({
                 );
               })}
             </div>
-            <div className="grid grid-cols-2 gap-1 pt-0.5">
-              <TcgplayerButton href={currentVariantMarket.tcgplayerUrl} label="Buy on TCGPlayer" />
-              <ExternalButton href={buildEbaySearchUrl(card.card_number, currentVariant?.label)} label="Buy on eBay" />
-            </div>
           </div>
         </div>
       </div>
+
     </div>
   );
 }
@@ -418,11 +455,14 @@ function LegalityItem({ format, info }: { format: string; info: CardDetailType["
 
   return (
     <div className="rounded-md border border-border bg-bg-card/45 px-3 py-2">
-      <div className="flex items-center justify-between gap-3">
-        <Link to={`/formats/${encodeURIComponent(format)}`} className="text-sm leading-tight font-medium text-text-primary hover:text-link">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+        <Link
+          to={`/formats/${encodeURIComponent(format)}`}
+          className="min-w-0 truncate whitespace-nowrap text-sm leading-tight font-medium text-text-primary hover:text-link"
+        >
           {format}
         </Link>
-        <span className={`inline-flex shrink-0 rounded-full border px-2.5 py-1 text-xs leading-tight font-medium ${STATUS_BADGE_STYLE[legality.tone] || "border-border text-text-muted"}`}>
+        <span className={`inline-flex shrink-0 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs leading-tight font-medium ${STATUS_BADGE_STYLE[legality.tone] || "border-border text-text-muted"}`}>
           {legality.label}
         </span>
       </div>
@@ -447,19 +487,8 @@ function LegalityItem({ format, info }: { format: string; info: CardDetailType["
   );
 }
 
-function PriceStat({ label, value, muted = false }: { label: string; value: string; muted?: boolean }) {
-  return (
-    <div className="text-center">
-      <p className="text-[11px] uppercase tracking-wider text-text-muted">{label}</p>
-      <p className={`mt-0.5 whitespace-nowrap tabular-nums text-sm font-medium ${muted ? "text-text-secondary" : "text-text-primary"}`}>
-        {value}
-      </p>
-    </div>
-  );
-}
-
 function TcgplayerButton({ href, label }: { href: string | null; label: string }) {
-  const className = "inline-flex min-h-8 min-w-[3.5rem] shrink-0 items-center justify-center rounded-md border border-border bg-bg-card px-1.5 py-1.5 text-[10px] font-semibold transition-colors sm:min-h-9 sm:min-w-[6.5rem] sm:px-3 sm:py-2 sm:text-xs";
+  const className = "inline-flex min-h-9 min-w-[9.5rem] shrink-0 items-center justify-center rounded-md border border-border bg-bg px-3 py-2 text-xs font-semibold transition-colors";
   const affiliateHref = buildTcgplayerAffiliateUrl(href);
 
   if (!affiliateHref) {
@@ -501,32 +530,108 @@ function buildTcgplayerAffiliateUrl(href: string | null): string | null {
   }
 }
 
-function ExternalButton({ href, label }: { href: string | null; label: string }) {
-  const className = "inline-flex min-h-9 min-w-[6.5rem] items-center justify-center rounded-md border border-border bg-bg-card px-3 py-2 text-xs font-semibold transition-colors";
+function PriceStat({ label, value, muted = false }: { label: string; value: string; muted?: boolean }) {
+  return (
+    <div className="text-center">
+      <p className="text-[11px] uppercase tracking-wider text-text-muted">{label}</p>
+      <p className={`mt-0.5 whitespace-nowrap tabular-nums text-sm font-medium ${muted ? "text-text-secondary" : "text-text-primary"}`}>
+        {value}
+      </p>
+    </div>
+  );
+}
 
-  if (!href) {
-    return (
-      <span className={`${className} text-text-muted`}>
-        {label}
+function buildVariantDownloadName(
+  cardNumber: string,
+  variantLabel: string | null | undefined,
+  kind: "image" | "scan",
+): string {
+  const suffix = variantLabel
+    ? variantLabel.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")
+    : "default";
+  return `${cardNumber.toLowerCase()}-${suffix}-${kind}.jpg`;
+}
+
+function InfoPanel({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-lg border border-border bg-bg-card/35 px-3 py-2.5">
+      <h3 className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-text-muted">{title}</h3>
+      {children}
+    </section>
+  );
+}
+
+function ToolActionRow({ action }: { action: ToolAction }) {
+  const isReport = action.kind === "report";
+  const content = (
+    <>
+      <span className={`flex h-4 w-4 shrink-0 items-center justify-center ${isReport ? "text-banned" : "text-text-secondary"}`}>
+        <ToolIcon kind={action.kind} />
       </span>
+      <span className="min-w-0 flex-1 truncate">{action.label}</span>
+    </>
+  );
+
+  const className = `flex w-full items-center gap-2 py-0.5 text-sm no-underline transition-colors hover:underline ${isReport ? "text-banned hover:text-banned" : "text-text-secondary hover:text-text-primary"}`;
+
+  if (action.mock || !action.href) {
+    return (
+      <button
+        type="button"
+        className={`${className} cursor-pointer appearance-none border-0 bg-transparent p-0 text-left font-inherit`}
+        title={action.mock ? "Coming soon" : undefined}
+      >
+        {content}
+      </button>
     );
   }
 
   return (
     <a
-      href={href}
+      href={action.href}
       target="_blank"
       rel="noopener noreferrer"
-      className={`${className} text-text-primary hover:border-text-muted/40 hover:bg-bg-tertiary/35`}
+      download={action.downloadName}
+      className={className}
     >
-      {label}
+      {content}
     </a>
   );
 }
 
-function buildEbaySearchUrl(cardNumber: string, variantLabel: string | null | undefined): string {
-  const query = [cardNumber, variantLabel].filter(Boolean).join(" ");
-  return `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(query)}`;
+function ToolIcon({ kind }: { kind: ToolAction["kind"] }) {
+  if (kind === "json") {
+    return (
+      <svg viewBox="0 0 16 16" className="h-3.5 w-3.5 fill-none stroke-current" strokeWidth="1.5" aria-hidden="true">
+        <path d="M5 2.5H9.5L12.5 5.5V13a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1Z" />
+        <path d="M9.5 2.5V5.5H12.5" />
+        <path d="M6.25 9.25h3.5M6.25 11h2.5" />
+      </svg>
+    );
+  }
+
+  if (kind === "report") {
+    return (
+      <svg viewBox="0 0 16 16" className="h-3.5 w-3.5 fill-none stroke-current" strokeWidth="1.5" aria-hidden="true">
+        <path d="M4 2.5v11" />
+        <path d="M4 3h6l-1.5 2.5L10 8H4" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5 fill-none stroke-current" strokeWidth="1.5" aria-hidden="true">
+      <path d="M8 2.5v6.25" />
+      <path d="m5.5 6.5 2.5 2.5 2.5-2.5" />
+      <path d="M3 11.5v1A1.5 1.5 0 0 0 4.5 14h7a1.5 1.5 0 0 0 1.5-1.5v-1" />
+    </svg>
+  );
 }
 
 
