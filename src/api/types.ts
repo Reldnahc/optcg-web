@@ -43,7 +43,6 @@ export interface CardVariantPrice {
 export interface CardVariant {
   variant_index: number;
   label: string | null;
-  is_default: boolean;
   artist: string | null;
   product: {
     name: string | null;
