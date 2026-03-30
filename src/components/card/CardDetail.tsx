@@ -232,6 +232,9 @@ export function CardDetailView({
                   className="hover:underline"
                 >
                   {currentVariant.product.name}
+                  {currentVariant.product.set_code ? (
+                    <span className="text-text-muted ml-1">({currentVariant.product.set_code})</span>
+                  ) : null}
                 </Link>
               </PrintRow>
             )}
@@ -265,23 +268,28 @@ export function CardDetailView({
                     >
                       <p className="truncate text-sm font-medium text-text-primary">
                         {variant.product.name || card.set_name}
+                        {variant.product.set_code ? (
+                          <span className="text-text-muted ml-1">({variant.product.set_code})</span>
+                        ) : null}
                       </p>
                       <div className="mt-px flex items-center gap-1 text-xs text-text-muted">
                         <span className="shrink-0 font-medium text-text-primary">{marketLabel}</span>
                         <span className="text-text-muted/60">&middot;</span>
                         <span className="truncate">{variant.label || `Variant ${variant.variant_index}`}</span>
+                        {variant.artist ? (
+                          <>
+                            <span className="text-text-muted/60">&middot;</span>
+                            <Link
+                              to={`/search?q=${encodeURIComponent(`artist:"${variant.artist}"`)}`}
+                              className="truncate transition-colors hover:text-text-primary"
+                            >
+                              {variant.artist}
+                            </Link>
+                          </>
+                        ) : null}
                       </div>
                     </button>
-                    {variant.artist ? (
-                      <Link
-                        to={`/search?q=${encodeURIComponent(`artist:"${variant.artist}"`)}`}
-                        className="min-w-0 truncate rounded px-1 py-0.5 text-xs text-text-muted transition-colors hover:text-text-primary"
-                      >
-                        {variant.artist}
-                      </Link>
-                    ) : (
-                      <span />
-                    )}
+                    <span />
                   </div>
                 );
               })}
@@ -676,6 +684,9 @@ function CardImageViewer({
             const market = getVariantMarketInfo(variant);
             const marketLabel = fmtPrice(market.marketPrice);
             const variantLabel = variant.label || `Variant ${variant.variant_index}`;
+            const variantMetaLabel = variant.product.set_code
+              ? `${variantLabel} (${variant.product.set_code})`
+              : variantLabel;
 
             return (
               <button
@@ -699,7 +710,7 @@ function CardImageViewer({
                 </div>
                 <div className="mt-1 px-0.5 text-[10px] leading-tight">
                   <p className="truncate font-medium text-text-primary">{marketLabel}</p>
-                  <p className="truncate text-text-muted">{variantLabel}</p>
+                  <p className="truncate text-text-muted">{variantMetaLabel}</p>
                 </div>
               </button>
             );
