@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import type { CardDetail as CardDetailType, CardVariant } from "../../api/types";
 import { CopyButton } from "../CopyButton";
@@ -592,12 +592,75 @@ function CardImageViewer({
   const hasAnyScans = variants.some((variant) => !!variant.media.scan_url);
   const [displayMode, setDisplayMode] = useState<ImageDisplayMode>("auto");
   const [autoPreference, setAutoPreference] = useState<ImageAutoPreference>(getStoredImageAutoPreference);
+  const stripRef = useRef<HTMLDivElement | null>(null);
+  const dragStateRef = useRef<{ pointerId: number | null; startX: number; startScrollLeft: number; moved: boolean }>({
+    pointerId: null,
+    startX: 0,
+    startScrollLeft: 0,
+    moved: false,
+  });
+  const suppressClickRef = useRef(false);
 
   useEffect(() => {
     window.localStorage.setItem(IMAGE_AUTO_PREFERENCE_STORAGE_KEY, autoPreference);
   }, [autoPreference]);
 
   const displayUrl = resolveImageDisplayUrl(current, displayMode, autoPreference);
+  const isScrollableVariantStrip = variants.length >= 5;
+
+  const handleVariantStripPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!isScrollableVariantStrip || event.button !== 0) return;
+    const strip = stripRef.current;
+    if (!strip) return;
+
+    dragStateRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startScrollLeft: strip.scrollLeft,
+      moved: false,
+    };
+    strip.setPointerCapture(event.pointerId);
+  };
+
+  const handleVariantStripPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!isScrollableVariantStrip) return;
+    const strip = stripRef.current;
+    const dragState = dragStateRef.current;
+    if (!strip || dragState.pointerId !== event.pointerId) return;
+
+    const deltaX = event.clientX - dragState.startX;
+    if (Math.abs(deltaX) > 4) {
+      dragState.moved = true;
+    }
+    if (!dragState.moved) return;
+
+    strip.scrollLeft = dragState.startScrollLeft - deltaX;
+  };
+
+  const finishVariantStripPointer = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!isScrollableVariantStrip) return;
+    const strip = stripRef.current;
+    const dragState = dragStateRef.current;
+    if (!strip || dragState.pointerId !== event.pointerId) return;
+
+    suppressClickRef.current = dragState.moved;
+    if (strip.hasPointerCapture(event.pointerId)) {
+      strip.releasePointerCapture(event.pointerId);
+    }
+    dragStateRef.current = {
+      pointerId: null,
+      startX: 0,
+      startScrollLeft: 0,
+      moved: false,
+    };
+  };
+
+  const handleVariantStripClickCapture = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (!suppressClickRef.current) return;
+    suppressClickRef.current = false;
+    event.preventDefault();
+    event.stopPropagation();
+  };
 
   return (
     <div>
@@ -683,7 +746,15 @@ function CardImageViewer({
 
       {/* Variant strip */}
       {variants.length > 1 && (
-        <div className={getVariantStripContainerClass(variants.length)}>
+        <div
+          ref={stripRef}
+          className={`${getVariantStripContainerClass(variants.length)} ${isScrollableVariantStrip ? "cursor-grab select-none active:cursor-grabbing" : ""}`}
+          onClickCapture={handleVariantStripClickCapture}
+          onPointerDown={handleVariantStripPointerDown}
+          onPointerMove={handleVariantStripPointerMove}
+          onPointerUp={finishVariantStripPointer}
+          onPointerCancel={finishVariantStripPointer}
+        >
           {variants.map((variant, i) => {
             const thumbnailUrl = resolveVariantThumbnailUrl(variant, displayMode, autoPreference);
             const market = getVariantMarketInfo(variant);
