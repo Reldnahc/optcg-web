@@ -4,6 +4,7 @@ import type { FormatDetail } from "../api/types";
 import { CardHoverPreviewLink } from "../components/card/CardHoverPreviewLink";
 import { ErrorState } from "../components/layout/ErrorState";
 import { PageContainer } from "../components/layout/PageContainer";
+import { usePageMeta } from "../hooks/usePageMeta";
 
 type DisplayBan = Omit<FormatDetail["bans"][number], "paired_with"> & {
   paired_with: string[];
@@ -18,6 +19,12 @@ export function FormatPage() {
   if (!data) return null;
 
   const format = data.data;
+
+  usePageMeta({
+    title: format.name,
+    description: format.description || `${format.name} — One Piece TCG format legality, banlists, and legal sets.`,
+  });
+
   const legalBlocks = format.blocks.filter((b) => b.legal);
   const rotatedBlocks = format.blocks.filter((b) => !b.legal);
   const displayBans = mergeFormatBans(format.bans);

@@ -1,8 +1,14 @@
 import { useDonCards } from "../api/hooks";
 import { PageContainer } from "../components/layout/PageContainer";
+import { usePageMeta } from "../hooks/usePageMeta";
 
 export function DonBrowser() {
   const { data, isLoading } = useDonCards();
+
+  usePageMeta({
+    title: "DON!! Cards",
+    description: "Browse all DON!! cards in the One Piece Card Game.",
+  });
 
   if (isLoading) return <div className="p-8" aria-live="polite"><span className="sr-only">Loading DON cards</span></div>;
 

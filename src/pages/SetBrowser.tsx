@@ -2,6 +2,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useSets } from "../api/hooks";
 import type { SetSort, SortOrder } from "../api/types";
 import { PageContainer } from "../components/layout/PageContainer";
+import { usePageMeta } from "../hooks/usePageMeta";
 
 function defaultOrderForSort(sort: SetSort): SortOrder {
   return sort === "released" || sort === "card_count" ? "desc" : "asc";
@@ -21,6 +22,11 @@ export function SetBrowser() {
   const sort = (params.get("sort") as SetSort | null) || "released";
   const order = (params.get("order") as SortOrder | null) || defaultOrderForSort(sort);
   const { data, isLoading } = useSets({ sort, order });
+
+  usePageMeta({
+    title: "All Sets",
+    description: "Browse all One Piece Card Game sets — booster packs, starter decks, and promotional releases.",
+  });
 
   function updateParams(nextSort: SetSort) {
     const nextOrder: SortOrder = sort === nextSort

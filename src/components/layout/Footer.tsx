@@ -19,8 +19,8 @@ export function Footer() {
             <ul className="space-y-1 text-text-muted">
               <li><Link to="/sets" className="hover:text-text-secondary">Sets</Link></li>
               <li><Link to="/products" className="hover:text-text-secondary">Products</Link></li>
-              <li><Link to="/formats" className="hover:text-text-secondary">Formats</Link></li>
               <li><Link to="/don" className="hover:text-text-secondary">DON!!</Link></li>
+              <li><Link to="/formats" className="hover:text-text-secondary">Formats</Link></li>
             </ul>
           </div>
           <div className="w-full max-w-[12rem] text-center">

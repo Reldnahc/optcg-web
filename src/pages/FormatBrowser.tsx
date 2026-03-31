@@ -1,9 +1,15 @@
 import { Link } from "react-router-dom";
 import { useFormats } from "../api/hooks";
 import { PageContainer } from "../components/layout/PageContainer";
+import { usePageMeta } from "../hooks/usePageMeta";
 
 export function FormatBrowser() {
   const { data, isLoading } = useFormats();
+
+  usePageMeta({
+    title: "Formats",
+    description: "One Piece Card Game formats — legality, banlists, and restricted cards for each competitive format.",
+  });
 
   if (isLoading) return <div className="p-8" aria-live="polite"><span className="sr-only">Loading formats</span></div>;
 

@@ -1,5 +1,6 @@
 import { useSearchParams } from "react-router-dom";
 import { useCardSearch } from "../api/hooks";
+import { usePageMeta } from "../hooks/usePageMeta";
 import { CardGrid } from "../components/card/CardGrid";
 import { CardChecklist } from "../components/card/CardChecklist";
 import { CardTextList } from "../components/card/CardTextList";
@@ -42,6 +43,13 @@ export function Search() {
   };
 
   const { data, isLoading, error } = useCardSearch(searchParams);
+
+  usePageMeta({
+    title: q ? `Search: ${q}` : "Search",
+    description: q
+      ? `Search results for "${q}" in the One Piece TCG card database.`
+      : "Search the One Piece Card Game database by name, text, color, type, and more.",
+  });
   const pagination = data?.pagination;
   const appliedSortMeta = data?.meta;
   const showsAppliedSortNote = Boolean(

@@ -3,6 +3,7 @@ import { useSet } from "../api/hooks";
 import { CardGrid } from "../components/card/CardGrid";
 import { ErrorState } from "../components/layout/ErrorState";
 import { PageContainer } from "../components/layout/PageContainer";
+import { usePageMeta } from "../hooks/usePageMeta";
 
 export function SetPage() {
   const { set_code } = useParams<{ set_code: string }>();
@@ -13,6 +14,11 @@ export function SetPage() {
   if (!data) return null;
 
   const set = data.data;
+
+  usePageMeta({
+    title: `${set.name} (${set.code})`,
+    description: `${set.name} — ${set.cards.length} cards. Browse all cards in this One Piece TCG set.`,
+  });
 
   const subtitle = [
     set.released_at && `Released ${new Date(set.released_at).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}`,

@@ -2,6 +2,7 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { useCard } from "../api/hooks";
 import { CardDetailView } from "../components/card/CardDetail";
 import { ErrorState } from "../components/layout/ErrorState";
+import { usePageMeta } from "../hooks/usePageMeta";
 
 const LANGUAGE_LABELS: Record<string, string> = {
   en: "EN",
@@ -25,8 +26,24 @@ export function CardPage() {
     }, { replace: true });
   };
 
-  const available = data?.data.available_languages ?? [];
+  const card = data?.data;
+  const available = card?.available_languages ?? [];
   const showSwitcher = available.length > 1;
+
+  const metaDesc = card
+    ? [
+        card.card_number,
+        card.color.join("/"),
+        card.card_type,
+        card.types.length > 0 ? card.types.join("/") : null,
+        card.cost !== null ? `Cost ${card.cost}` : null,
+        card.power !== null ? `${card.power} Power` : null,
+      ].filter(Boolean).join(" · ")
+    : undefined;
+  usePageMeta({
+    title: card ? `${card.name} (${card.card_number})` : undefined,
+    description: metaDesc ? `${card!.name} — ${metaDesc}. One Piece TCG card details, prices, and legality.` : undefined,
+  });
 
   if (error) return <ErrorState message={(error as Error).message} wide />;
 
