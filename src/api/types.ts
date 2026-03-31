@@ -145,6 +145,29 @@ export interface ScanProgressGroup {
   variants_without_image: number;
 }
 
+export interface ScanProgressMissingCard {
+  card_number: string;
+  has_any_image_or_scan: boolean;
+}
+
+export interface ScanProgressMissingVariant {
+  card_number: string;
+  variant_index: number;
+  label: string | null;
+  product_name: string | null;
+  product_set_code: string | null;
+}
+
+export interface ScanProgressMissingDetail {
+  bucket_key: string;
+  bucket_label: string;
+  bucket_type: "set_product" | "other_products";
+  product_count: number;
+  cards_missing_scan: ScanProgressMissingCard[];
+  variants_missing_scan: ScanProgressMissingVariant[];
+  variants_without_image: ScanProgressMissingVariant[];
+}
+
 export interface ScanProgressResponse {
   data: {
     language: string;

@@ -1,8 +1,9 @@
-import { useSearchParams } from "react-router-dom";
-import { useScanProgress } from "../api/hooks";
+import { Link, useSearchParams } from "react-router-dom";
+import { useState } from "react";
+import { useScanProgress, useScanProgressMissing } from "../api/hooks";
 import { ErrorState } from "../components/layout/ErrorState";
 import { usePageMeta } from "../hooks/usePageMeta";
-import type { ScanProgressGroup } from "../api/types";
+import type { ScanProgressGroup, ScanProgressMissingVariant } from "../api/types";
 
 const LANGUAGE_LABELS: Record<string, string> = {
   en: "English",
@@ -42,7 +43,111 @@ function ProgressBar({ value, max, color = "bg-accent" }: { value: number; max: 
   );
 }
 
-function GroupRow({ group }: { group: ScanProgressGroup }) {
+function MissingVariantLine({ variant, lang }: { variant: ScanProgressMissingVariant; lang: string }) {
+  const url = lang === "en"
+    ? `/cards/${variant.card_number}?variant=${variant.variant_index}`
+    : `/cards/${variant.card_number}?lang=${encodeURIComponent(lang)}&variant=${variant.variant_index}`;
+
+  return (
+    <li className="flex flex-wrap items-center gap-x-2 gap-y-1">
+      <Link to={url} className="font-mono text-link hover:text-link-hover">
+        {variant.card_number}
+      </Link>
+      <span className="text-text-muted">variant {variant.variant_index}</span>
+      {variant.label ? <span className="text-text-secondary">({variant.label})</span> : null}
+      {variant.product_name ? (
+        <span className="text-text-secondary">
+          in {variant.product_name}
+          {variant.product_set_code ? ` (${variant.product_set_code})` : ""}
+        </span>
+      ) : null}
+    </li>
+  );
+}
+
+function MissingDetails({ bucketKey, lang }: { bucketKey: string; lang: string }) {
+  const { data, isLoading, error } = useScanProgressMissing(lang, bucketKey, true);
+
+  if (isLoading) {
+    return <p className="text-xs text-text-muted">Loading missing items…</p>;
+  }
+
+  if (error) {
+    return <p className="text-xs text-banned">{(error as Error).message}</p>;
+  }
+
+  const details = data?.data;
+  if (!details) {
+    return null;
+  }
+
+  return (
+    <div className="mt-3 grid gap-3 lg:grid-cols-3">
+      <div className="rounded-md border border-border bg-bg-card/50 p-3">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-text-muted">Cards Missing Any Scan</h3>
+        {details.cards_missing_scan.length === 0 ? (
+          <p className="mt-2 text-xs text-text-secondary">None.</p>
+        ) : (
+          <ul className="mt-2 space-y-1 text-xs">
+            {details.cards_missing_scan.map((card) => {
+              const url = lang === "en"
+                ? `/cards/${card.card_number}`
+                : `/cards/${card.card_number}?lang=${encodeURIComponent(lang)}`;
+
+              return (
+                <li key={card.card_number} className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <Link to={url} className="font-mono text-link hover:text-link-hover">
+                    {card.card_number}
+                  </Link>
+                  <span className={card.has_any_image_or_scan ? "text-text-secondary" : "text-banned"}>
+                    {card.has_any_image_or_scan ? "no scan yet" : "no image or scan"}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+
+      <div className="rounded-md border border-border bg-bg-card/50 p-3">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-text-muted">Variants Missing Scan</h3>
+        {details.variants_missing_scan.length === 0 ? (
+          <p className="mt-2 text-xs text-text-secondary">None.</p>
+        ) : (
+          <ul className="mt-2 space-y-1 text-xs">
+            {details.variants_missing_scan.map((variant) => (
+              <MissingVariantLine
+                key={`${variant.card_number}-${variant.variant_index}-scan`}
+                variant={variant}
+                lang={lang}
+              />
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="rounded-md border border-border bg-bg-card/50 p-3">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-text-muted">Variants Without Image</h3>
+        {details.variants_without_image.length === 0 ? (
+          <p className="mt-2 text-xs text-text-secondary">None.</p>
+        ) : (
+          <ul className="mt-2 space-y-1 text-xs">
+            {details.variants_without_image.map((variant) => (
+              <MissingVariantLine
+                key={`${variant.card_number}-${variant.variant_index}-image`}
+                variant={variant}
+                lang={lang}
+              />
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function GroupRow({ group, lang }: { group: ScanProgressGroup; lang: string }) {
+  const [showMissing, setShowMissing] = useState(false);
   const cardPercent = pct(group.scanned_cards, group.total_cards);
   const variantPercent = pct(group.scanned_variants, group.total_variants);
   const cardComplete = group.scanned_cards === group.total_cards;
@@ -57,18 +162,13 @@ function GroupRow({ group }: { group: ScanProgressGroup }) {
         <span className={`text-sm ${group.bucket_type === "other_products" ? "text-text-secondary" : "font-mono text-text-secondary"}`}>
           {groupTitle}
         </span>
-        <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1 text-xs">
-          {group.cards_without_image_or_scan > 0 ? (
-            <span className="text-banned" title="Card numbers in this bucket where no variant has an image or scan">
-              {group.cards_without_image_or_scan} cards have no image or scan
-            </span>
-          ) : null}
-          {group.variants_without_image > 0 ? (
-            <span className="text-accent" title="Variants in this bucket with no canonical image">
-              {group.variants_without_image} variants have no image
-            </span>
-          ) : null}
-        </div>
+        <button
+          type="button"
+          onClick={() => setShowMissing((current) => !current)}
+          className="rounded-md border border-border px-2.5 py-1 text-xs text-text-muted hover:text-text-primary"
+        >
+          {showMissing ? "Hide Missing" : "Show Missing"}
+        </button>
       </div>
 
       <div className="mt-3 space-y-2.5">
@@ -92,6 +192,8 @@ function GroupRow({ group }: { group: ScanProgressGroup }) {
           <ProgressBar value={group.scanned_variants} max={group.total_variants} color={variantComplete ? "bg-legal" : "bg-accent"} />
         </div>
       </div>
+
+      {showMissing ? <MissingDetails bucketKey={group.bucket_key} lang={lang} /> : null}
     </div>
   );
 }
@@ -232,7 +334,7 @@ export function ScanProgress() {
         </p>
         <div className="space-y-2">
           {d.groups.map((group) => (
-            <GroupRow key={group.bucket_key} group={group} />
+            <GroupRow key={group.bucket_key} group={group} lang={lang} />
           ))}
         </div>
       </div>

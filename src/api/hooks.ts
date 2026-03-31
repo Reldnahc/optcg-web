@@ -13,6 +13,7 @@ import type {
   FormatDetail,
   OpenApiDocument,
   ScanProgressResponse,
+  ScanProgressMissingDetail,
 } from "./types";
 
 export function useCardSearch(params: Record<string, string>) {
@@ -87,6 +88,15 @@ export function useScanProgress(lang = "en") {
   return useQuery({
     queryKey: ["scans", "progress", lang],
     queryFn: () => apiFetch<ScanProgressResponse>("/scans/progress", { lang }),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useScanProgressMissing(lang: string, bucketKey: string, enabled = true) {
+  return useQuery({
+    queryKey: ["scans", "progress", "missing", lang, bucketKey],
+    queryFn: () => apiFetch<{ data: ScanProgressMissingDetail }>(`/scans/progress/missing/${encodeURIComponent(bucketKey)}`, { lang }),
+    enabled: enabled && Boolean(bucketKey),
     staleTime: 5 * 60 * 1000,
   });
 }
