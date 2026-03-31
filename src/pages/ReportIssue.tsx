@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { buildApiUrl } from "../api/client";
+import { PageContainer } from "../components/layout/PageContainer";
 
 const REPORT_TYPES = [
   { value: "card_data", label: "Card Data Issue" },
@@ -52,8 +53,8 @@ export function ReportIssue() {
 
   if (status === "sent") {
     return (
-      <div className="max-w-xl mx-auto px-4 py-8 text-center">
-        <h1 className="text-2xl font-bold text-text-primary mb-4">Thanks!</h1>
+      <PageContainer title="Thanks!">
+        <div className="text-center">
         <p className="text-text-secondary mb-6">Your report has been sent. We'll look into it.</p>
         <button
           onClick={() => {
@@ -66,16 +67,13 @@ export function ReportIssue() {
         >
           Submit another report
         </button>
-      </div>
+        </div>
+      </PageContainer>
     );
   }
 
   return (
-    <div className="max-w-xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold text-text-primary mb-2">Report an Issue</h1>
-      <p className="text-text-secondary text-sm mb-6">
-        Found a bug, incorrect card data, or have a suggestion? Let us know.
-      </p>
+    <PageContainer title="Report an Issue" subtitle="Found a bug, incorrect card data, or have a suggestion? Let us know.">
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -145,6 +143,6 @@ export function ReportIssue() {
           {status === "sending" ? "Sending..." : "Submit Report"}
         </button>
       </form>
-    </div>
+    </PageContainer>
   );
 }

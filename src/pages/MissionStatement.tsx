@@ -26,10 +26,7 @@ const COMMITMENTS = [
 
 export function MissionStatement() {
   return (
-    <PageContainer
-      title="Mission Statement"
-      wide
-    >
+    <PageContainer title="Mission Statement">
       <div className="space-y-6">
         <section className="rounded-xl border border-border bg-bg-card">
           <div className="border-b border-border px-5 py-3">

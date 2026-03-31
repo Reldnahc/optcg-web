@@ -27,7 +27,6 @@ export function ApiDocs() {
       <PageContainer
         title="API Documentation"
         subtitle={<>Base URL: <code className="text-accent break-all">{apiBaseUrl}</code></>}
-        wide
       >
         <div className="rounded-xl border border-border bg-bg-card px-5 py-8 text-sm text-text-secondary">
           Loading the published OpenAPI document...
@@ -41,7 +40,6 @@ export function ApiDocs() {
       <PageContainer
         title="API Documentation"
         subtitle={<>Base URL: <code className="text-accent break-all">{apiBaseUrl}</code></>}
-        wide
       >
         <div className="rounded-xl border border-banned/30 bg-banned/10 px-5 py-8 text-sm text-text-primary">
           Failed to load <code className="text-accent">/openapi.json</code>: {(error as Error | undefined)?.message ?? "Unknown error"}
@@ -59,7 +57,6 @@ export function ApiDocs() {
     <PageContainer
       title="API Documentation"
       subtitle={<>The poneglyph.one API is free and public. Base URL: <code className="text-accent break-all">{apiBaseUrl}</code></>}
-      wide
     >
       <section className="rounded-xl border border-border bg-bg-card p-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">

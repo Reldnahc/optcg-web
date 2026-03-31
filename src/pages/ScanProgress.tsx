@@ -2,6 +2,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useState } from "react";
 import { useScanProgress, useScanProgressMissing } from "../api/hooks";
 import { ErrorState } from "../components/layout/ErrorState";
+import { PageContainer } from "../components/layout/PageContainer";
 import { usePageMeta } from "../hooks/usePageMeta";
 import type { ScanProgressGroup, ScanProgressMissingVariant } from "../api/types";
 
@@ -224,7 +225,7 @@ export function ScanProgress() {
   });
 
   if (isLoading) return <div className="p-8" aria-live="polite"><span className="sr-only">Loading scan progress</span></div>;
-  if (error) return <ErrorState message={(error as Error).message} wide />;
+  if (error) return <ErrorState message={(error as Error).message} />;
   if (!data) return null;
 
   const d = data.data;
@@ -233,8 +234,7 @@ export function ScanProgress() {
   const completeGroupCount = d.groups.filter((group) => group.scanned_cards === group.total_cards).length;
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold text-text-primary mb-2">Scan Progress</h1>
+    <PageContainer title={lang === "en" ? "Scan Progress" : `${languageLabel} Scan Progress`}>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs uppercase tracking-wide text-text-muted">
           Language: <span className="text-text-primary">{languageLabel}</span>
@@ -338,6 +338,6 @@ export function ScanProgress() {
           ))}
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 }

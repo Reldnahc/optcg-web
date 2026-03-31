@@ -3,6 +3,7 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { useCard } from "../api/hooks";
 import { CardDetailView } from "../components/card/CardDetail";
 import { ErrorState } from "../components/layout/ErrorState";
+import { DEFAULT_PAGE_CONTAINER_CLASS } from "../components/layout/container";
 import { usePageMeta } from "../hooks/usePageMeta";
 
 const LANGUAGE_LABELS: Record<string, string> = {
@@ -79,12 +80,12 @@ export function CardPage() {
     jsonLd,
   });
 
-  if (error) return <ErrorState message={(error as Error).message} wide />;
+  if (error) return <ErrorState message={(error as Error).message} />;
 
   return (
     <div>
       {showSwitcher && (
-        <div className="max-w-6xl mx-auto px-4 pt-2.5 flex justify-end sm:hidden">
+        <div className={`${DEFAULT_PAGE_CONTAINER_CLASS} pt-2.5 flex justify-end sm:hidden`}>
           <div className="flex gap-px bg-bg-card rounded-md p-px border border-border">
             {available.map((code) => (
               <button

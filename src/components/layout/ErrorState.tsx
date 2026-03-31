@@ -1,3 +1,5 @@
+import { DEFAULT_PAGE_CONTAINER_CLASS } from "./container";
+
 function isRateLimitMessage(message: string): boolean {
   const normalized = message.toLowerCase();
   return normalized.includes("rate limit")
@@ -5,11 +7,11 @@ function isRateLimitMessage(message: string): boolean {
     || normalized.includes("429");
 }
 
-export function ErrorState({ message, wide = false }: { message: string; wide?: boolean }) {
+export function ErrorState({ message }: { message: string }) {
   const isRateLimit = isRateLimitMessage(message);
 
   return (
-    <div className={`${wide ? "max-w-6xl" : "max-w-5xl"} mx-auto px-4 py-8`}>
+    <div className={`${DEFAULT_PAGE_CONTAINER_CLASS} py-8`}>
       <div className="min-h-[45vh] flex items-center justify-center">
         <div
           className={`w-full max-w-xl rounded-xl border px-6 py-5 text-center shadow-lg shadow-black/20 ${

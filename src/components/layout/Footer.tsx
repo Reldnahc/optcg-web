@@ -1,9 +1,10 @@
 import { Link } from "react-router-dom";
+import { DEFAULT_PAGE_CONTAINER_CLASS } from "./container";
 
 export function Footer() {
   return (
     <footer className="border-t border-border mt-auto bg-bg-secondary">
-      <div className="max-w-5xl mx-auto px-4 py-8">
+      <div className={`${DEFAULT_PAGE_CONTAINER_CLASS} py-8`}>
         <div className="mx-auto flex max-w-sm flex-col items-center gap-8 text-center text-sm md:grid md:max-w-[56rem] md:grid-cols-[12rem_12rem_12rem_12rem] md:justify-center md:items-start md:justify-items-center md:gap-x-8 md:gap-y-8">
           <div className="w-full max-w-[12rem] text-center">
             <h4 className="text-text-primary font-semibold mb-2">Explore</h4>

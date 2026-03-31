@@ -2,6 +2,7 @@ import { Link, useNavigate, useSearchParams, useLocation } from "react-router-do
 import { useState } from "react";
 import { SearchBar } from "../search/SearchBar";
 import { BrandWordmark } from "./BrandWordmark";
+import { DEFAULT_PAGE_CONTAINER_CLASS } from "./container";
 
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -12,7 +13,7 @@ export function Header() {
 
   return (
     <header className="bg-bg-secondary border-b border-border">
-      <div className="max-w-6xl mx-auto px-4 h-14 flex items-center gap-4">
+      <div className={`${DEFAULT_PAGE_CONTAINER_CLASS} h-14 flex items-center gap-4`}>
         <Link
           to="/"
           className="group inline-flex h-full items-center [font-family:var(--font-display)] font-bold shrink-0 hover:no-underline tracking-tight"

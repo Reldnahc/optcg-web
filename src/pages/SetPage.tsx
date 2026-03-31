@@ -17,7 +17,7 @@ export function SetPage() {
   });
 
   if (isLoading) return <div className="p-8" aria-live="polite"><span className="sr-only">Loading set</span></div>;
-  if (error) return <ErrorState message={(error as Error).message} wide />;
+  if (error) return <ErrorState message={(error as Error).message} />;
   if (!set) return null;
 
   const subtitle = [
@@ -26,7 +26,7 @@ export function SetPage() {
   ].filter(Boolean).join(" · ");
 
   return (
-    <PageContainer title={`${set.name} (${set.code})`} subtitle={subtitle} wide>
+    <PageContainer title={`${set.name} (${set.code})`} subtitle={subtitle}>
       {set.products && set.products.length > 0 && (
         <p className="mb-6 -mt-4 text-sm text-text-muted">
           Products: {set.products.map((product) => product.name).join(", ")}
