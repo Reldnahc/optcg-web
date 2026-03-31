@@ -6,6 +6,7 @@ import { CopyButton } from "../CopyButton";
 import { CardHoverPreviewLink } from "./CardHoverPreviewLink";
 import { CardRulesText } from "./CardRulesText";
 import { TriggerBlock } from "./TriggerBlock";
+import { DEFAULT_PAGE_CONTAINER_CLASS } from "../layout/container";
 
 type LanguageSwitcherConfig = {
   current: string;
@@ -127,7 +128,7 @@ export function CardDetailView({
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 pt-4 pb-6">
+    <div className={`${DEFAULT_PAGE_CONTAINER_CLASS} pt-4 pb-6`}>
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Left: Card Image */}
         <div className="lg:w-[320px] xl:w-[360px] shrink-0">
@@ -223,7 +224,7 @@ export function CardDetailView({
           >
             <div className="space-y-2">
               {featuredLegalityEntries.length > 0 && (
-                <div className="grid gap-2 sm:grid-cols-2">
+                <div className="space-y-2">
                   {featuredLegalityEntries.map(([format, info]) => (
                     <LegalityItem key={format} format={format} info={info} />
                   ))}
@@ -235,22 +236,22 @@ export function CardDetailView({
             </div>
           </Section>
 
-          {currentVariant && Object.keys(currentVariant.market.prices).length > 0 && (
+          {currentVariant && getVariantMarketRows(currentVariant).length > 0 && (
             <Section title="Prices">
               <div className="space-y-2">
-                {Object.entries(currentVariant.market.prices).map(([subType, price]) => (
+                {getVariantMarketRows(currentVariant).map(({ key, lowPrice, marketPrice, tcgplayerUrl }) => (
                   <div
-                    key={subType}
+                    key={key}
                     className="grid grid-cols-[minmax(0,1fr)_minmax(4.5rem,auto)_auto] items-center gap-2.5 rounded-md border border-border bg-bg-card/45 px-3 py-2 sm:grid-cols-[minmax(0,1.3fr)_minmax(4.75rem,auto)_minmax(4.75rem,auto)_auto] sm:gap-3"
                   >
                     <div className="min-w-0">
                       <p className="truncate text-[13px] font-medium text-text-primary sm:text-sm">TCGplayer</p>
                     </div>
                     <div className="hidden sm:block">
-                      <PriceStat label="Low" value={fmtPrice(price.low_price)} muted />
+                      <PriceStat label="Low" value={fmtPrice(lowPrice)} muted />
                     </div>
-                    <PriceStat label="Market" value={fmtPrice(price.market_price)} />
-                    <TcgplayerButton href={price.tcgplayer_url ?? currentVariant.market.tcgplayer_url ?? null} label="Buy" />
+                    <PriceStat label="Market" value={fmtPrice(marketPrice)} />
+                    <TcgplayerButton href={tcgplayerUrl} label="Buy" />
                   </div>
                 ))}
               </div>
@@ -393,14 +394,43 @@ function fmtPrice(val: string | null): string {
   return `$${parseFloat(val).toFixed(2)}`;
 }
 
+function getVariantMarketRows(variant: CardVariant): Array<{
+  key: string;
+  lowPrice: string | null;
+  marketPrice: string | null;
+  tcgplayerUrl: string | null;
+}> {
+  const rows = Object.entries(variant.market.prices).map(([subType, price]) => ({
+    key: subType,
+    lowPrice: price.low_price,
+    marketPrice: price.market_price,
+    tcgplayerUrl: price.tcgplayer_url ?? variant.market.tcgplayer_url ?? null,
+  }));
+
+  if (rows.length > 0) {
+    return rows;
+  }
+
+  if (variant.market.tcgplayer_url) {
+    return [{
+      key: "listing",
+      lowPrice: null,
+      marketPrice: null,
+      tcgplayerUrl: variant.market.tcgplayer_url,
+    }];
+  }
+
+  return [];
+}
+
 function getVariantMarketInfo(variant: CardVariant): { marketPrice: string | null; tcgplayerUrl: string | null } {
-  for (const price of Object.values(variant.market.prices)) {
-    if (price.market_price || price.tcgplayer_url) {
-      return {
-        marketPrice: price.market_price,
-        tcgplayerUrl: price.tcgplayer_url ?? variant.market.tcgplayer_url ?? null,
-      };
-    }
+  const [firstRow] = getVariantMarketRows(variant);
+
+  if (firstRow) {
+    return {
+      marketPrice: firstRow.marketPrice,
+      tcgplayerUrl: firstRow.tcgplayerUrl,
+    };
   }
 
   return {
@@ -501,14 +531,14 @@ function LegalityItem({ format, info }: { format: string; info: CardDetailType["
 
   return (
     <div className="rounded-md border border-border bg-bg-card/45 px-3 py-2">
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+      <div className="grid grid-cols-[minmax(0,1fr)_max-content] items-center gap-2">
         <Link
           to={`/formats/${encodeURIComponent(format)}`}
-          className="min-w-0 truncate whitespace-nowrap text-sm leading-tight font-medium text-text-primary hover:text-link"
+          className="min-w-0 truncate text-sm leading-tight font-medium text-text-primary hover:text-link"
         >
           {format}
         </Link>
-        <span className={`inline-flex shrink-0 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs leading-tight font-medium ${STATUS_BADGE_STYLE[legality.tone] || "border-border text-text-muted"}`}>
+        <span className={`inline-flex shrink-0 whitespace-nowrap rounded-full border px-2 py-1 text-xs leading-tight font-medium ${STATUS_BADGE_STYLE[legality.tone] || "border-border text-text-muted"}`}>
           {legality.label}
         </span>
       </div>
