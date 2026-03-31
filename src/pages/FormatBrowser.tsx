@@ -9,6 +9,7 @@ export function FormatBrowser() {
   usePageMeta({
     title: "Formats",
     description: "One Piece Card Game formats — legality, banlists, and restricted cards for each competitive format.",
+    url: "/formats",
   });
 
   if (isLoading) return <div className="p-8" aria-live="polite"><span className="sr-only">Loading formats</span></div>;

@@ -49,6 +49,7 @@ export function Search() {
     description: q
       ? `Search results for "${q}" in the One Piece TCG card database.`
       : "Search the One Piece Card Game database by name, text, color, type, and more.",
+    url: "/search",
   });
   const pagination = data?.pagination;
   const appliedSortMeta = data?.meta;

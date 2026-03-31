@@ -8,6 +8,7 @@ export function DonBrowser() {
   usePageMeta({
     title: "DON!! Cards",
     description: "Browse all DON!! cards in the One Piece Card Game.",
+    url: "/don",
   });
 
   if (isLoading) return <div className="p-8" aria-live="polite"><span className="sr-only">Loading DON cards</span></div>;

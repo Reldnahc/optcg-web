@@ -26,6 +26,7 @@ export function SetBrowser() {
   usePageMeta({
     title: "All Sets",
     description: "Browse all One Piece Card Game sets — booster packs, starter decks, and promotional releases.",
+    url: "/sets",
   });
 
   function updateParams(nextSort: SetSort) {

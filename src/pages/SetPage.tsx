@@ -18,6 +18,7 @@ export function SetPage() {
   usePageMeta({
     title: `${set.name} (${set.code})`,
     description: `${set.name} — ${set.cards.length} cards. Browse all cards in this One Piece TCG set.`,
+    url: `/sets/${set.code}`,
   });
 
   const subtitle = [

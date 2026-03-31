@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useCard } from "../api/hooks";
 import { CardDetailView } from "../components/card/CardDetail";
@@ -30,6 +31,7 @@ export function CardPage() {
   const available = card?.available_languages ?? [];
   const showSwitcher = available.length > 1;
 
+  const metaTitle = card ? `${card.name} (${card.card_number})` : undefined;
   const metaDesc = card
     ? [
         card.card_number,
@@ -40,9 +42,41 @@ export function CardPage() {
         card.power !== null ? `${card.power} Power` : null,
       ].filter(Boolean).join(" · ")
     : undefined;
+  const cardImage = card?.image_url || card?.thumbnail_url || undefined;
+  const firstVariant = card?.variants?.[0];
+  const marketPrice = firstVariant?.market?.prices
+    ? Object.values(firstVariant.market.prices).find((p) => p.market_price)?.market_price
+    : null;
+
+  const jsonLd = useMemo(() => {
+    if (!card) return undefined;
+    const ld: Record<string, unknown> = {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name: card.name,
+      description: metaDesc ? `${card.name} — ${metaDesc}` : card.name,
+      category: "Trading Card",
+      brand: { "@type": "Brand", name: "One Piece Card Game" },
+    };
+    if (cardImage) ld.image = cardImage;
+    if (marketPrice) {
+      ld.offers = {
+        "@type": "Offer",
+        price: marketPrice,
+        priceCurrency: "USD",
+        availability: "https://schema.org/InStock",
+      };
+    }
+    return ld;
+  }, [card, cardImage, marketPrice, metaDesc]);
+
   usePageMeta({
-    title: card ? `${card.name} (${card.card_number})` : undefined,
+    title: metaTitle,
     description: metaDesc ? `${card!.name} — ${metaDesc}. One Piece TCG card details, prices, and legality.` : undefined,
+    image: cardImage,
+    url: card ? `/cards/${card.card_number}` : undefined,
+    twitterCard: cardImage ? "summary_large_image" : "summary",
+    jsonLd,
   });
 
   if (error) return <ErrorState message={(error as Error).message} wide />;
