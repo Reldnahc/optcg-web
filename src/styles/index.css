@@ -212,13 +212,35 @@ a:hover {
 }
 
 .card-rules-tag--trigger {
-  /* TODO: Refine Trigger badge shape/color against more card scan references. */
-  background: rgba(241, 218, 73, 0.98);
+  background: rgba(255, 230, 50, 0.98);
   color: #17150d;
-  border-radius: 0;
-  padding-inline: 0.34rem;
-  clip-path: polygon(8% 0, 95% 0, 100% 32%, 94% 100%, 7% 100%, 0 68%);
+  border-radius: 0.25rem 0 0 0;
+  margin: -0.15rem 0 -0.15rem 0;
+  padding: 0.15rem 1.4rem 0.15rem 0.3rem;
+  line-height: 1.65;
+  font-size: 0.9em;
+  clip-path: polygon(0 0, 97% 0, 72% 100%, 0 100%);
+  vertical-align: baseline;
 }
+
+.trigger-block .card-rules-text {
+  line-height: 1;
+}
+
+.trigger-block .card-rules-line {
+  padding: 0.2rem 0.5rem 0.2rem 0;
+  line-height: 1.65;
+}
+
+.trigger-block .card-rules-line:first-child {
+  padding-left: 0.3rem;
+  padding-top: 0;
+}
+
+.trigger-block .card-rules-line:first-child .card-rules-tag--trigger {
+  margin-left: -0.3rem;
+}
+
 
 .card-rules-tag--ability {
   position: relative;

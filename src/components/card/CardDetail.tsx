@@ -202,7 +202,7 @@ export function CardDetailView({
                 <CardRulesText text={card.effect} />
               ) : null}
               {card.trigger ? (
-                <div className={card.effect ? "mt-3" : ""}>
+                <div className={`trigger-block rounded bg-black/90 overflow-hidden -mx-1 ${card.effect ? "mt-3" : ""}`}>
                   <CardRulesText text={card.trigger} />
                 </div>
               ) : null}
