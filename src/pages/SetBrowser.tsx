@@ -49,7 +49,50 @@ export function SetBrowser() {
 
   return (
     <PageContainer title="All Sets" subtitle={`${sets.length} sets found`}>
-      <div className="w-full overflow-x-auto">
+      {/* Sort controls for mobile */}
+      <div className="mb-3 flex items-center gap-2 sm:hidden">
+        <span className="text-[11px] uppercase tracking-wider text-text-muted">Sort</span>
+        <div className="flex gap-px rounded-md bg-bg-tertiary/35 p-px">
+          {(["released", "name", "set_code", "card_count"] as SetSort[]).map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => updateParams(s)}
+              className={`rounded-md px-2 py-0.5 text-[11px] font-medium transition-colors ${
+                sort === s
+                  ? "bg-accent text-bg-primary"
+                  : "text-text-muted hover:text-text-primary"
+              }`}
+            >
+              {s === "released" ? "Date" : s === "card_count" ? "Cards" : s === "set_code" ? "Code" : "Name"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Mobile: card list */}
+      <div className="space-y-2 sm:hidden">
+        {sets.map((set) => (
+          <Link
+            key={set.code}
+            to={`/sets/${set.code}`}
+            className="flex items-center justify-between gap-3 rounded-lg border border-border bg-bg-card/40 px-3 py-2.5 no-underline hover:bg-bg-hover/50"
+          >
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-text-primary">{set.name}</p>
+              <div className="mt-0.5 flex items-center gap-1.5 text-xs text-text-muted">
+                <span className="font-mono">{set.code}</span>
+                <span className="text-text-muted/50">&middot;</span>
+                <span>{set.card_count} cards</span>
+              </div>
+            </div>
+            <span className="shrink-0 text-xs text-text-muted">{formatReleasedAt(set.released_at)}</span>
+          </Link>
+        ))}
+      </div>
+
+      {/* Desktop: table */}
+      <div className="hidden sm:block w-full overflow-x-auto">
         <table className="w-full min-w-[720px] table-fixed text-sm">
           <thead>
             <tr className="border-b border-border text-[12px] uppercase tracking-wider text-text-muted">
