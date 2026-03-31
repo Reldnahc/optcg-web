@@ -3,7 +3,6 @@ import { useEffect } from "react";
 const SITE_URL = "https://poneglyph.one";
 const DEFAULT_TITLE = "poneglyph - One Piece TCG Database";
 const DEFAULT_DESCRIPTION = "Search, browse, and explore the One Piece Card Game. Card database with prices, legality, and advanced search.";
-const DEFAULT_IMAGE = "";
 
 function setMetaTag(name: string, content: string) {
   let el = document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement | null;
