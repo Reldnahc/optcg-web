@@ -14,7 +14,8 @@ export function CardChecklist({ cards }: { cards: Card[] }) {
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+      {/* Desktop table */}
+      <table className="w-full text-sm hidden sm:table">
         <thead>
           <tr className="text-left text-text-muted border-b border-border text-[12px] uppercase tracking-wider">
             <th className="pb-2 font-medium">Number</th>
@@ -61,6 +62,21 @@ export function CardChecklist({ cards }: { cards: Card[] }) {
           ))}
         </tbody>
       </table>
+
+      {/* Mobile condensed list */}
+      <div className="sm:hidden divide-y divide-border/50">
+        {cards.map((card) => (
+          <Link
+            key={`${card.card_number}-${card.language}-${card.variant_index ?? "c"}-m`}
+            to={cardLink(card)}
+            className="flex items-baseline gap-2 py-1.5 hover:bg-bg-hover/50 hover:no-underline"
+          >
+            <span className="font-mono text-[11px] text-text-muted shrink-0">{card.card_number}</span>
+            <span className="text-[13px] text-text-primary truncate">{card.name}</span>
+            <span className="ml-auto text-[11px] text-text-muted shrink-0">{card.rarity || ""}</span>
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }

@@ -22,9 +22,9 @@ export function CardFullList({ cards }: { cards: Card[] }) {
         return (
           <div
             key={`${card.card_number}-${card.language}-${card.variant_index ?? "c"}`}
-            className="flex gap-4 border-b border-border/50 pb-5"
+            className="flex flex-col sm:flex-row gap-3 sm:gap-4 border-b border-border/50 pb-5"
           >
-            <Link to={cardLink(card)} className="shrink-0 w-28 sm:w-36">
+            <Link to={cardLink(card)} className="shrink-0 w-32 sm:w-36 mx-auto sm:mx-0">
               <div className="rounded-xl overflow-hidden bg-bg-tertiary shadow-md">
                 {imageUrl ? (
                   <img src={imageUrl} alt={card.name} className="w-full block" loading="lazy" />
