@@ -12,6 +12,7 @@ import type {
   FormatInfo,
   FormatDetail,
   OpenApiDocument,
+  ScanProgressResponse,
 } from "./types";
 
 export function useCardSearch(params: Record<string, string>) {
@@ -79,6 +80,14 @@ export function useFormat(name: string) {
   return useQuery({
     queryKey: ["format", name],
     queryFn: () => apiFetch<{ data: FormatDetail }>(`/formats/${name}`),
+  });
+}
+
+export function useScanProgress() {
+  return useQuery({
+    queryKey: ["scans", "progress"],
+    queryFn: () => apiFetch<ScanProgressResponse>("/scans/progress"),
+    staleTime: 5 * 60 * 1000,
   });
 }
 

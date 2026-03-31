@@ -132,6 +132,26 @@ export interface CardSearchResponse<T> extends PaginatedResponse<T> {
   meta: CardSearchMeta;
 }
 
+export interface ScanProgressSet {
+  set_code: string;
+  total_cards: number;
+  scanned_cards: number;
+  missing_image_cards: number;
+  total_variants: number;
+  scanned_variants: number;
+}
+
+export interface ScanProgressResponse {
+  data: {
+    total_cards: number;
+    total_scanned_cards: number;
+    total_missing_image_cards: number;
+    total_variants: number;
+    total_scanned_variants: number;
+    sets: ScanProgressSet[];
+  };
+}
+
 export type JsonSchema = Record<string, unknown>;
 
 export interface OpenApiMediaType {
