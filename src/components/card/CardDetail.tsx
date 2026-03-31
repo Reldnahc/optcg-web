@@ -5,6 +5,7 @@ import type { CardDetail as CardDetailType, CardVariant } from "../../api/types"
 import { CopyButton } from "../CopyButton";
 import { CardHoverPreviewLink } from "./CardHoverPreviewLink";
 import { CardRulesText } from "./CardRulesText";
+import { TriggerBlock } from "./TriggerBlock";
 
 type LanguageSwitcherConfig = {
   current: string;
@@ -202,7 +203,7 @@ export function CardDetailView({
                 <CardRulesText text={card.effect} />
               ) : null}
               {card.trigger ? (
-                <TriggerBlock className={card.effect ? "mt-3" : ""} text={card.trigger} />
+                <TriggerBlock className={`-mx-1 ${card.effect ? "mt-3" : ""}`} text={card.trigger} />
               ) : null}
             </div>
           )}
@@ -472,37 +473,6 @@ function StatLine({ value, suffix }: { value: React.ReactNode; suffix: string })
 
 function MetaLine({ value }: { value: React.ReactNode }) {
   return <div className="text-text-primary">{value}</div>;
-}
-
-function TriggerBlock({ className, text }: { className?: string; text: string }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [wraps, setWraps] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const firstLine = el.querySelector(".card-rules-line") as HTMLElement | null;
-    if (!firstLine) return;
-
-    const check = () => {
-      const lineHeight = parseFloat(getComputedStyle(firstLine).lineHeight) || firstLine.offsetHeight;
-      setWraps(firstLine.offsetHeight > lineHeight * 1.5);
-    };
-
-    check();
-    const observer = new ResizeObserver(check);
-    observer.observe(firstLine);
-    return () => observer.disconnect();
-  }, [text]);
-
-  return (
-    <div
-      ref={ref}
-      className={`trigger-block rounded bg-black/90 overflow-hidden -mx-1 ${wraps ? "trigger-block--wraps" : "trigger-block--no-wrap"} ${className ?? ""}`}
-    >
-      <CardRulesText text={text} />
-    </div>
-  );
 }
 
 function DotSeparator({ size = "md" }: { size?: "sm" | "md" }) {

@@ -2,6 +2,8 @@ import { useSearchParams } from "react-router-dom";
 import { useCardSearch } from "../api/hooks";
 import { CardGrid } from "../components/card/CardGrid";
 import { CardChecklist } from "../components/card/CardChecklist";
+import { CardTextList } from "../components/card/CardTextList";
+import { CardFullList } from "../components/card/CardFullList";
 import { ErrorState } from "../components/layout/ErrorState";
 
 const SORT_LABELS: Record<string, string> = {
@@ -97,6 +99,8 @@ export function Search() {
               className="bg-bg-input border border-border rounded px-1.5 py-0.5 text-text-primary text-[13px] focus:outline-none focus:border-accent/60"
             >
               <option value="images">Images</option>
+              <option value="full">Full</option>
+              <option value="text">Text</option>
               <option value="checklist">Checklist</option>
             </select>
           </ControlGroup>
@@ -142,9 +146,10 @@ export function Search() {
       </div>
 
       {data && (
-        as === "checklist"
-          ? <CardChecklist cards={data.data} />
-          : <CardGrid cards={data.data} />
+        as === "checklist" ? <CardChecklist cards={data.data} />
+        : as === "text" ? <CardTextList cards={data.data} />
+        : as === "full" ? <CardFullList cards={data.data} />
+        : <CardGrid cards={data.data} />
       )}
 
       {pagination && pagination.total > 0 && (
