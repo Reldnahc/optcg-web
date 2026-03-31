@@ -132,13 +132,17 @@ export interface CardSearchResponse<T> extends PaginatedResponse<T> {
   meta: CardSearchMeta;
 }
 
-export interface ScanProgressSet {
-  set_code: string;
+export interface ScanProgressGroup {
+  bucket_key: string;
+  bucket_label: string;
+  bucket_type: "set_product" | "other_products";
+  product_count: number;
   total_cards: number;
   scanned_cards: number;
-  missing_image_cards: number;
+  cards_without_image_or_scan: number;
   total_variants: number;
   scanned_variants: number;
+  variants_without_image: number;
 }
 
 export interface ScanProgressResponse {
@@ -146,10 +150,11 @@ export interface ScanProgressResponse {
     language: string;
     total_cards: number;
     total_scanned_cards: number;
-    total_missing_image_cards: number;
+    total_cards_without_image_or_scan: number;
     total_variants: number;
     total_scanned_variants: number;
-    sets: ScanProgressSet[];
+    total_variants_without_image: number;
+    groups: ScanProgressGroup[];
   };
 }
 
