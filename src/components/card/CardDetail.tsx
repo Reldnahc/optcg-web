@@ -73,7 +73,7 @@ export function CardDetailView({
     });
   }
   toolActions.push({ key: "json", kind: "json", href: cardApiJsonUrl, label: "JSON" });
-  toolActions.push({ key: "report", kind: "report", label: "Report issue", mock: true });
+  toolActions.push({ key: "report", kind: "report", label: "Report issue", href: `/report?card=${encodeURIComponent(card.card_number)}` });
 
   const [fileSizes, setFileSizes] = useState<Record<string, number | null>>({});
   useEffect(() => {
@@ -663,6 +663,14 @@ function ToolActionRow({ action }: { action: ToolAction }) {
       >
         {content}
       </a>
+    );
+  }
+
+  if (isReport && action.href) {
+    return (
+      <Link to={action.href} className={className} style={{ color: "var(--color-banned)" }}>
+        {content}
+      </Link>
     );
   }
 

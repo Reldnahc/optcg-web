@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { buildApiUrl } from "../api/client";
 
 const REPORT_TYPES = [
@@ -9,8 +10,10 @@ const REPORT_TYPES = [
 ];
 
 export function ReportIssue() {
-  const [type, setType] = useState("card_data");
-  const [cardNumber, setCardNumber] = useState("");
+  const [params] = useSearchParams();
+  const initialCard = params.get("card") || "";
+  const [type, setType] = useState(initialCard ? "card_data" : "card_data");
+  const [cardNumber, setCardNumber] = useState(initialCard);
   const [message, setMessage] = useState("");
   const [contact, setContact] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
