@@ -214,7 +214,7 @@ a:hover {
 .card-rules-tag--trigger {
   background: rgba(255, 230, 50, 0.98);
   color: #17150d;
-  border-radius: 0.25rem 0 0 0;
+  border-radius: 0.25rem 0 0 0.25rem;
   margin: -0.15rem 0 -0.15rem 0;
   padding: 0.15rem 1.4rem 0.15rem 0.3rem;
   line-height: 1.65;
@@ -239,6 +239,10 @@ a:hover {
 
 .trigger-block .card-rules-line:first-child .card-rules-tag--trigger {
   margin-left: -0.3rem;
+}
+
+.trigger-block--wraps .card-rules-tag--trigger {
+  border-radius: 0.25rem 0 0 0;
 }
 
 
