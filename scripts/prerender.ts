@@ -117,7 +117,7 @@ function ensureParentDir(filePath: string) {
   mkdirSync(dirname(filePath), { recursive: true });
 }
 
-function copyForwardUnchangedRoutes(routes: string[]) {
+function copyForwardUnchangedRoutes(routes: string[] = []) {
   if (!PREVIOUS_DIST_DIR || !existsSync(PREVIOUS_DIST_DIR)) {
     return;
   }
@@ -197,7 +197,10 @@ function selectRoutes(allRoutes: string[]): { changedRoutes: string[]; unchanged
 
     const plan = computeChangedRoutes(currentManifest, previousManifest);
     console.log(`Using manifest diff prerender mode (${plan.changed.length} changed routes, ${plan.unchanged.length} reused routes).`);
-    return plan;
+    return {
+      changedRoutes: plan.changed,
+      unchangedRoutes: plan.unchanged,
+    };
   }
 
   return { changedRoutes: allRoutes, unchangedRoutes: [] };
