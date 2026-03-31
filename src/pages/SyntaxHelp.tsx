@@ -34,7 +34,7 @@ const FILTER_SECTIONS: FilterSection[] = [
     filters: [
       { filter: "c:red", desc: "Color includes red", example: "c:red" },
       { filter: "c=red", desc: "Color is exactly red (no multicolor)", example: "c=red" },
-      { filter: "c:red,green", desc: "Has both red and green", example: "c:red,green" },
+      { filter: "c:red,green", desc: "Red or green", example: "c:red,green" },
       { filter: "c=red,green", desc: "Exactly red and green", example: "c=red,green" },
       { filter: "-c:purple", desc: "Not purple", example: "-c:purple" },
     ],
@@ -188,7 +188,7 @@ const SORT_EXAMPLES = [
 const COMBO_EXAMPLES = [
   { query: 'c:red t:character cost<=3 o:"draw"', desc: "Cheap red characters that draw cards", example: 'c:red t:character cost<=3 o:"draw"' },
   { query: "set:OP01 r:sr is:multicolor", desc: "Multicolor Super Rares from OP01", example: "set:OP01 r:sr is:multicolor" },
-  { query: "t:leader life>=5 (c:red OR c:green)", desc: "Red or green Leaders with 5+ life", example: "t:leader life>=5 (c:red OR c:green)" },
+  { query: "t:leader life>=5 c:red,green", desc: "Red or green Leaders with 5+ life", example: "t:leader life>=5 c:red,green" },
   { query: "legal:standard o:blocker power>=6000", desc: "Standard-legal blockers with 6000+ power", example: "legal:standard o:blocker power>=6000" },
   { query: 'trait:"Straw Hat Crew" -t:leader -t:event', desc: "Straw Hat characters and stages", example: 'trait:"Straw Hat Crew" -t:leader -t:event' },
   { query: "prints>=3 r:sr", desc: "Super Rares with 3+ printings", example: "prints>=3 r:sr" },

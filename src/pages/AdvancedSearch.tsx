@@ -245,7 +245,7 @@ export function AdvancedSearch() {
                   onChange={(e) => setColorMode(e.target.value as ":" | "=")}
                   className="ml-1 bg-bg-input border border-border rounded px-2 py-1 text-[13px] text-text-primary focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent/60"
                 >
-                  <option value=":">Includes all selected</option>
+                  <option value=":">Any selected color</option>
                   <option value="=">Exactly these colors</option>
                 </select>
               )}
