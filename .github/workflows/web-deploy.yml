@@ -51,7 +51,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Download previous deployed site snapshot
+        run: |
+          mkdir -p .previous-site
+          aws s3 sync "s3://${WEBSITE_BUCKET}" .previous-site \
+            --exclude "*" \
+            --include "*.html" \
+            --include "_meta/*" || true
+
       - name: Build site
+        env:
+          PREVIOUS_PRERENDER_MANIFEST_FILE: .previous-site/_meta/prerender-manifest.json
+          PREVIOUS_PRERENDER_DIST_DIR: .previous-site
         run: npm run build
 
       - name: Read CloudFront distribution id

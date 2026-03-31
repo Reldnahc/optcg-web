@@ -10,6 +10,7 @@ lerna-debug.log*
 node_modules
 dist
 public/sitemap.xml
+public/_meta/
 dist-ssr
 *.local
 

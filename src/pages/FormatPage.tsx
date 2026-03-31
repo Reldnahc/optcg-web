@@ -13,17 +13,16 @@ type DisplayBan = Omit<FormatDetail["bans"][number], "paired_with"> & {
 export function FormatPage() {
   const { name } = useParams<{ name: string }>();
   const { data, isLoading, error } = useFormat(name!);
+  const format = data?.data;
+
+  usePageMeta({
+    title: format?.name,
+    description: format?.description || (format ? `${format.name} - One Piece TCG format legality, banlists, and legal sets.` : undefined),
+  });
 
   if (isLoading) return <div className="p-8" aria-live="polite"><span className="sr-only">Loading format</span></div>;
   if (error) return <ErrorState message={(error as Error).message} />;
-  if (!data) return null;
-
-  const format = data.data;
-
-  usePageMeta({
-    title: format.name,
-    description: format.description || `${format.name} — One Piece TCG format legality, banlists, and legal sets.`,
-  });
+  if (!format) return null;
 
   const legalBlocks = format.blocks.filter((b) => b.legal);
   const rotatedBlocks = format.blocks.filter((b) => !b.legal);
@@ -31,15 +30,14 @@ export function FormatPage() {
 
   return (
     <PageContainer title={format.name} subtitle={format.description || undefined}>
-      {/* Legal blocks */}
       <section className="mb-6">
-        <h2 className="text-xs font-bold text-text-muted uppercase tracking-wider mb-2">
+        <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-text-muted">
           Legal Blocks ({legalBlocks.length})
         </h2>
         <div className="flex flex-wrap gap-2">
-          {legalBlocks.map((b) => (
-            <span key={b.block} className="text-sm text-legal bg-legal/10 border border-legal/20 rounded px-2.5 py-1">
-              Block {b.block}
+          {legalBlocks.map((block) => (
+            <span key={block.block} className="rounded px-2.5 py-1 text-sm text-legal bg-legal/10 border border-legal/20">
+              Block {block.block}
             </span>
           ))}
         </div>
@@ -47,16 +45,16 @@ export function FormatPage() {
 
       {rotatedBlocks.length > 0 && (
         <section className="mb-6">
-          <h2 className="text-xs font-bold text-text-muted uppercase tracking-wider mb-2">
+          <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-text-muted">
             Rotated Blocks ({rotatedBlocks.length})
           </h2>
           <div className="flex flex-wrap gap-2">
-            {rotatedBlocks.map((b) => (
-              <span key={b.block} className="text-sm text-text-muted bg-bg-card border border-border rounded px-2.5 py-1">
-                Block {b.block}
-                {b.rotated_at && (
-                  <span className="text-xs ml-1">
-                    ({new Date(b.rotated_at).toLocaleDateString("en-US", { month: "short", year: "numeric" })})
+            {rotatedBlocks.map((block) => (
+              <span key={block.block} className="rounded px-2.5 py-1 text-sm text-text-muted bg-bg-card border border-border">
+                Block {block.block}
+                {block.rotated_at && (
+                  <span className="ml-1 text-xs">
+                    ({new Date(block.rotated_at).toLocaleDateString("en-US", { month: "short", year: "numeric" })})
                   </span>
                 )}
               </span>
@@ -65,15 +63,14 @@ export function FormatPage() {
         </section>
       )}
 
-      {/* Banlist */}
       {format.bans.length > 0 && (
         <section>
-          <h2 className="text-xs font-bold text-text-muted uppercase tracking-wider mb-2">
-            Banned & Restricted Cards ({displayBans.length})
+          <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-text-muted">
+            Banned and Restricted Cards ({displayBans.length})
           </h2>
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-text-muted text-[12px] border-b border-border">
+              <tr className="border-b border-border text-left text-[12px] text-text-muted">
                 <th className="pb-1.5 font-medium">Card</th>
                 <th className="pb-1.5 font-medium">Status</th>
                 <th className="pb-1.5 font-medium">Date</th>
@@ -86,18 +83,33 @@ export function FormatPage() {
                 return (
                   <tr key={`${ban.card_number}-${ban.type}-${ban.banned_at}`} className="border-b border-border/50">
                     <td className="py-2">
-                      <CardHoverPreviewLink cardNumber={ban.card_number} className={`font-mono hover:text-link ${isFuture ? "text-text-secondary" : ""}`} previewPosition="top">
+                      <CardHoverPreviewLink
+                        cardNumber={ban.card_number}
+                        className={`font-mono hover:text-link ${isFuture ? "text-text-secondary" : ""}`}
+                        previewPosition="top"
+                      >
                         {ban.card_number}
                       </CardHoverPreviewLink>
                     </td>
                     <td className="py-2">
-                      <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-medium ${
-                        isFuture ? "border-accent/30 bg-accent/10 text-accent" :
-                        ban.type === "banned" ? "border-banned/30 bg-banned/10 text-banned" :
-                        ban.type === "restricted" ? "border-restricted/30 bg-restricted/10 text-restricted" :
-                        "border-pair/30 bg-pair/10 text-pair"
-                      }`}>
-                        {isFuture ? "Upcoming" : ban.type === "pair" ? "Pair Ban" : ban.type === "restricted" ? `Restricted (${ban.max_copies ?? 1})` : "Banned"}
+                      <span
+                        className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-medium ${
+                          isFuture
+                            ? "border-accent/30 bg-accent/10 text-accent"
+                            : ban.type === "banned"
+                              ? "border-banned/30 bg-banned/10 text-banned"
+                              : ban.type === "restricted"
+                                ? "border-restricted/30 bg-restricted/10 text-restricted"
+                                : "border-pair/30 bg-pair/10 text-pair"
+                        }`}
+                      >
+                        {isFuture
+                          ? "Upcoming"
+                          : ban.type === "pair"
+                            ? "Pair Ban"
+                            : ban.type === "restricted"
+                              ? `Restricted (${ban.max_copies ?? 1})`
+                              : "Banned"}
                       </span>
                     </td>
                     <td className={`py-2 ${isFuture ? "text-text-secondary" : "text-text-muted"}`}>
@@ -158,8 +170,8 @@ function mergeFormatBans(bans: FormatDetail["bans"]): DisplayBan[] {
 }
 
 function formatUTCDate(dateStr: string): string {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString("en-US", {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
