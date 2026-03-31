@@ -15,6 +15,9 @@ import { ApiDocs } from "./pages/ApiDocs";
 import { MissionStatement } from "./pages/MissionStatement";
 import { PrivacyPolicy } from "./pages/PrivacyPolicy";
 import { RandomRedirect } from "./pages/RandomRedirect";
+import { ProductBrowser } from "./pages/ProductBrowser";
+import { ReportIssue } from "./pages/ReportIssue";
+import { ScanProgress } from "./pages/ScanProgress";
 import { TermsOfUse } from "./pages/TermsOfUse";
 
 const queryClient = new QueryClient({
@@ -45,7 +48,10 @@ export default function App() {
             <Route path="/random-redirect" element={<RandomRedirect />} />
             <Route path="/api" element={<ApiDocs />} />
             <Route path="/mission" element={<MissionStatement />} />
+            <Route path="/products" element={<ProductBrowser />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/report" element={<ReportIssue />} />
+            <Route path="/scans" element={<ScanProgress />} />
             <Route path="/terms" element={<TermsOfUse />} />
           </Route>
         </Routes>

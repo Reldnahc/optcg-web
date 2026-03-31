@@ -4,7 +4,7 @@ export function Footer() {
   return (
     <footer className="border-t border-border mt-auto bg-bg-secondary">
       <div className="max-w-5xl mx-auto px-4 py-8">
-        <div className="mx-auto flex max-w-sm flex-col items-center gap-8 text-center text-sm md:grid md:max-w-[42rem] md:grid-cols-[12rem_12rem_12rem] md:justify-center md:items-start md:justify-items-center md:gap-x-12 md:gap-y-8">
+        <div className="mx-auto flex max-w-sm flex-col items-center gap-8 text-center text-sm md:grid md:max-w-[56rem] md:grid-cols-[12rem_12rem_12rem_12rem] md:justify-center md:items-start md:justify-items-center md:gap-x-8 md:gap-y-8">
           <div className="w-full max-w-[12rem] text-center">
             <h4 className="text-text-primary font-semibold mb-2">Explore</h4>
             <ul className="space-y-1 text-text-muted">
@@ -17,17 +17,26 @@ export function Footer() {
           <div className="w-full max-w-[12rem] text-center">
             <h4 className="text-text-primary font-semibold mb-2">Reference</h4>
             <ul className="space-y-1 text-text-muted">
-              <li><Link to="/sets" className="hover:text-text-secondary">All Sets</Link></li>
+              <li><Link to="/sets" className="hover:text-text-secondary">Sets</Link></li>
+              <li><Link to="/products" className="hover:text-text-secondary">Products</Link></li>
               <li><Link to="/formats" className="hover:text-text-secondary">Formats</Link></li>
-              <li><Link to="/don" className="hover:text-text-secondary">DON!! Cards</Link></li>
+              <li><Link to="/don" className="hover:text-text-secondary">DON!!</Link></li>
             </ul>
           </div>
           <div className="w-full max-w-[12rem] text-center">
             <h4 className="text-text-primary font-semibold mb-2">Resources</h4>
             <ul className="space-y-1 text-text-muted">
-              <li><Link to="/mission" className="hover:text-text-secondary">Mission</Link></li>
               <li><Link to="/search/syntax" className="hover:text-text-secondary">Syntax Guide</Link></li>
               <li><Link to="/api" className="hover:text-text-secondary">API Docs</Link></li>
+            </ul>
+          </div>
+          <div className="w-full max-w-[12rem] text-center">
+            <h4 className="text-text-primary font-semibold mb-2">Community</h4>
+            <ul className="space-y-1 text-text-muted">
+              <li><Link to="/mission" className="hover:text-text-secondary">Mission</Link></li>
+              <li><Link to="/scans" className="hover:text-text-secondary">Scan Progress</Link></li>
+              <li><Link to="/report" className="hover:text-text-secondary">Report Issue</Link></li>
+              <li><a href="https://discord.gg/poneglyph" target="_blank" rel="noopener noreferrer" className="hover:text-text-secondary">Discord</a></li>
             </ul>
           </div>
         </div>

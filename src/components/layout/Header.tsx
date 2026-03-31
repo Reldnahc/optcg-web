@@ -31,7 +31,6 @@ export function Header() {
           <NavLink to="/advanced">Advanced</NavLink>
           <NavLink to="/search/syntax">Syntax</NavLink>
           <NavLink to="/sets">Sets</NavLink>
-          <NavLink to="/don">DON!!</NavLink>
           <button
             onClick={() => navigate("/random-redirect")}
             className="inline-flex h-9 items-center rounded-md px-3 font-semibold text-text-secondary transition-colors hover:bg-bg-tertiary/70 hover:text-text-primary cursor-pointer"
@@ -59,7 +58,6 @@ export function Header() {
           <MobileLink to="/advanced" onClick={() => setMenuOpen(false)}>Advanced Search</MobileLink>
           <MobileLink to="/search/syntax" onClick={() => setMenuOpen(false)}>Syntax Guide</MobileLink>
           <MobileLink to="/sets" onClick={() => setMenuOpen(false)}>All Sets</MobileLink>
-          <MobileLink to="/don" onClick={() => setMenuOpen(false)}>DON!! Cards</MobileLink>
         </nav>
       )}
     </header>
