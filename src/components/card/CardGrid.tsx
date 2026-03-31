@@ -32,7 +32,7 @@ function CardThumbnail({ card }: { card: Card }) {
       to={cardLink(card)}
       className="group block hover:no-underline"
     >
-      <div className="relative rounded-lg overflow-hidden bg-bg-tertiary shadow-md group-hover:shadow-lg group-hover:shadow-black/30 transition-all duration-150 group-hover:-translate-y-0.5">
+      <div className="relative rounded-xl overflow-hidden bg-bg-tertiary shadow-md group-hover:shadow-lg group-hover:shadow-black/30 transition-all duration-150 group-hover:-translate-y-0.5">
         {thumbnailUrl ? (
           <img
             src={thumbnailUrl}

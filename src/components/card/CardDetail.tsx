@@ -258,15 +258,17 @@ export function CardDetailView({
             </Section>
           )}
 
-          <Section title="Tools">
-            <InfoPanel title="Actions" compact>
-              <div className="space-y-1.5">
-                {resolvedToolActions.map((action) => (
-                  <ToolActionRow key={action.key} action={action} />
-                ))}
-              </div>
-            </InfoPanel>
-          </Section>
+          <div className="hidden lg:block">
+            <Section title="Tools">
+              <InfoPanel title="Actions" compact>
+                <div className="space-y-1.5">
+                  {resolvedToolActions.map((action) => (
+                    <ToolActionRow key={action.key} action={action} />
+                  ))}
+                </div>
+              </InfoPanel>
+            </Section>
+          </div>
         </div>
 
         {/* Right: Print info */}
@@ -369,6 +371,18 @@ export function CardDetailView({
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="lg:hidden">
+        <Section title="Tools">
+          <InfoPanel title="Actions" compact>
+            <div className="space-y-1.5">
+              {resolvedToolActions.map((action) => (
+                <ToolActionRow key={action.key} action={action} />
+              ))}
+            </div>
+          </InfoPanel>
+        </Section>
       </div>
 
     </div>
@@ -655,13 +669,16 @@ function ToolActionRow({ action }: { action: ToolAction }) {
 
   if (isDownload && action.downloadName) {
     return (
-      <button
-        type="button"
-        onClick={() => triggerBlobDownload(action.href!, action.downloadName!)}
+      <a
+        href={action.href}
+        onClick={(e) => {
+          e.preventDefault();
+          triggerBlobDownload(action.href!, action.downloadName!);
+        }}
         className={className}
       >
         {content}
-      </button>
+      </a>
     );
   }
 
@@ -845,7 +862,7 @@ function CardImageViewer({
 
   return (
     <div>
-      <div className="rounded-xl overflow-hidden bg-bg-card shadow-lg shadow-black/40">
+      <div className="rounded-2xl overflow-hidden bg-bg-card shadow-lg shadow-black/40">
         {displayUrl ? (
           <img
             src={displayUrl}
