@@ -4,6 +4,7 @@ import { createServer } from "http";
 import { launch } from "puppeteer";
 
 const DIST = resolve(import.meta.dirname, "../dist");
+const SHOULD_SKIP_PRERENDER = process.env.CI !== "true" && process.env.PRERENDER_LOCAL !== "1";
 const CURRENT_MANIFEST_PATH = resolve(DIST, "_meta/prerender-manifest.json");
 const PREVIOUS_MANIFEST_PATH = process.env.PREVIOUS_PRERENDER_MANIFEST_FILE
   ? resolve(process.cwd(), process.env.PREVIOUS_PRERENDER_MANIFEST_FILE)
@@ -306,6 +307,12 @@ function writePlanSummary(changedRoutes: string[], unchangedRoutes: string[]) {
 }
 
 async function main() {
+  if (SHOULD_SKIP_PRERENDER) {
+    console.log("Skipping prerender for local build.");
+    console.log("Set PRERENDER_LOCAL=1 to force local prerendering.");
+    return;
+  }
+
   const allRoutes = parseRoutesFromSitemap();
   const { changedRoutes, unchangedRoutes } = selectRoutes(allRoutes);
 

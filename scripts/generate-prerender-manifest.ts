@@ -5,6 +5,7 @@ import { resolve, relative } from "path";
 const API = process.env.VITE_API_URL || "https://api.poneglyph.one";
 const OUT = resolve(import.meta.dirname, "../public/_meta/prerender-manifest.json");
 const SRC_ROOT = resolve(import.meta.dirname, "../src");
+const SHOULD_SKIP_PRERENDER = process.env.CI !== "true" && process.env.PRERENDER_LOCAL !== "1";
 
 type RenderGroup =
   | "static"
@@ -109,6 +110,16 @@ function hashSourcePaths(paths: string[]): string {
 }
 
 async function main() {
+  if (SHOULD_SKIP_PRERENDER) {
+    if (existsSync(OUT)) {
+      unlinkSync(OUT);
+    }
+
+    console.log("Skipping prerender manifest generation for local build.");
+    console.log("Set PRERENDER_LOCAL=1 to force local prerendering.");
+    return;
+  }
+
   console.log("Generating prerender manifest...");
 
   const render_group_hashes: Record<RenderGroup, string> = {

@@ -83,10 +83,10 @@ export function useFormat(name: string) {
   });
 }
 
-export function useScanProgress() {
+export function useScanProgress(lang = "en") {
   return useQuery({
-    queryKey: ["scans", "progress"],
-    queryFn: () => apiFetch<ScanProgressResponse>("/scans/progress"),
+    queryKey: ["scans", "progress", lang],
+    queryFn: () => apiFetch<ScanProgressResponse>("/scans/progress", { lang }),
     staleTime: 5 * 60 * 1000,
   });
 }

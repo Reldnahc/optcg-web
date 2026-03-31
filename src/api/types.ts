@@ -143,6 +143,7 @@ export interface ScanProgressSet {
 
 export interface ScanProgressResponse {
   data: {
+    language: string;
     total_cards: number;
     total_scanned_cards: number;
     total_missing_image_cards: number;
