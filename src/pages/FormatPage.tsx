@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useFormat } from "../api/hooks";
 import { CardHoverPreviewLink } from "../components/card/CardHoverPreviewLink";
@@ -106,20 +107,20 @@ export function FormatPage() {
         </section>
       )}
 
-      {activeEntries.length > 0 && (
-        <BanSection
-          title={`Current Restrictions (${activeEntries.length})`}
-          subtitle="Only entries that are currently effective are shown here."
-          entries={activeEntries}
-        />
-      )}
-
       {upcomingEntries.length > 0 && (
         <BanSection
           title={`Upcoming Changes (${upcomingEntries.length})`}
           subtitle="Scheduled changes that are announced but not active yet."
           entries={upcomingEntries}
           upcoming
+        />
+      )}
+
+      {activeEntries.length > 0 && (
+        <BanSection
+          title={`Current Restrictions (${activeEntries.length})`}
+          subtitle="Only entries that are currently effective are shown here."
+          entries={activeEntries}
         />
       )}
     </PageContainer>
@@ -190,6 +191,22 @@ function BanSection({
   entries: DisplayBan[];
   upcoming?: boolean;
 }) {
+  const [sort, setSort] = useState<BanTableSort>("date");
+  const [order, setOrder] = useState<"asc" | "desc">(upcoming ? "asc" : "desc");
+  const sortedEntries = sortBanEntries(entries, sort, order);
+
+  function updateSort(nextSort: BanTableSort) {
+    if (sort === nextSort) {
+      setOrder((current) => current === "asc" ? "desc" : "asc");
+      return;
+    }
+
+    setSort(nextSort);
+    setOrder(nextSort === "date"
+      ? (upcoming ? "asc" : "desc")
+      : "asc");
+  }
+
   return (
     <section className="mb-6 last:mb-0">
       <div className="mb-2">
@@ -197,17 +214,43 @@ function BanSection({
         <p className="mt-1 text-sm text-text-secondary">{subtitle}</p>
       </div>
       <div className="overflow-x-auto rounded-lg border border-border bg-bg-card/30">
-        <table className="w-full min-w-[42rem] text-sm">
+        <table className="w-full min-w-[42rem] table-fixed text-sm">
+          <colgroup>
+            <col className="w-[22%]" />
+            <col className="w-[20%]" />
+            <col className="w-[16%]" />
+            <col className="w-[42%]" />
+          </colgroup>
           <thead>
             <tr className="border-b border-border text-left text-[12px] text-text-muted">
-              <th className="px-3 py-2 font-medium">Card</th>
-              <th className="px-3 py-2 font-medium">Status</th>
-              <th className="px-3 py-2 font-medium">{upcoming ? "Effective" : "Since"}</th>
-              <th className="px-3 py-2 font-medium">Details</th>
+              <SortableBanHeader
+                active={sort === "card"}
+                label="Card"
+                order={order}
+                onClick={() => updateSort("card")}
+              />
+              <SortableBanHeader
+                active={sort === "status"}
+                label="Status"
+                order={order}
+                onClick={() => updateSort("status")}
+              />
+              <SortableBanHeader
+                active={sort === "date"}
+                label={upcoming ? "Effective" : "Since"}
+                order={order}
+                onClick={() => updateSort("date")}
+              />
+              <SortableBanHeader
+                active={sort === "details"}
+                label="Details"
+                order={order}
+                onClick={() => updateSort("details")}
+              />
             </tr>
           </thead>
           <tbody>
-            {entries.map((ban) => (
+            {sortedEntries.map((ban) => (
               <tr key={`${ban.card_number}-${ban.type}-${ban.banned_at}`} className="border-b border-border/50 last:border-b-0">
                 <td className="px-3 py-2 align-top">
                   <CardHoverPreviewLink
@@ -238,6 +281,57 @@ function BanSection({
   );
 }
 
+type BanTableSort = "card" | "status" | "date" | "details";
+
+function sortBanEntries(entries: DisplayBan[], sort: BanTableSort, order: "asc" | "desc"): DisplayBan[] {
+  return [...entries].sort((a, b) => {
+    let delta = 0;
+
+    if (sort === "card") {
+      delta = a.card_number.localeCompare(b.card_number, undefined, { numeric: true });
+    } else if (sort === "status") {
+      delta = getBanStatusLabel(a).localeCompare(getBanStatusLabel(b), undefined, { numeric: true });
+    } else if (sort === "date") {
+      delta = new Date(a.banned_at).getTime() - new Date(b.banned_at).getTime();
+    } else {
+      delta = getBanDetailsText(a).localeCompare(getBanDetailsText(b), undefined, { numeric: true });
+    }
+
+    if (delta !== 0) {
+      return order === "asc" ? delta : -delta;
+    }
+
+    return a.card_number.localeCompare(b.card_number, undefined, { numeric: true });
+  });
+}
+
+function SortableBanHeader({
+  active,
+  label,
+  order,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  order: "asc" | "desc";
+  onClick: () => void;
+}) {
+  return (
+    <th className="px-3 py-2 font-medium">
+      <button
+        type="button"
+        onClick={onClick}
+        className={`flex items-center gap-2 ${active ? "text-text-primary" : "text-text-muted hover:text-text-primary"}`}
+      >
+        <span>{label}</span>
+        <span className="inline-block w-4 text-center font-mono text-[11px]">
+          {active ? (order === "asc" ? "^" : "v") : ""}
+        </span>
+      </button>
+    </th>
+  );
+}
+
 function StatusBadge({ ban, upcoming }: { ban: DisplayBan; upcoming: boolean }) {
   const className = upcoming
     ? "border-accent/30 bg-accent/10 text-accent"
@@ -247,11 +341,7 @@ function StatusBadge({ ban, upcoming }: { ban: DisplayBan; upcoming: boolean }) 
         ? "border-restricted/30 bg-restricted/10 text-restricted"
         : "border-pair/30 bg-pair/10 text-pair";
 
-  const label = ban.type === "pair"
-    ? "Pair Ban"
-    : ban.type === "restricted"
-      ? `Restricted (${ban.max_copies ?? 1})`
-      : "Banned";
+  const label = getBanStatusLabel(ban);
 
   return (
     <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-medium ${className}`}>
@@ -268,6 +358,22 @@ function formatUTCDate(dateStr: string): string {
     year: "numeric",
     timeZone: "UTC",
   });
+}
+
+function getBanStatusLabel(ban: DisplayBan): string {
+  return ban.type === "pair"
+    ? "Pair Ban"
+    : ban.type === "restricted"
+      ? `Restricted (${ban.max_copies ?? 1})`
+      : "Banned";
+}
+
+function getBanDetailsText(ban: DisplayBan): string {
+  if (ban.type === "pair" && ban.paired_with.length > 0) {
+    return `with ${ban.paired_with.join(", ")}`;
+  }
+
+  return ban.reason || "";
 }
 
 function renderPairedCards(cardNumbers: string[], muted = false) {
