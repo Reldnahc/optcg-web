@@ -129,7 +129,7 @@ export function CardDetailView({
 
   return (
     <div className={`${DEFAULT_PAGE_CONTAINER_CLASS} pt-4 pb-6`}>
-      <div className="flex flex-col lg:flex-row gap-8">
+      <div className="flex flex-col lg:flex-row gap-5 lg:gap-3">
         {/* Left: Card Image */}
         <div className="lg:w-[320px] xl:w-[360px] shrink-0">
           <CardImageViewer
@@ -141,7 +141,7 @@ export function CardDetailView({
         </div>
 
         {/* Middle: Game info */}
-        <div className="min-w-0 flex-[1.15]">
+        <div className="min-w-0 flex-[1.4]">
           {/* Name + type line */}
           <div className="border-b border-border pb-3 mb-4">
             <div className="flex items-baseline gap-3">
@@ -272,7 +272,7 @@ export function CardDetailView({
         </div>
 
         {/* Right: Print info */}
-        <div className="lg:w-[320px] xl:w-[360px] shrink-0 space-y-4">
+        <div className="lg:w-[280px] xl:w-[320px] shrink-0 space-y-4">
           {languageSwitcher && (
             <div className="hidden sm:flex sm:justify-end">
               <div className="flex gap-px rounded-md border border-border bg-bg-tertiary/30 p-px">
