@@ -11,6 +11,7 @@ import {
 } from "../components/format/formatLegality";
 import { ErrorState } from "../components/layout/ErrorState";
 import { PageContainer } from "../components/layout/PageContainer";
+import { DataTable, SortableTableHeader } from "../components/table/DataTable";
 import { usePageMeta } from "../hooks/usePageMeta";
 
 export function FormatPage() {
@@ -213,8 +214,7 @@ function BanSection({
         <h2 className="text-xs font-bold uppercase tracking-wider text-text-muted">{title}</h2>
         <p className="mt-1 text-sm text-text-secondary">{subtitle}</p>
       </div>
-      <div className="overflow-x-auto rounded-lg border border-border bg-bg-card/30">
-        <table className="w-full min-w-[42rem] table-fixed text-sm">
+      <DataTable minWidthClass="min-w-[42rem]">
           <colgroup>
             <col className="w-[22%]" />
             <col className="w-[20%]" />
@@ -223,25 +223,25 @@ function BanSection({
           </colgroup>
           <thead>
             <tr className="border-b border-border text-left text-[12px] text-text-muted">
-              <SortableBanHeader
+              <SortableTableHeader
                 active={sort === "card"}
                 label="Card"
                 order={order}
                 onClick={() => updateSort("card")}
               />
-              <SortableBanHeader
+              <SortableTableHeader
                 active={sort === "status"}
                 label="Status"
                 order={order}
                 onClick={() => updateSort("status")}
               />
-              <SortableBanHeader
+              <SortableTableHeader
                 active={sort === "date"}
                 label={upcoming ? "Effective" : "Since"}
                 order={order}
                 onClick={() => updateSort("date")}
               />
-              <SortableBanHeader
+              <SortableTableHeader
                 active={sort === "details"}
                 label="Details"
                 order={order}
@@ -275,8 +275,7 @@ function BanSection({
               </tr>
             ))}
           </tbody>
-        </table>
-      </div>
+      </DataTable>
     </section>
   );
 }
@@ -303,33 +302,6 @@ function sortBanEntries(entries: DisplayBan[], sort: BanTableSort, order: "asc" 
 
     return a.card_number.localeCompare(b.card_number, undefined, { numeric: true });
   });
-}
-
-function SortableBanHeader({
-  active,
-  label,
-  order,
-  onClick,
-}: {
-  active: boolean;
-  label: string;
-  order: "asc" | "desc";
-  onClick: () => void;
-}) {
-  return (
-    <th className="px-3 py-2 font-medium">
-      <button
-        type="button"
-        onClick={onClick}
-        className={`flex items-center gap-2 ${active ? "text-text-primary" : "text-text-muted hover:text-text-primary"}`}
-      >
-        <span>{label}</span>
-        <span className="inline-block w-4 text-center font-mono text-[11px]">
-          {active ? (order === "asc" ? "^" : "v") : ""}
-        </span>
-      </button>
-    </th>
-  );
 }
 
 function StatusBadge({ ban, upcoming }: { ban: DisplayBan; upcoming: boolean }) {
