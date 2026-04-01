@@ -130,12 +130,46 @@ function normalizeRouteList(value: unknown): string[] {
   return [];
 }
 
+function extractCurrentBuildAssetTags(): string[] {
+  const indexPath = resolve(DIST, "index.html");
+  if (!existsSync(indexPath)) {
+    return [];
+  }
+
+  const html = readFileSync(indexPath, "utf-8");
+  return html.match(/<script[^>]+src="\/assets\/[^"]+"[^>]*><\/script>|<link[^>]+href="\/assets\/[^"]+"[^>]*>/g) ?? [];
+}
+
+function refreshHtmlAssetTags(filePath: string, currentAssetTags: string[]) {
+  if (currentAssetTags.length === 0 || !existsSync(filePath)) {
+    return;
+  }
+
+  const html = readFileSync(filePath, "utf-8");
+  if (!html.includes("</head>")) {
+    return;
+  }
+
+  const withoutOldAssetTags = html
+    .replace(/\s*<script[^>]+src="\/assets\/[^"]+"[^>]*><\/script>\s*/g, "\n")
+    .replace(/\s*<link[^>]+href="\/assets\/[^"]+"[^>]*>\s*/g, "\n");
+
+  const nextHtml = withoutOldAssetTags.replace(
+    "</head>",
+    `${currentAssetTags.map((tag) => `    ${tag}`).join("\n")}\n  </head>`,
+  );
+
+  writeFileSync(filePath, nextHtml, "utf-8");
+}
+
 function copyForwardUnchangedRoutes(routes: unknown) {
   const normalizedRoutes = normalizeRouteList(routes);
 
   if (!PREVIOUS_DIST_DIR || !existsSync(PREVIOUS_DIST_DIR)) {
     return;
   }
+
+  const currentAssetTags = extractCurrentBuildAssetTags();
 
   for (const route of normalizedRoutes) {
     const sourcePath = routeToDistPath(route, PREVIOUS_DIST_DIR);
@@ -147,6 +181,7 @@ function copyForwardUnchangedRoutes(routes: unknown) {
 
     ensureParentDir(targetPath);
     copyFileSync(sourcePath, targetPath);
+    refreshHtmlAssetTags(targetPath, currentAssetTags);
   }
 }
 
