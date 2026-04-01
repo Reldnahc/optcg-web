@@ -96,46 +96,6 @@ a:hover {
   border-radius: 4px;
 }
 
-.hex-filter-expand,
-.hex-filter-collapse {
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(0);
-  opacity: 0;
-}
-
-.hex-filter-expand {
-  animation: hex-scale-in 150ms ease-out forwards;
-}
-
-.hex-filter-collapse {
-  transform: translate(-50%, -50%) scale(1);
-  opacity: 1;
-  animation: hex-scale-out 120ms ease-in forwards;
-}
-
-@keyframes hex-scale-in {
-  0% {
-    transform: translate(-50%, -50%) scale(0.25);
-    opacity: 0;
-  }
-  100% {
-    transform: translate(-50%, -50%) scale(1);
-    opacity: 1;
-  }
-}
-
-@keyframes hex-scale-out {
-  0% {
-    transform: translate(-50%, -50%) scale(1);
-    opacity: 1;
-  }
-  100% {
-    transform: translate(-50%, -50%) scale(0.25);
-    opacity: 0;
-  }
-}
-
 /* Card effect text styling */
 .effect-text {
   font-family: var(--font-sans);

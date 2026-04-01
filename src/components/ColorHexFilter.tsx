@@ -1,7 +1,5 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-// Color order: segment 0 = top-right face, going clockwise
-// Matches the OPTCG hex logo arrangement
 const SEGMENTS = [
   { name: "red", fill: "var(--color-op-red)" },
   { name: "green", fill: "var(--color-op-green)" },
@@ -9,12 +7,17 @@ const SEGMENTS = [
   { name: "purple", fill: "var(--color-op-purple)" },
   { name: "black", fill: "var(--color-op-black)" },
   { name: "yellow", fill: "var(--color-op-yellow)" },
-];
+] as const;
 
 const CX = 50;
 const CY = 50;
 const R_OUTER = 46;
 const R_INNER = 14;
+const HEX_STROKE = "#14161c";
+const OPEN_SIZE_CLASS = "h-24 w-24";
+const CLOSED_SIZE_CLASS = "h-14 w-14";
+const COLLAPSED_SCALE = 14 / 24;
+const CLOSE_DELAY_MS = 90;
 
 function hexVertex(cx: number, cy: number, r: number, i: number): [number, number] {
   const angle = (Math.PI / 180) * (i * 60 - 90);
@@ -23,147 +26,203 @@ function hexVertex(cx: number, cy: number, r: number, i: number): [number, numbe
 
 const outerVerts = Array.from({ length: 6 }, (_, i) => hexVertex(CX, CY, R_OUTER, i));
 const innerVerts = Array.from({ length: 6 }, (_, i) => hexVertex(CX, CY, R_INNER, i));
+const outerHexPoints = outerVerts.map(([x, y]) => `${x},${y}`).join(" ");
+const innerHexPoints = innerVerts.map(([x, y]) => `${x},${y}`).join(" ");
 
-// Each segment is a trapezoid: inner[i] → outer[i] → outer[i+1] → inner[i+1]
-const segmentPaths = SEGMENTS.map((seg, i) => {
+const segmentPaths = SEGMENTS.map((segment, i) => {
   const next = (i + 1) % 6;
   const [ix1, iy1] = innerVerts[i];
   const [ox1, oy1] = outerVerts[i];
   const [ox2, oy2] = outerVerts[next];
   const [ix2, iy2] = innerVerts[next];
   return {
-    ...seg,
+    ...segment,
     d: `M${ix1},${iy1} L${ox1},${oy1} L${ox2},${oy2} L${ix2},${iy2}Z`,
   };
 });
-
-const outerHexPoints = outerVerts.map(([x, y]) => `${x},${y}`).join(" ");
-const innerHexPoints = innerVerts.map(([x, y]) => `${x},${y}`).join(" ");
-
-// Detect coarse pointer (touch device) vs fine pointer (mouse)
-function useHasHover() {
-  const [hasHover, setHasHover] = useState(() =>
-    typeof window !== "undefined" && window.matchMedia("(hover: hover)").matches,
-  );
-  useEffect(() => {
-    const mq = window.matchMedia("(hover: hover)");
-    const handler = (e: MediaQueryListEvent) => setHasHover(e.matches);
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
-  }, []);
-  return hasHover;
-}
 
 interface Props {
   selected: string[];
   onChange: (colors: string[]) => void;
 }
 
-export function ColorHexFilter({ selected, onChange }: Props) {
-  const [visible, setVisible] = useState(false);
-  const [closing, setClosing] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const hasHover = useHasHover();
+function useHasHover() {
+  const [hasHover, setHasHover] = useState(() =>
+    typeof window !== "undefined" && window.matchMedia("(hover: hover)").matches,
+  );
 
-  const expanded = visible || closing;
-
-  const open = useCallback(() => {
-    setClosing(false);
-    setVisible(true);
+  useEffect(() => {
+    const mq = window.matchMedia("(hover: hover)");
+    const handler = (event: MediaQueryListEvent) => setHasHover(event.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
   }, []);
 
-  const close = useCallback(() => {
-    if (!visible) return;
-    setClosing(true);
-    setVisible(false);
-  }, [visible]);
+  return hasHover;
+}
 
-  const handleAnimationEnd = useCallback(() => {
-    if (closing) setClosing(false);
-  }, [closing]);
+export function ColorHexFilter({ selected, onChange }: Props) {
+  const hasHover = useHasHover();
+  const [isOpen, setIsOpen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const closeDelayTimeoutRef = useRef<number | null>(null);
 
-  // Close on outside tap (touch devices)
+  const clearCloseDelayTimeout = useCallback(() => {
+    if (closeDelayTimeoutRef.current != null) {
+      window.clearTimeout(closeDelayTimeoutRef.current);
+      closeDelayTimeoutRef.current = null;
+    }
+  }, []);
+
+  const openPicker = useCallback(() => {
+    clearCloseDelayTimeout();
+    setIsClosing(false);
+    setIsOpen(true);
+  }, [clearCloseDelayTimeout]);
+
+  const closePicker = useCallback(() => {
+    clearCloseDelayTimeout();
+    setIsOpen(false);
+    setIsClosing(true);
+  }, [clearCloseDelayTimeout]);
+
+  const scheduleClose = useCallback(() => {
+    clearCloseDelayTimeout();
+    closeDelayTimeoutRef.current = window.setTimeout(() => {
+      closeDelayTimeoutRef.current = null;
+      closePicker();
+    }, CLOSE_DELAY_MS);
+  }, [clearCloseDelayTimeout, closePicker]);
+
+  useEffect(() => () => {
+    clearCloseDelayTimeout();
+  }, [clearCloseDelayTimeout]);
+
   useEffect(() => {
-    if (!visible || hasHover) return;
-    const handler = (e: PointerEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        close();
+    if (!isOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        closePicker();
       }
     };
-    document.addEventListener("pointerdown", handler);
-    return () => document.removeEventListener("pointerdown", handler);
-  }, [visible, hasHover, close]);
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closePicker();
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [closePicker, isOpen]);
 
   const hasSelection = selected.length > 0;
+  const isExpandedLayerVisible = isOpen || isClosing;
 
-  const toggle = (name: string) => {
+  const toggleColor = useCallback((name: string) => {
     onChange(
       selected.includes(name)
-        ? selected.filter((c) => c !== name)
+        ? selected.filter((color) => color !== name)
         : [...selected, name],
     );
-  };
+  }, [onChange, selected]);
 
   const segmentFill = (name: string, fill: string) =>
     hasSelection && !selected.includes(name) ? "#111318" : fill;
 
-  const renderHex = (size: string, strokeOuter: number, gapStroke: number, interactive: boolean) => (
-    <svg viewBox="0 0 100 100" className={`${size} block`}>
-      {segmentPaths.map((p) => (
+  const segmentOpacity = (name: string) => {
+    if (!hasSelection) {
+      return 0.28;
+    }
+
+    return selected.includes(name) ? 1 : 0.16;
+  };
+
+  const renderHex = (interactive: boolean, strokeOuter: number, gapStroke: number) => (
+    <svg viewBox="0 0 100 100" className="block h-full w-full">
+      {segmentPaths.map((segment) => (
         <path
-          key={p.name}
-          d={p.d}
-          fill={segmentFill(p.name, p.fill)}
-          stroke="#242731"
+          key={segment.name}
+          d={segment.d}
+          fill={segmentFill(segment.name, segment.fill)}
+          fillOpacity={segmentOpacity(segment.name)}
+          stroke={HEX_STROKE}
           strokeWidth={gapStroke}
           strokeLinejoin="round"
           className={interactive ? "cursor-pointer" : ""}
-          style={{ transition: "fill 150ms" }}
-          onClick={interactive ? () => toggle(p.name) : undefined}
+          style={{ transition: "fill 150ms, fill-opacity 150ms" }}
+          onClick={interactive ? (event) => {
+            event.stopPropagation();
+            toggleColor(segment.name);
+          } : undefined}
         />
       ))}
-      {/* Center black hexagon */}
       <polygon
         points={innerHexPoints}
         fill="#111318"
         className={interactive ? "cursor-pointer" : ""}
-        onClick={interactive ? () => close() : undefined}
+        onClick={interactive ? (event) => {
+          event.stopPropagation();
+          closePicker();
+        } : undefined}
       />
-      {/* Thick outer outline */}
       <polygon
         points={outerHexPoints}
         fill="none"
-        stroke="#242731"
+        stroke={HEX_STROKE}
         strokeWidth={strokeOuter}
         strokeLinejoin="round"
       />
     </svg>
   );
 
-  // PC: hover to open/close. Mobile: tap to toggle.
-  const containerProps = hasHover
-    ? { onMouseEnter: open, onMouseLeave: close }
-    : {};
+  const handleExpandedTransitionEnd = useCallback(() => {
+    if (!isOpen && isClosing) {
+      setIsClosing(false);
+    }
+  }, [isClosing, isOpen]);
 
   return (
-    <div ref={containerRef} className="relative inline-flex items-center" {...containerProps}>
+    <div ref={containerRef} className="relative inline-flex h-14 w-14 shrink-0 items-center justify-center">
       <button
         type="button"
-        onClick={hasHover ? undefined : () => (visible ? close() : open())}
-        className="w-14 h-14 shrink-0"
-        title="Filter by color"
+        aria-expanded={isOpen}
+        aria-label="Filter by color"
+        onClick={hasHover ? undefined : () => (isOpen ? closePicker() : openPicker())}
+        onPointerEnter={hasHover ? openPicker : undefined}
+        onPointerLeave={hasHover ? scheduleClose : undefined}
+        className={`${CLOSED_SIZE_CLASS} relative z-10 rounded-full transition-opacity duration-150 ${
+          isExpandedLayerVisible ? "opacity-0 pointer-events-none" : "opacity-100"
+        }`}
       >
-        {renderHex("w-full h-full", 7, 2.5, false)}
+        {renderHex(false, 7, 2.5)}
       </button>
 
-      {expanded && (
-        <div
-          className={`absolute z-50 ${closing ? "hex-filter-collapse" : "hex-filter-expand"}`}
-          onAnimationEnd={handleAnimationEnd}
+      <div
+        className={`absolute left-1/2 top-1/2 z-20 transition-transform duration-250 ease-out ${
+          !isOpen && !isClosing ? "pointer-events-none" : ""
+        }`}
+        style={{ transform: `translate(-50%, -50%) scale(${isOpen ? 1 : COLLAPSED_SCALE})` }}
+        onPointerEnter={hasHover ? openPicker : undefined}
+        onPointerLeave={hasHover ? scheduleClose : undefined}
+        onTransitionEnd={handleExpandedTransitionEnd}
+      >
+        <button
+          type="button"
+          tabIndex={isOpen ? 0 : -1}
+          onClick={hasHover ? undefined : () => closePicker()}
+          className={`${OPEN_SIZE_CLASS} block rounded-full`}
         >
-          {renderHex("w-24 h-24 drop-shadow-lg", 6, 2, !closing)}
-        </div>
-      )}
+          {renderHex(isOpen, 6, 2)}
+        </button>
+      </div>
     </div>
   );
 }

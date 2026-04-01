@@ -270,34 +270,33 @@ export function Search() {
       </div>
 
       {/* Desktop: inline controls */}
-      <div className="hidden sm:flex flex-wrap items-center gap-3 mb-4 text-[13px]">
-        <ColorHexFilter selected={selectedColors} onChange={setColors} />
-
-        <div className="flex flex-wrap items-center gap-3 flex-1 min-w-0">
-          <div className="text-text-secondary">
-            {isLoading && <span className="sr-only">Searching</span>}
-            {pagination && (
-              <>
-                {pagination.total.toLocaleString()} {unique === "cards" ? (pagination.total === 1 ? "card" : "cards") : (pagination.total === 1 ? "print" : "prints")}
-                {q && <> where <span className="text-text-primary">{q}</span></>}
-                {showsAppliedSortNote && appliedSortMeta && (
-                  <>
-                    {" "}&middot; applied sort{" "}
-                    <span className="text-text-primary">
-                      {SORT_LABELS[appliedSortMeta.sort_applied] || appliedSortMeta.sort_applied}
-                    </span>
-                    {appliedSortMeta.sort_applied !== "relevance" && (
-                      <> ({appliedSortMeta.order_applied})</>
-                    )}
-                  </>
-                )}
-              </>
-            )}
-          </div>
-
-          <div className="flex items-center gap-3 ml-auto">
+      <div className="hidden sm:block mb-4 text-[13px]">
+        <div className="flex items-center justify-between gap-3">
+          <ColorHexFilter selected={selectedColors} onChange={setColors} />
+          <div className="flex items-center gap-3">
             {controls}
           </div>
+        </div>
+
+        <div className="mt-2 text-center text-text-secondary">
+          {isLoading && <span className="sr-only">Searching</span>}
+          {pagination && (
+            <>
+              {pagination.total.toLocaleString()} {unique === "cards" ? (pagination.total === 1 ? "card" : "cards") : (pagination.total === 1 ? "print" : "prints")}
+              {q && <> where <span className="text-text-primary">{q}</span></>}
+              {showsAppliedSortNote && appliedSortMeta && (
+                <>
+                  {" "}&middot; applied sort{" "}
+                  <span className="text-text-primary">
+                    {SORT_LABELS[appliedSortMeta.sort_applied] || appliedSortMeta.sort_applied}
+                  </span>
+                  {appliedSortMeta.sort_applied !== "relevance" && (
+                    <> ({appliedSortMeta.order_applied})</>
+                  )}
+                </>
+              )}
+            </>
+          )}
         </div>
       </div>
 
