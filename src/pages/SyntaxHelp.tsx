@@ -18,6 +18,9 @@ const FILTER_SECTIONS: FilterSection[] = [
     filters: [
       { filter: "luffy", desc: "Free-text search for 'luffy' across name, text, set, product, artist, and more", example: "luffy" },
       { filter: '"Monkey D. Luffy"', desc: "Free-text phrase search. Quotes keep the words together, but this still searches more than just the card name.", example: '"Monkey D. Luffy"' },
+      { filter: "text:blocker", desc: "Explicit free-text search across all fields (alias: any)", example: "text:blocker" },
+      { filter: "OP01-001", desc: "Typing a card number directly searches for that card", example: "OP01-001" },
+      { filter: "OP01", desc: "Typing a set code directly filters to that set", example: "OP01" },
     ],
   },
   {
@@ -68,12 +71,14 @@ const FILTER_SECTIONS: FilterSection[] = [
     ],
   },
   {
-    title: "Set & Product",
+    title: "Set, Product & Card Number",
     filters: [
       { filter: "set:OP01", desc: "Cards from set OP01", example: "set:OP01" },
       { filter: "set:ST01", desc: "Cards from Starter Deck 01", example: "set:ST01" },
       { filter: 'product:"Romance Dawn"', desc: "Cards from a product (fuzzy match)", example: 'product:"Romance Dawn"' },
       { filter: 'product="One Piece Card the Best"', desc: "Cards from a product (exact match)", example: 'product="One Piece Card the Best"' },
+      { filter: "card_number:OP01-001", desc: "Explicit card number filter", example: "card_number:OP01-001" },
+      { filter: "new:OP01", desc: "Cards first appearing in set OP01", example: "new:OP01" },
     ],
   },
   {
@@ -117,9 +122,17 @@ const FILTER_SECTIONS: FilterSection[] = [
       { filter: "is:multicolor", desc: "Multi-color cards", example: "is:multicolor" },
       { filter: "is:vanilla", desc: "Cards with no effect text", example: "is:vanilla" },
       { filter: "is:reprint", desc: "Cards that are reprints", example: "is:reprint" },
+      { filter: "is:sp", desc: "Cards with an SP variant", example: "is:sp" },
+      { filter: "is:alt", desc: "Cards with an Alternate Art variant", example: "is:alt" },
+      { filter: "is:manga", desc: "Cards with a Manga Art variant", example: "is:manga" },
+      { filter: "is:fullart", desc: "Cards with a Full Art variant (alias: fa)", example: "is:fullart" },
+      { filter: "is:tr", desc: "Cards with a TR variant", example: "is:tr" },
+      { filter: "not:reprint", desc: "Not a reprint (shorthand for -is:reprint)", example: "not:reprint" },
       { filter: "has:trigger", desc: "Cards with a trigger effect", example: "has:trigger" },
       { filter: "has:effect", desc: "Non-vanilla cards", example: "has:effect" },
       { filter: "has:price", desc: "Cards with TCGPlayer price data", example: "has:price" },
+      { filter: "has:sp", desc: "Card has any SP printing", example: "has:sp" },
+      { filter: "has:alt", desc: "Card has any Alternate Art printing", example: "has:alt" },
     ],
   },
   {
@@ -165,7 +178,7 @@ const LOGIC = [
 ];
 
 const SORT_FIELDS = [
-  { value: "card_number", desc: "Card number (default)", example: "order:card_number" },
+  { value: "card_number", desc: "Card number (default). Aliases: number, set", example: "order:card_number" },
   { value: "name", desc: "Card name alphabetically", example: "order:name" },
   { value: "cost", desc: "Cost value", example: "order:cost" },
   { value: "power", desc: "Power value", example: "order:power" },
@@ -173,7 +186,8 @@ const SORT_FIELDS = [
   { value: "rarity", desc: "Rarity", example: "order:rarity" },
   { value: "color", desc: "Color", example: "order:color" },
   { value: "artist", desc: "Artist name from the best matching print", example: "order:artist" },
-  { value: "market_price", desc: "TCGPlayer market price", example: "order:market_price" },
+  { value: "market_price", desc: "TCGPlayer market price. Alias: usd", example: "order:market_price" },
+  { value: "relevance", desc: "Relevance ranking (only with a search query)", example: "luffy order:relevance" },
 ];
 
 const SORT_EXAMPLES = [
@@ -262,7 +276,7 @@ export function SyntaxHelp() {
       <section className="mb-10">
         <h2 className="text-lg font-semibold mb-3">Sorting</h2>
         <p className="text-sm text-text-secondary mb-3">
-          Sort results using the controls on the search page, URL parameters, or inline in the query with <code className="text-accent">order:</code> and <code className="text-accent">dir:</code>.
+          Sort results using the controls on the search page, URL parameters, or inline in the query with <code className="text-accent">order:</code> (alias: <code className="text-accent">sort:</code>) and <code className="text-accent">dir:</code>.
         </p>
 
         <h3 className="text-sm font-semibold text-text-secondary mb-2">Sort Fields</h3>
@@ -312,6 +326,9 @@ export function SyntaxHelp() {
           <AliasRow short="a" full="attribute" />
           <AliasRow short="tr" full="trait" />
           <AliasRow short="pow" full="power" />
+          <AliasRow short="any" full="text" />
+          <AliasRow short="sort" full="order" />
+          <AliasRow short="dir" full="direction" />
         </div>
       </section>
     </PageContainer>
