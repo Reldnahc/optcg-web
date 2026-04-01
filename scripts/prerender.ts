@@ -117,12 +117,27 @@ function ensureParentDir(filePath: string) {
   mkdirSync(dirname(filePath), { recursive: true });
 }
 
-function copyForwardUnchangedRoutes(routes: string[] = []) {
+function normalizeRouteList(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.filter((route): route is string => typeof route === "string");
+  }
+
+  if (value == null) {
+    return [];
+  }
+
+  console.warn("Received unexpected prerender route list shape; falling back to an empty list.");
+  return [];
+}
+
+function copyForwardUnchangedRoutes(routes: unknown) {
+  const normalizedRoutes = normalizeRouteList(routes);
+
   if (!PREVIOUS_DIST_DIR || !existsSync(PREVIOUS_DIST_DIR)) {
     return;
   }
 
-  for (const route of routes) {
+  for (const route of normalizedRoutes) {
     const sourcePath = routeToDistPath(route, PREVIOUS_DIST_DIR);
     const targetPath = routeToDistPath(route, DIST);
 
@@ -317,7 +332,9 @@ async function main() {
   }
 
   const allRoutes = parseRoutesFromSitemap();
-  const { changedRoutes, unchangedRoutes } = selectRoutes(allRoutes);
+  const routePlan = selectRoutes(allRoutes);
+  const changedRoutes = normalizeRouteList(routePlan.changedRoutes);
+  const unchangedRoutes = normalizeRouteList(routePlan.unchangedRoutes);
 
   copyForwardUnchangedRoutes(unchangedRoutes);
   writePlanSummary(changedRoutes, unchangedRoutes);
