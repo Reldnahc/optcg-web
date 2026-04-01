@@ -564,7 +564,7 @@ function LegalityItem({ format, info }: { format: string; info: CardDetailType["
 }
 
 function TcgplayerButton({ href, label }: { href: string | null; label: string }) {
-  const className = "inline-flex min-h-9 min-w-[9.5rem] shrink-0 items-center justify-center rounded-md border border-border bg-bg px-3 py-2 text-xs font-semibold transition-colors";
+  const className = "inline-flex min-h-9 min-w-[5.5rem] shrink-0 items-center justify-center rounded-md border border-border bg-bg px-2.5 py-2 text-xs font-semibold transition-colors";
   const affiliateHref = buildTcgplayerAffiliateUrl(href);
 
   if (!affiliateHref) {
