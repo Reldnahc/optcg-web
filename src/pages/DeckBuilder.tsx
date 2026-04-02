@@ -74,8 +74,7 @@ export function NewDeckRedirect() {
 
     void encodeDeckHash(emptyDeck).then((hash) => {
       if (!cancelled) {
-        const savedDeck = createSavedDeckRecord(hash, emptyDeck);
-        navigate(deckHashToEditPath(hash, savedDeck.id), { replace: true });
+        navigate(deckHashToEditPath(hash), { replace: true });
       }
     }).catch((nextError: unknown) => {
       if (!cancelled) {
@@ -948,6 +947,11 @@ function SearchResultTile({
         tabIndex={isMaxed ? -1 : 0}
         aria-disabled={isMaxed}
         onClick={onAdd}
+        onContextMenu={(event) => {
+          event.preventDefault();
+          if (currentCount === 0) return;
+          onSubtract();
+        }}
         onKeyDown={(event) => {
           if (isMaxed) return;
           if (event.key === "Enter" || event.key === " ") {
