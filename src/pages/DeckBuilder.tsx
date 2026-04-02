@@ -137,6 +137,8 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
     segmentLabel: string;
     count: number;
   } | null>(null);
+  const [searchPage, setSearchPage] = useState(1);
+  const [loadedSearchResults, setLoadedSearchResults] = useState<Card[]>([]);
   const [syntaxDrafts, setSyntaxDrafts] = useState<Record<SyntaxField, SyntaxDraft>>({
     cost: { operator: ">=", value: "" },
     power: { operator: ">=", value: "" },
@@ -211,7 +213,7 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
   const trimmedSearchQuery = debouncedSearchQuery.trim();
   const requiredLeaderColorQuery = !deck?.leader && deckColors.length > 0 ? `c>=${deckColors.join(",")}` : "";
   const effectiveSearchQuery = [requiredLeaderColorQuery, trimmedSearchQuery].filter(Boolean).join(" ");
-  const searchParams: Record<string, string> = mode === "edit" && deck && (trimmedSearchQuery.length > 0 || !deck.leader)
+  const baseSearchParams: Record<string, string> = mode === "edit" && deck && (trimmedSearchQuery.length > 0 || !deck.leader)
     ? {
         unique: "cards",
         limit: deck.leader ? "20" : "24",
@@ -220,12 +222,46 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
         ...(effectiveSearchQuery ? { q: effectiveSearchQuery } : {}),
       }
     : {};
+  const searchRequestKey = JSON.stringify(baseSearchParams);
+  const searchEnabled = Object.keys(baseSearchParams).length > 0;
+  const searchParams: Record<string, string> = Object.keys(baseSearchParams).length > 0
+    ? {
+        ...baseSearchParams,
+        page: String(searchPage),
+      }
+    : {};
   const searchQueryResult = useCardSearch(searchParams);
-  const searchResults = (searchQueryResult.data?.data ?? []).filter((card) => {
-    if (isDonCard(card)) return false;
-    if (deck?.leader && card.card_type.toLowerCase() === "leader") return false;
-    return true;
-  });
+  const searchResults = loadedSearchResults;
+  const hasMoreSearchResults = searchQueryResult.data?.pagination?.has_more ?? false;
+
+  useEffect(() => {
+    setSearchPage(1);
+    setLoadedSearchResults((current) => (current.length > 0 ? [] : current));
+  }, [searchRequestKey]);
+
+  useEffect(() => {
+    const nextPageResults = (searchQueryResult.data?.data ?? []).filter((card) => {
+      if (isDonCard(card)) return false;
+      if (deck?.leader && card.card_type.toLowerCase() === "leader") return false;
+      return true;
+    });
+
+    if (!searchQueryResult.data) {
+      if (!searchEnabled) {
+        setLoadedSearchResults((current) => (current.length > 0 ? [] : current));
+      }
+      return;
+    }
+
+    setLoadedSearchResults((current) => {
+      if (searchPage <= 1) return nextPageResults;
+      const byKey = new Map(current.map((card) => [`${card.card_number}:${card.language}`, card]));
+      for (const card of nextPageResults) {
+        byKey.set(`${card.card_number}:${card.language}`, card);
+      }
+      return [...byKey.values()];
+    });
+  }, [searchEnabled, Boolean(deck?.leader), searchPage, searchQueryResult.data]);
 
   const effectiveHash = currentHash ?? hash ?? hydratedHashRef.current ?? null;
   const sharePath = effectiveHash ? deckHashToViewPath(effectiveHash) : null;
@@ -732,24 +768,38 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
                 <p className="text-sm text-text-secondary">Searching...</p>
               )}
               {searchResults.length > 0 && (
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4">
-                  {searchResults.map((card) => (
-                    <SearchResultTile
-                      key={`${card.card_number}-${card.language}`}
-                      card={card}
-                      deck={deck}
-                      onAdd={() => updateDeck((current) => addCardToDeck(current, card))}
-                      onSubtract={() => updateDeck((current) => {
-                        if (card.card_type.toLowerCase() === "leader") {
-                          return current.leader?.card_number === card.card_number ? removeLeader(current) : current;
-                        }
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4">
+                    {searchResults.map((card) => (
+                      <SearchResultTile
+                        key={`${card.card_number}-${card.language}`}
+                        card={card}
+                        deck={deck}
+                        onAdd={() => updateDeck((current) => addCardToDeck(current, card))}
+                        onSubtract={() => updateDeck((current) => {
+                          if (card.card_type.toLowerCase() === "leader") {
+                            return current.leader?.card_number === card.card_number ? removeLeader(current) : current;
+                          }
 
-                        const existing = current.main.find((entry) => entry.card_number === card.card_number);
-                        return updateMainDeckCount(current, card.card_number, (existing?.count ?? 0) - 1);
-                      })}
-                      onPreview={() => setPreviewCard(card)}
-                    />
-                  ))}
+                          const existing = current.main.find((entry) => entry.card_number === card.card_number);
+                          return updateMainDeckCount(current, card.card_number, (existing?.count ?? 0) - 1);
+                        })}
+                        onPreview={() => setPreviewCard(card)}
+                      />
+                    ))}
+                  </div>
+                  {hasMoreSearchResults && (
+                    <div className="flex justify-center">
+                      <button
+                        type="button"
+                        onClick={() => setSearchPage((current) => current + 1)}
+                        disabled={searchQueryResult.isFetching}
+                        className="border border-border/60 bg-bg-tertiary/14 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.08em] text-text-secondary transition hover:bg-bg-hover hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {searchQueryResult.isFetching ? "Loading..." : "Load more"}
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
               {!searchQueryResult.isLoading && (trimmedSearchQuery.length > 0 || !deck.leader) && searchResults.length === 0 && (
