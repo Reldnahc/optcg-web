@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { apiFetch, apiRootFetch } from "./client";
+import { apiFetch, apiPost, apiRootFetch } from "./client";
 import type {
   Card,
+  CardBatchResponse,
   CardDetail,
   CardSearchResponse,
   SetInfo,
@@ -24,11 +25,28 @@ export function useCardSearch(params: Record<string, string>) {
   });
 }
 
-export function useCard(cardNumber: string, lang = "en") {
+export function useCard(cardNumber: string, lang = "en", enabled = Boolean(cardNumber)) {
   return useQuery({
     queryKey: ["card", cardNumber, lang],
     queryFn: () =>
       apiFetch<{ data: CardDetail }>(`/cards/${cardNumber}`, { lang }),
+    enabled,
+  });
+}
+
+export function useCardsBatch(cardNumbers: string[], lang = "en") {
+  const normalizedCardNumbers = [...new Set(cardNumbers
+    .map((cardNumber) => cardNumber.trim().toUpperCase())
+    .filter(Boolean))];
+
+  return useQuery({
+    queryKey: ["cards", "batch", lang, normalizedCardNumbers],
+    queryFn: () => apiPost<CardBatchResponse>("/cards/batch", {
+      card_numbers: normalizedCardNumbers,
+      lang,
+    }),
+    enabled: normalizedCardNumbers.length > 0,
+    placeholderData: (previousData) => previousData,
   });
 }
 

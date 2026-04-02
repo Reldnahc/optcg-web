@@ -30,10 +30,32 @@ async function fetchJson<T>(url: string): Promise<T> {
   return res.json();
 }
 
+async function fetchJsonInit<T>(url: string, init: RequestInit): Promise<T> {
+  const res = await fetch(url, init);
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    const message = body?.error?.message
+      || body?.message
+      || (res.status === 429 ? "Rate limit exceeded" : `API error ${res.status}`);
+    throw new Error(message);
+  }
+  return res.json();
+}
+
 export async function apiFetch<T>(path: string, params?: QueryParams): Promise<T> {
   return fetchJson<T>(buildApiUrl(path, params));
 }
 
 export async function apiRootFetch<T>(path: string, params?: QueryParams): Promise<T> {
   return fetchJson<T>(buildApiRootUrl(path, params));
+}
+
+export async function apiPost<T>(path: string, body: unknown): Promise<T> {
+  return fetchJsonInit<T>(buildApiUrl(path), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
 }

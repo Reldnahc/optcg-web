@@ -67,6 +67,11 @@ export interface CardDetail extends Card {
   available_languages: string[];
 }
 
+export interface CardBatchResponse {
+  data: Record<string, CardDetail>;
+  missing: string[];
+}
+
 export interface SetInfo {
   code: string;
   name: string;

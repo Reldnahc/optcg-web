@@ -19,7 +19,6 @@ export function Footer() {
             <h4 className="text-text-primary font-semibold mb-2">Reference</h4>
             <ul className="space-y-1 text-text-muted">
               <li><Link to="/sets" className="hover:text-text-secondary">Sets</Link></li>
-              <li><Link to="/products" className="hover:text-text-secondary">Products</Link></li>
               <li><Link to="/don" className="hover:text-text-secondary">DON!!</Link></li>
               <li><Link to="/formats" className="hover:text-text-secondary">Formats</Link></li>
             </ul>

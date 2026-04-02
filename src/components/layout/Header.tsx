@@ -31,7 +31,7 @@ export function Header() {
         <nav className="hidden md:flex items-center gap-1.5 text-sm ml-auto">
           <NavLink to="/advanced">Advanced</NavLink>
           <NavLink to="/search/syntax">Syntax</NavLink>
-          <NavLink to="/sets">Sets</NavLink>
+          <NavLink to="/decks">Decks</NavLink>
           <button
             onClick={() => navigate("/random-redirect")}
             className="inline-flex h-9 items-center rounded-md px-3 font-semibold text-text-secondary transition-colors hover:bg-bg-tertiary/70 hover:text-text-primary cursor-pointer"
@@ -58,7 +58,7 @@ export function Header() {
         <nav className="md:hidden border-t border-border px-4 py-3 flex flex-col text-sm">
           <MobileLink to="/advanced" onClick={() => setMenuOpen(false)}>Advanced Search</MobileLink>
           <MobileLink to="/search/syntax" onClick={() => setMenuOpen(false)}>Syntax Guide</MobileLink>
-          <MobileLink to="/sets" onClick={() => setMenuOpen(false)}>All Sets</MobileLink>
+          <MobileLink to="/decks" onClick={() => setMenuOpen(false)}>Decks</MobileLink>
         </nav>
       )}
     </header>
