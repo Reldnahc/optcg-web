@@ -3,6 +3,7 @@ import { Link, Navigate, useLocation, useNavigate, useParams } from "react-route
 import { useCard, useCardSearch, useCardsBatch } from "../api/hooks";
 import type { Card, CardDetail } from "../api/types";
 import { CopyButton } from "../components/CopyButton";
+import { ActionModal, ModalBackdrop, ModalCloseButton, ModalSurface } from "../components/Modal";
 import { CardRulesText } from "../components/card/CardRulesText";
 import { TriggerBlock } from "../components/card/TriggerBlock";
 import { ErrorState } from "../components/layout/ErrorState";
@@ -28,6 +29,7 @@ type SyntaxField = "cost" | "power" | "counter";
 type SyntaxOperator = ">" | "<" | "=" | ">=" | "<=";
 type SyntaxDraft = { operator: SyntaxOperator; value: string };
 type DeckChartMode = "bars" | "pies";
+type PendingInternalNavigation = { path: string } | null;
 type DeckCurveSegment = {
   key: string;
   label: string;
@@ -153,6 +155,7 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
   const [loadedSearchResults, setLoadedSearchResults] = useState<Card[]>([]);
   const [savedDeckRevision, setSavedDeckRevision] = useState(0);
   const [confirmClearDeckOpen, setConfirmClearDeckOpen] = useState(false);
+  const [pendingInternalNavigation, setPendingInternalNavigation] = useState<PendingInternalNavigation>(null);
   const [undoHistory, setUndoHistory] = useState<Deck[]>([]);
   const [redoHistory, setRedoHistory] = useState<Deck[]>([]);
   const [syntaxDrafts, setSyntaxDrafts] = useState<Record<SyntaxField, SyntaxDraft>>({
@@ -163,6 +166,7 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
   const [traitDraft, setTraitDraft] = useState("");
   const [previewCard, setPreviewCard] = useState<Card | null>(null);
   const hydratedHashRef = useRef<string | null>(null);
+  const ignoreNextPopStateRef = useRef(false);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const debouncedSearchQuery = useDebounce(searchQuery, 250);
   const explicitSavedDeckId = useMemo(() => new URLSearchParams(location.search).get("saved"), [location.search]);
@@ -203,12 +207,14 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
       hydratedHashRef.current = hash;
       setCurrentHash(hash);
       setDeck(decoded);
+      setPendingInternalNavigation(null);
       setUndoHistory([]);
       setRedoHistory([]);
       setLoadError(null);
     }).catch((error: unknown) => {
       if (cancelled) return;
       setDeck(null);
+      setPendingInternalNavigation(null);
       setUndoHistory([]);
       setRedoHistory([]);
       setLoadError(error instanceof Error ? error.message : "Could not decode deck hash.");
@@ -349,10 +355,6 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
   useEffect(() => {
     if (!shouldWarnOnLeave || typeof window === "undefined" || typeof document === "undefined") return;
 
-    let ignoreNextPopState = false;
-
-    const confirmLeave = () => window.confirm("This saved deck has unsaved changes. Leave without saving?");
-
     const handleDocumentClick = (event: MouseEvent) => {
       if (event.defaultPrevented) return;
       if (event.button !== 0) return;
@@ -374,22 +376,21 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
 
       if (nextUrl.origin !== currentUrl.origin || isSameDocument) return;
 
-      if (!confirmLeave()) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
+      event.preventDefault();
+      event.stopPropagation();
+      setPendingInternalNavigation({ path: `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}` });
     };
 
     const handlePopState = () => {
-      if (ignoreNextPopState) {
-        ignoreNextPopState = false;
+      if (ignoreNextPopStateRef.current) {
+        ignoreNextPopStateRef.current = false;
         return;
       }
 
-      if (confirmLeave()) return;
-
-      ignoreNextPopState = true;
+      const currentUrl = new URL(window.location.href);
+      ignoreNextPopStateRef.current = true;
       window.history.go(1);
+      setPendingInternalNavigation({ path: `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}` });
     };
 
     document.addEventListener("click", handleDocumentClick, true);
@@ -518,6 +519,13 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
     setCurrentHash(effectiveHash);
     setSaveError(null);
     navigate(deckHashToEditPath(effectiveHash, savedDeck.id), { replace: true });
+  };
+
+  const proceedPendingInternalNavigation = () => {
+    if (!pendingInternalNavigation) return;
+    const nextPath = pendingInternalNavigation.path;
+    setPendingInternalNavigation(null);
+    navigate(nextPath);
   };
 
   const appendSyntaxFilter = (field: SyntaxField) => {
@@ -844,6 +852,14 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
                       ref={searchInputRef}
                       value={plainSearchText}
                       onChange={(event) => setSearchQuery(buildCombinedSearchQuery(event.target.value, syntaxSearchTokens))}
+                      onKeyDown={(event) => {
+                        if (event.key !== "Backspace") return;
+                        if (plainSearchText.length > 0 || syntaxSearchTokens.length === 0) return;
+                        if (event.currentTarget.selectionStart !== 0 || event.currentTarget.selectionEnd !== 0) return;
+
+                        event.preventDefault();
+                        removeSearchToken(syntaxSearchTokens[syntaxSearchTokens.length - 1]!);
+                      }}
                       placeholder={!deck.leader ? "Search leaders..." : "Search cards..."}
                       className="min-w-0 flex-1 bg-transparent py-1 text-sm text-text-primary outline-none placeholder:text-text-muted"
                     />
@@ -1144,12 +1160,45 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
         />
       )}
       {confirmClearDeckOpen && (
-        <ConfirmClearDeckModal
-          onCancel={() => setConfirmClearDeckOpen(false)}
-          onConfirm={() => {
-            clearDeck();
-            setConfirmClearDeckOpen(false);
-          }}
+        <ActionModal
+          onClose={() => setConfirmClearDeckOpen(false)}
+          title="Clear deck?"
+          description="This will remove the leader and all main-deck cards from the current deck."
+          actions={[
+            { label: "Cancel", onClick: () => setConfirmClearDeckOpen(false) },
+            {
+              label: "Clear deck",
+              onClick: () => {
+                clearDeck();
+                setConfirmClearDeckOpen(false);
+              },
+              tone: "danger",
+            },
+          ]}
+        />
+      )}
+      {pendingInternalNavigation && (
+        <ActionModal
+          onClose={() => setPendingInternalNavigation(null)}
+          eyebrow="Unsaved Changes"
+          title="Leave this deck?"
+          description="This saved deck has unsaved changes."
+          actions={[
+            { label: "Cancel", onClick: () => setPendingInternalNavigation(null) },
+            {
+              label: "Leave Don’t Save",
+              onClick: proceedPendingInternalNavigation,
+              tone: "danger",
+            },
+            {
+              label: "Save and Leave",
+              onClick: () => {
+                saveDeckToLibrary();
+                proceedPendingInternalNavigation();
+              },
+              tone: "primary",
+            },
+          ]}
         />
       )}
     </div>
@@ -1911,55 +1960,6 @@ function SyntaxIcon() {
   );
 }
 
-function ConfirmClearDeckModal({
-  onCancel,
-  onConfirm,
-}: {
-  onCancel: () => void;
-  onConfirm: () => void;
-}) {
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onCancel();
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onCancel]);
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/72 p-3 sm:p-6" onClick={onCancel}>
-      <div
-        className="w-full max-w-md rounded-2xl border border-border/80 bg-[#111318] p-4 shadow-[0_32px_120px_rgba(0,0,0,0.55)] sm:p-5"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="space-y-2">
-          <h2 className="text-lg font-semibold text-text-primary">Clear deck?</h2>
-          <p className="text-sm text-text-secondary">
-            This will remove the leader and all main-deck cards from the current deck.
-          </p>
-        </div>
-        <div className="mt-4 flex items-center justify-end gap-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            className={`${DECK_HEADER_ACTION_CLASS} px-3`}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            className={`${DECK_HEADER_ACTION_CLASS} border-banned/40 bg-banned/12 px-3 text-banned hover:bg-banned/20`}
-          >
-            Clear deck
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function CardPreviewModal({
   card,
   detail,
@@ -2004,9 +2004,9 @@ function CardPreviewModal({
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/72 p-3 sm:p-6" onClick={onClose}>
-      <div
-        className="relative max-h-[92vh] w-full max-w-5xl overflow-hidden rounded-2xl border border-border/80 bg-[#111318] shadow-[0_32px_120px_rgba(0,0,0,0.55)]"
+    <ModalBackdrop onClose={onClose}>
+      <ModalSurface
+        className="max-h-[92vh] w-full max-w-5xl"
         onClick={(event) => event.stopPropagation()}
       >
         <button
@@ -2017,14 +2017,7 @@ function CardPreviewModal({
           ×
         </button>
 
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close preview"
-          className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-md border border-border/70 bg-bg-input/70 text-text-secondary transition hover:bg-bg-hover hover:text-text-primary"
-        >
-          <ClearSearchIcon />
-        </button>
+        <ModalCloseButton onClose={onClose} />
 
         <div className="grid max-h-[92vh] overflow-y-auto lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]">
           <div className="border-b border-border/70 bg-[#0d1015] p-4 lg:border-b-0 lg:border-r">
@@ -2111,8 +2104,8 @@ function CardPreviewModal({
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </ModalSurface>
+    </ModalBackdrop>
   );
 }
 
@@ -2485,7 +2478,20 @@ function buildDeckTitle(cardNumber: string, leaderName?: string | null) {
 }
 
 function buildCombinedSearchQuery(plainText: string, syntaxTokens: string[]) {
-  return [plainText.trim(), ...syntaxTokens].filter(Boolean).join(" ");
+  const normalizedSyntaxTokens = syntaxTokens.map((token) => token.trim()).filter(Boolean);
+
+  if (normalizedSyntaxTokens.length === 0) {
+    return plainText;
+  }
+
+  const normalizedPlainText = plainText.replace(/\s+/g, " ").trimStart();
+  const syntaxQuery = normalizedSyntaxTokens.join(" ");
+
+  if (normalizedPlainText.length === 0) {
+    return `${syntaxQuery} `;
+  }
+
+  return `${syntaxQuery} ${normalizedPlainText}`;
 }
 
 function isSameDeckState(left: Deck, right: Deck) {
@@ -2495,31 +2501,156 @@ function isSameDeckState(left: Deck, right: Deck) {
 function parseSearchQuery(query: string) {
   const normalized = query.replace(/\s+/g, " ");
   const hasTrailingWhitespace = /\s$/.test(query);
-  const parts = Array.from(normalized.matchAll(/trait:"[^"]+"|\S+/gi), (match) => match[0].trim()).filter(Boolean);
+  const parts = tokenizeSearchQuery(normalized);
 
   const syntaxTokens: string[] = [];
   const plainTokens: string[] = [];
+  let hasTrailingPlainWhitespace = false;
 
   parts.forEach((token, index) => {
     const isLastToken = index === parts.length - 1;
     const isCommitted = !isLastToken || hasTrailingWhitespace;
-    const isSyntaxToken =
-      /^(cost|power|counter)(>=|<=|=|>|<)\d+$/i.test(token)
-      || /^has:trigger$/i.test(token)
-      || /^trait:"[^"]+"$/i.test(token);
+    const isSyntaxToken = isCommitted && isAdvancedSearchSyntaxToken(token);
 
-    if (isCommitted && isSyntaxToken) {
+    if (isSyntaxToken) {
       syntaxTokens.push(token);
       return;
     }
 
     plainTokens.push(token);
+    if (isLastToken && hasTrailingWhitespace) {
+      hasTrailingPlainWhitespace = true;
+    }
   });
 
   return {
     syntaxTokens,
-    plainText: plainTokens.join(" "),
+    plainText: `${plainTokens.join(" ")}${hasTrailingPlainWhitespace && plainTokens.length > 0 ? " " : ""}`,
   };
+}
+
+const SEARCH_FIELD_ALIASES: Record<string, string> = {
+  n: "name",
+  name: "name",
+  c: "color",
+  color: "color",
+  t: "type",
+  type: "type",
+  cost: "cost",
+  p: "power",
+  pow: "power",
+  power: "power",
+  life: "life",
+  counter: "counter",
+  r: "rarity",
+  rarity: "rarity",
+  artist: "artist",
+  text: "text",
+  any: "text",
+  o: "effect",
+  effect: "effect",
+  trigger: "trigger",
+  trait: "trait",
+  tr: "trait",
+  a: "attribute",
+  attribute: "attribute",
+  block: "block",
+  set: "set",
+  product: "product",
+  legal: "legal",
+  banned: "banned",
+  is: "is",
+  not: "not",
+  has: "has",
+  usd: "usd",
+  year: "year",
+  date: "date",
+  new: "new",
+  prints: "prints",
+  order: "order",
+  sort: "order",
+  dir: "direction",
+  direction: "direction",
+  card_number: "card_number",
+};
+
+const SEARCH_OPERATOR_PATTERN = /^(>=|<=|!=|>|<|=|:)/;
+const IMPLICIT_CARD_NUMBER_PATTERN = /^(?:(?:OP\d{2}|ST\d{2}|EB\d{2}|PRB\d{2})-\d{3}|P-\d{3})$/i;
+const IMPLICIT_SET_CODE_PATTERN = /^(?:OP\d{2}|ST\d{2}|EB\d{2}|PRB\d{2}|P\d{2,3})$/i;
+
+function tokenizeSearchQuery(input: string) {
+  const tokens: string[] = [];
+  let index = 0;
+
+  while (index < input.length) {
+    if (input[index] === " " || input[index] === "\t") {
+      index++;
+      continue;
+    }
+
+    if (input[index] === "(" || input[index] === ")") {
+      tokens.push(input[index]);
+      index++;
+      continue;
+    }
+
+    if (input[index] === '"') {
+      let end = index + 1;
+      while (end < input.length && input[end] !== '"') end++;
+      tokens.push(input.slice(index, Math.min(end + 1, input.length)));
+      index = Math.min(end + 1, input.length);
+      continue;
+    }
+
+    let end = index;
+    while (end < input.length && input[end] !== " " && input[end] !== "\t" && input[end] !== "(" && input[end] !== ")") {
+      if (input[end] === '"') {
+        end++;
+        while (end < input.length && input[end] !== '"') end++;
+        if (end < input.length) end++;
+        break;
+      }
+      end++;
+    }
+
+    tokens.push(input.slice(index, end));
+    index = end;
+  }
+
+  return tokens.filter(Boolean);
+}
+
+function isAdvancedSearchSyntaxToken(token: string) {
+  if (!token || token === "(" || token === ")") return false;
+  if (/^(OR|NOT)$/i.test(token)) return false;
+  if (token.startsWith('"') && token.endsWith('"')) return false;
+
+  const normalizedToken = token.startsWith("-") ? token.slice(1) : token;
+  if (!normalizedToken) return false;
+
+  if (IMPLICIT_CARD_NUMBER_PATTERN.test(normalizedToken) || IMPLICIT_SET_CODE_PATTERN.test(normalizedToken)) {
+    return true;
+  }
+
+  const lowerToken = normalizedToken.toLowerCase();
+  for (const alias of Object.keys(SEARCH_FIELD_ALIASES)) {
+    if (!lowerToken.startsWith(alias)) continue;
+
+    const remainder = normalizedToken.slice(alias.length);
+    const operatorMatch = remainder.match(SEARCH_OPERATOR_PATTERN);
+    if (!operatorMatch) continue;
+
+    const value = remainder.slice(operatorMatch[1].length);
+    if (!value) continue;
+
+    if (value.startsWith('"') && !value.endsWith('"')) {
+      return false;
+    }
+
+    return true;
+  }
+
+  return false;
 }
 
 function buildDeckStats(deck: Deck, cardsByNumber: Record<string, CardDetail>) {
