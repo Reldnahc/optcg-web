@@ -27,7 +27,7 @@ type DeckBuilderMode = "edit" | "view";
 type SyntaxField = "cost" | "power" | "counter";
 type SyntaxOperator = ">" | "<" | "=" | ">=" | "<=";
 type SyntaxDraft = { operator: SyntaxOperator; value: string };
-type DeckChartMode = "curve" | "counter" | "types";
+type DeckChartMode = "bars" | "pies";
 type DeckCurveSegment = {
   key: string;
   label: string;
@@ -41,8 +41,18 @@ type DeckCurveBin = {
   height: number;
   segments: DeckCurveSegment[];
 };
+type TypePieSlice = {
+  type: string;
+  count: number;
+  color: string;
+  dotClass: string;
+  offset: number;
+  size: number;
+};
 const SYNTAX_OPERATORS: SyntaxOperator[] = [">=", "<=", "=", ">", "<"];
+const COUNTER_SYNTAX_OPERATORS: SyntaxOperator[] = [">=", "="];
 const COUNTER_VALUES = ["", "1000", "2000"] as const;
+const DECK_HISTORY_LIMIT = 50;
 const DeckViewActionIcon = () => (
   <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" />
@@ -62,7 +72,10 @@ const DeckSaveActionIcon = () => (
     <path d="M7 3v5h8" />
   </svg>
 );
-const DECK_HEADER_ACTION_CLASS = "inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-bg-tertiary/40 px-2.5 text-[11px] font-medium leading-none text-text-primary transition hover:bg-bg-hover";
+const DECK_SURFACE_CLASS = "rounded-2xl border border-border/70 bg-bg-card/72";
+const DECK_SUBSURFACE_CLASS = "rounded-xl border border-border/55 bg-bg-card/35";
+const DECK_CONTROL_CLASS = "inline-flex h-7 items-center justify-center rounded-md border border-border/70 bg-bg-input/70 px-2 text-[10px] font-medium leading-none text-text-primary transition hover:bg-bg-hover";
+const DECK_HEADER_ACTION_CLASS = `${DECK_CONTROL_CLASS} gap-1.5 px-2.5 text-[11px]`;
 
 export function NewDeckRedirect() {
   const navigate = useNavigate();
@@ -127,7 +140,7 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [syntaxHelperOpen, setSyntaxHelperOpen] = useState(false);
   const [curveOpen, setCurveOpen] = useState(true);
-  const [deckChartMode, setDeckChartMode] = useState<DeckChartMode>("curve");
+  const [deckChartMode, setDeckChartMode] = useState<DeckChartMode>("bars");
   const [curveTooltip, setCurveTooltip] = useState<{
     x: number;
     y: number;
@@ -139,11 +152,15 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
   const [searchPage, setSearchPage] = useState(1);
   const [loadedSearchResults, setLoadedSearchResults] = useState<Card[]>([]);
   const [savedDeckRevision, setSavedDeckRevision] = useState(0);
+  const [confirmClearDeckOpen, setConfirmClearDeckOpen] = useState(false);
+  const [undoHistory, setUndoHistory] = useState<Deck[]>([]);
+  const [redoHistory, setRedoHistory] = useState<Deck[]>([]);
   const [syntaxDrafts, setSyntaxDrafts] = useState<Record<SyntaxField, SyntaxDraft>>({
     cost: { operator: ">=", value: "" },
     power: { operator: ">=", value: "" },
     counter: { operator: ">=", value: "" },
   });
+  const [traitDraft, setTraitDraft] = useState("");
   const [previewCard, setPreviewCard] = useState<Card | null>(null);
   const hydratedHashRef = useRef<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -174,6 +191,8 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
   useEffect(() => {
     if (!hash) {
       setDeck(null);
+      setUndoHistory([]);
+      setRedoHistory([]);
       setLoadError("Deck hash is missing.");
       return;
     }
@@ -184,10 +203,14 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
       hydratedHashRef.current = hash;
       setCurrentHash(hash);
       setDeck(decoded);
+      setUndoHistory([]);
+      setRedoHistory([]);
       setLoadError(null);
     }).catch((error: unknown) => {
       if (cancelled) return;
       setDeck(null);
+      setUndoHistory([]);
+      setRedoHistory([]);
       setLoadError(error instanceof Error ? error.message : "Could not decode deck hash.");
     });
 
@@ -284,9 +307,26 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
     ? buildDeckTitle(deck.leader.card_number, cardsByNumber[deck.leader.card_number]?.name)
     : "Deck Builder";
   const deckStats = deck ? buildDeckStats(deck, cardsByNumber) : null;
-  const deckTypeCounts = deck ? buildDeckTypeCounts(deck, cardsByNumber) : [];
+  const deckTraitCounts = deck ? buildDeckTypeCounts(deck, cardsByNumber) : [];
+  const deckTraitPairCounts = deck ? buildDeckTraitCounts(deck, cardsByNumber) : [];
   const deckCurveByType = deck ? buildDeckCurve(deck, cardsByNumber, "type") : [];
   const deckCurveByCounter = deck ? buildDeckCurve(deck, cardsByNumber, "counter") : [];
+  const deckCardTypeCounts = useMemo(
+    () => [
+      { type: "character", count: deckStats?.characters ?? 0 },
+      { type: "event", count: deckStats?.events ?? 0 },
+      { type: "stage", count: deckStats?.stages ?? 0 },
+    ].filter((entry) => entry.count > 0),
+    [deckStats],
+  );
+  const deckCounterCounts = useMemo(
+    () => [
+      { type: "0", count: deckStats?.bricks ?? 0 },
+      { type: "1k", count: deckStats?.oneKs ?? 0 },
+      { type: "2k", count: deckStats?.twoKs ?? 0 },
+    ].filter((entry) => entry.count > 0),
+    [deckStats],
+  );
   const sortedMainDeckEntries = useMemo(
     () => deck ? sortDeckEntriesForDisplay(deck.main, cardsByNumber) : [],
     [cardsByNumber, deck],
@@ -412,7 +452,12 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
     });
   };
 
-  const commitDeck = (nextDeck: Deck) => {
+  const commitDeck = (nextDeck: Deck, previousDeck?: Deck | null) => {
+    if (previousDeck && isSameDeckState(previousDeck, nextDeck)) return;
+    if (previousDeck) {
+      setUndoHistory((current) => [...current, previousDeck].slice(-DECK_HISTORY_LIMIT));
+      setRedoHistory([]);
+    }
     setDeck(nextDeck);
     syncDeckUrl(nextDeck);
   };
@@ -421,6 +466,11 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
     setDeck((current) => {
       if (!current) return current;
       const nextDeck = updater(current);
+      if (isSameDeckState(current, nextDeck)) {
+        return current;
+      }
+      setUndoHistory((history) => [...history, current].slice(-DECK_HISTORY_LIMIT));
+      setRedoHistory([]);
       syncDeckUrl(nextDeck);
       return nextDeck;
     });
@@ -431,7 +481,25 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
     commitDeck({
       ...createEmptyDeck(),
       updated_at: Date.now(),
-    });
+    }, deck);
+  };
+
+  const undoLastDeckChange = () => {
+    if (!deck || undoHistory.length === 0) return;
+    const previousDeck = undoHistory[undoHistory.length - 1]!;
+    setUndoHistory((current) => current.slice(0, -1));
+    setRedoHistory((current) => [...current, deck].slice(-DECK_HISTORY_LIMIT));
+    setDeck(previousDeck);
+    syncDeckUrl(previousDeck);
+  };
+
+  const redoLastDeckChange = () => {
+    if (!deck || redoHistory.length === 0) return;
+    const nextDeck = redoHistory[redoHistory.length - 1]!;
+    setRedoHistory((current) => current.slice(0, -1));
+    setUndoHistory((current) => [...current, deck].slice(-DECK_HISTORY_LIMIT));
+    setDeck(nextDeck);
+    syncDeckUrl(nextDeck);
   };
 
   const saveDeckToLibrary = () => {
@@ -464,6 +532,20 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
       ...current,
       [field]: { ...current[field], value: "" },
     }));
+  };
+
+  const appendSimpleSyntaxToken = (token: string) => {
+    if (syntaxSearchTokens.includes(token)) return;
+    setSearchQuery(buildCombinedSearchQuery(plainSearchText, [...syntaxSearchTokens, token]));
+  };
+
+  const appendTraitSyntaxToken = () => {
+    const trimmedTrait = traitDraft.trim().replace(/^"+|"+$/g, "");
+    if (!trimmedTrait) return;
+    const token = `trait:"${trimmedTrait}"`;
+    if (syntaxSearchTokens.includes(token)) return;
+    setSearchQuery(buildCombinedSearchQuery(plainSearchText, [...syntaxSearchTokens, token]));
+    setTraitDraft("");
   };
 
   const removeSearchToken = (targetToken: string) => {
@@ -506,9 +588,10 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
 
   const cycleSyntaxOperator = (field: SyntaxField) => {
     setSyntaxDrafts((current) => {
+      const operatorOptions = field === "counter" ? COUNTER_SYNTAX_OPERATORS : SYNTAX_OPERATORS;
       const currentOperator = current[field].operator;
-      const currentIndex = SYNTAX_OPERATORS.indexOf(currentOperator);
-      const nextOperator = SYNTAX_OPERATORS[(currentIndex + 1) % SYNTAX_OPERATORS.length] ?? ">=";
+      const currentIndex = operatorOptions.indexOf(currentOperator);
+      const nextOperator = operatorOptions[(currentIndex + 1) % operatorOptions.length] ?? ">=";
       return {
         ...current,
         [field]: { ...current[field], operator: nextOperator },
@@ -530,7 +613,7 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
 
   return (
     <div className={`${DEFAULT_PAGE_CONTAINER_CLASS} py-2 space-y-3`}>
-      <section className="rounded-xl border border-border/70 bg-bg-card/75 p-2.5 sm:p-3">
+      <section className={`${DECK_SURFACE_CLASS} p-2 sm:p-3`}>
         <div className="flex min-w-0 flex-col gap-2.5">
             <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
               <div className="min-w-0 space-y-1">
@@ -542,51 +625,54 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
                 </h1>
               </div>
 
-              <div className="flex flex-wrap items-center gap-1.5 lg:justify-end">
-                {canSaveToLibrary && (
-                  <button
-                    type="button"
-                    onClick={saveDeckToLibrary}
-                    className={DECK_HEADER_ACTION_CLASS}
-                  >
-                    <DeckSaveActionIcon />
-                    Save
-                  </button>
-                )}
-                {effectiveHash && (
-                  mode === "edit" ? (
-                    <a
-                      href={deckHashToViewPath(effectiveHash, savedDeckId)}
-                      className={`${DECK_HEADER_ACTION_CLASS} hover:no-underline`}
+              <div className="flex w-full flex-col gap-1.5 lg:w-auto lg:items-end">
+                <div className="flex flex-wrap items-center gap-1.5 lg:justify-end">
+                  {canSaveToLibrary && (
+                    <button
+                      type="button"
+                      onClick={saveDeckToLibrary}
+                      className={`${DECK_HEADER_ACTION_CLASS} border-accent/55 bg-accent/16 text-text-primary shadow-[0_0_0_1px_rgba(255,255,255,0.02)] hover:bg-accent/24`}
                     >
-                      <DeckViewActionIcon />
-                      View
-                    </a>
-                  ) : (
-                    <Link
-                      to={deckHashToEditPath(effectiveHash, savedDeckId)}
-                      className={`${DECK_HEADER_ACTION_CLASS} bg-bg-tertiary/20 hover:no-underline`}
-                    >
-                      <DeckEditActionIcon />
-                      Edit
-                    </Link>
-                  )
-                )}
-                {sharePath && (
-                  <>
-                    <div className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-border bg-bg-tertiary/20 px-2 py-1">
-                      <span className="max-w-40 truncate text-[11px] text-text-secondary sm:max-w-56">{sharePath}</span>
+                      <DeckSaveActionIcon />
+                      Save
+                    </button>
+                  )}
+                  {effectiveHash && (
+                    mode === "edit" ? (
+                      <a
+                        href={deckHashToViewPath(effectiveHash, savedDeckId)}
+                        className={`${DECK_HEADER_ACTION_CLASS} hover:no-underline`}
+                      >
+                        <DeckViewActionIcon />
+                        View
+                      </a>
+                    ) : (
+                      <Link
+                        to={deckHashToEditPath(effectiveHash, savedDeckId)}
+                        className={`${DECK_HEADER_ACTION_CLASS} bg-bg-tertiary/20 hover:no-underline`}
+                      >
+                        <DeckEditActionIcon />
+                        Edit
+                      </Link>
+                    )
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-1.5 lg:flex lg:flex-wrap lg:justify-end">
+                  {sharePath && (
+                    <div className="inline-flex min-w-0 items-center justify-between gap-1.5 rounded-md border border-border/70 bg-bg-input/70 px-2 py-1 text-[11px] text-text-secondary">
+                      <span className="font-medium text-text-primary lg:hidden">Deck URL</span>
+                      <span className="hidden max-w-40 truncate lg:block lg:text-text-secondary xl:max-w-56">{sharePath}</span>
                       <CopyButton value={shareUrl} label="Copy deck link" copiedLabel="Copied deck link" />
                     </div>
-                  </>
-                )}
-                <div className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-bg-tertiary/20 px-2 py-1 text-[11px] text-text-secondary">
-                  <span className="font-medium text-text-primary">Decklist</span>
-                  <CopyButton
-                    value={exportText}
-                    label="Copy decklist"
-                    copiedLabel="Copied decklist"
-                  />
+                  )}
+                  <div className="inline-flex min-w-0 items-center justify-between gap-1.5 rounded-md border border-border/70 bg-bg-input/70 px-2 py-1 text-[11px] text-text-secondary">
+                    <span className="font-medium text-text-primary">Decklist</span>
+                    <CopyButton
+                      value={exportText}
+                      label="Copy decklist"
+                      copiedLabel="Copied decklist"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -610,7 +696,7 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
             </div>
 
             {(deckCurveByType.length > 0 || deckCurveByCounter.length > 0) && (
-              <div className="border border-border/55 bg-bg-tertiary/10 px-2 py-2">
+              <div className={`${DECK_SUBSURFACE_CLASS} bg-bg-tertiary/10 px-1.5 py-2 sm:px-2`}>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="text-[16px] font-semibold uppercase tracking-[0.08em] text-text-secondary">
                     Charts
@@ -619,28 +705,32 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
                     <button
                       type="button"
                       onClick={() => setCurveOpen((current) => !current)}
-                      className="inline-flex h-4 min-w-[32px] items-center justify-center border border-border/70 bg-bg-tertiary/16 px-1 text-[6px] font-medium uppercase leading-none tracking-[0.02em] text-text-secondary transition hover:bg-bg-hover hover:text-text-primary"
+                      className={`${DECK_CONTROL_CLASS} h-6 min-w-[60px] gap-1.5 px-1.5 text-[9px] tracking-[0.02em] text-text-secondary`}
                       aria-expanded={curveOpen}
                     >
-                      {curveOpen ? "hide" : "show"}
+                      {curveOpen ? <HideIcon /> : <ShowIcon />}
+                      {curveOpen ? "Hide" : "Show"}
                     </button>
-                    <div className="inline-flex items-center border border-border/70 bg-bg-tertiary/16 p-[2px] lg:hidden">
-                      {([
-                        ["curve", "cost"],
-                        ["counter", "counter"],
-                        ["types", "types"],
-                      ] as const).map(([mode, label]) => (
+                    <div className="inline-flex items-center rounded-md border border-border/70 bg-bg-input/70 p-[2px]">
+                      {(["bars", "pies"] as const).map((mode) => (
                         <button
                         key={mode}
                         type="button"
-                        onClick={() => setDeckChartMode(mode)}
-                        className={`inline-flex h-3.5 items-center px-1 text-[6px] font-medium uppercase tracking-[0.02em] transition ${
+                        onClick={() => {
+                          setDeckChartMode(mode);
+                          if (!curveOpen) {
+                            setCurveOpen(true);
+                          }
+                        }}
+                        aria-label={mode === "bars" ? "Bar charts" : "Pie charts"}
+                        title={mode === "bars" ? "Bar charts" : "Pie charts"}
+                        className={`inline-flex h-6 w-8 items-center justify-center rounded-[3px] transition ${
                           deckChartMode === mode
                             ? "bg-bg-card text-text-primary"
                             : "text-text-secondary hover:bg-bg-hover hover:text-text-primary"
                         }`}
                         >
-                          {label}
+                          {mode === "bars" ? <BarsIcon /> : <PieIcon />}
                         </button>
                       ))}
                     </div>
@@ -648,49 +738,71 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
                 </div>
                 {curveOpen && (
                   <div className="mt-2">
-                    <div className="lg:hidden">
-                      {deckChartMode === "curve" ? (
-                        <CombinedCostCurveChart
-                          typeCurve={deckCurveByType}
-                          counterCurve={deckCurveByCounter}
-                          curveTooltip={curveTooltip}
-                          onClearTooltip={() => setCurveTooltip(null)}
-                          onShowTooltip={showCurveTooltip}
-                        />
-                      ) : deckChartMode === "counter" ? (
-                        <CounterBarChart
-                          bricks={deckStats?.bricks ?? 0}
-                          oneKs={deckStats?.oneKs ?? 0}
-                          twoKs={deckStats?.twoKs ?? 0}
-                        />
-                      ) : (
-                        <TypePieChart counts={deckTypeCounts} />
-                      )}
-                    </div>
-                    <div className="hidden gap-2 lg:grid lg:grid-cols-[minmax(0,1.25fr)_minmax(0,0.8fr)_minmax(0,1fr)]">
-                      <div className="border border-border/55 bg-bg-card/35 px-2 py-2">
-                        <div className="mb-2 text-[10px] font-medium uppercase tracking-[0.08em] text-text-secondary">Cost</div>
-                        <CombinedCostCurveChart
-                          typeCurve={deckCurveByType}
-                          counterCurve={deckCurveByCounter}
-                          curveTooltip={curveTooltip}
-                          onClearTooltip={() => setCurveTooltip(null)}
-                          onShowTooltip={showCurveTooltip}
-                        />
+                    {deckChartMode === "bars" ? (
+                      <div className="space-y-2">
+                        <div className="px-1 py-1.5 sm:px-1.5 sm:py-2">
+                          <div className="flex min-h-[22px] flex-wrap items-start gap-x-3 gap-y-1 text-[13px] text-text-secondary">
+                            <div className="inline-flex flex-wrap items-center gap-1">
+                              <span className="font-medium uppercase tracking-[0.08em] text-text-muted">card type</span>
+                              {deckCurveByType[0]?.segments.map((segment) => (
+                                <span key={segment.key} className="inline-flex items-center gap-1">
+                                  <span className={`h-2 w-2 ${segment.colorClass}`} />
+                                  <span>{segment.label.toLowerCase()}</span>
+                                </span>
+                              ))}
+                            </div>
+                            <div className="inline-flex flex-wrap items-center gap-1">
+                              <span className="font-medium uppercase tracking-[0.08em] text-text-muted">counter</span>
+                              {deckCurveByCounter[0]?.segments.map((segment) => (
+                                <span key={segment.key} className="inline-flex items-center gap-1">
+                                  <span className={`h-2 w-2 ${segment.colorClass}`} />
+                                  <span>{segment.label.toLowerCase()}</span>
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="grid gap-2 lg:grid-cols-[minmax(0,11fr)_minmax(0,3fr)]">
+                          <div className="px-1 py-1.5 sm:px-1.5 sm:py-2">
+                            <div className="mb-2 text-[10px] font-medium uppercase tracking-[0.08em] text-text-secondary">Cost</div>
+                            <CombinedCostCurveChart
+                              typeCurve={deckCurveByType}
+                              curveTooltip={curveTooltip}
+                              onClearTooltip={() => setCurveTooltip(null)}
+                              onShowTooltip={showCurveTooltip}
+                              showLegend={false}
+                            />
+                          </div>
+                          <div className="px-1 py-1.5 sm:px-1.5 sm:py-2">
+                            <div className="mb-2 text-[10px] font-medium uppercase tracking-[0.08em] text-text-secondary">Counter</div>
+                            <CounterBarChart
+                              bricks={deckStats?.bricks ?? 0}
+                              oneKs={deckStats?.oneKs ?? 0}
+                              twoKs={deckStats?.twoKs ?? 0}
+                            />
+                          </div>
+                        </div>
                       </div>
-                      <div className="border border-border/55 bg-bg-card/35 px-2 py-2">
-                        <div className="mb-2 text-[10px] font-medium uppercase tracking-[0.08em] text-text-secondary">Counter</div>
-                        <CounterBarChart
-                          bricks={deckStats?.bricks ?? 0}
-                          oneKs={deckStats?.oneKs ?? 0}
-                          twoKs={deckStats?.twoKs ?? 0}
-                        />
+                    ) : (
+                      <div className="grid gap-2 lg:grid-cols-2">
+                        <div className="px-1 py-1.5 sm:px-1.5 sm:py-2">
+                          <div className="mb-2 text-[10px] font-medium uppercase tracking-[0.08em] text-text-secondary">Card Type</div>
+                          <TypePieChart counts={deckCardTypeCounts} />
+                        </div>
+                        <div className="px-1 py-1.5 sm:px-1.5 sm:py-2">
+                          <div className="mb-2 text-[10px] font-medium uppercase tracking-[0.08em] text-text-secondary">Counter</div>
+                          <TypePieChart counts={deckCounterCounts} />
+                        </div>
+                        <div className="px-1 py-1.5 sm:px-1.5 sm:py-2">
+                          <div className="mb-2 text-[10px] font-medium uppercase tracking-[0.08em] text-text-secondary">Traits</div>
+                          <TypePieChart counts={deckTraitCounts} />
+                        </div>
+                        <div className="px-1 py-1.5 sm:px-1.5 sm:py-2">
+                          <div className="mb-2 text-[10px] font-medium uppercase tracking-[0.08em] text-text-secondary">Trait Pairs</div>
+                          <TypePieChart counts={deckTraitPairCounts} />
+                        </div>
                       </div>
-                      <div className="border border-border/55 bg-bg-card/35 px-2 py-2">
-                        <div className="mb-2 text-[10px] font-medium uppercase tracking-[0.08em] text-text-secondary">Types</div>
-                        <TypePieChart counts={deckTypeCounts} />
-                      </div>
-                    </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -699,7 +811,7 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
             {warnings.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {warnings.map((warning) => (
-                  <p key={warning} className="rounded-lg border border-banned/25 bg-banned/8 px-2.5 py-1.5 text-[11px] text-[#f2b0b0]">
+                  <p key={warning} className="rounded-md border border-banned/25 bg-banned/8 px-2.5 py-1.5 text-[11px] text-[#f2b0b0]">
                     {warning}
                   </p>
                 ))}
@@ -708,9 +820,9 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
 
             {mode === "edit" && (
               <div className="relative mt-auto pt-2">
-                <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-2">
                   <div
-                    className="flex min-h-10 min-w-0 flex-1 flex-wrap items-center gap-1 rounded-lg border border-border bg-bg-input px-2 py-1 transition-colors focus-within:border-accent/70"
+                    className="flex min-h-10 min-w-0 flex-1 flex-wrap items-center gap-1 rounded-xl border border-border/70 bg-bg-input/70 px-1.5 py-1 transition-colors focus-within:border-accent/70 sm:px-2"
                     onClick={() => searchInputRef.current?.focus()}
                   >
                     {syntaxSearchTokens.map((token, index) => (
@@ -721,7 +833,7 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
                           event.stopPropagation();
                           removeSearchToken(token);
                         }}
-                        className="inline-flex items-center gap-1 border border-border/60 bg-bg-tertiary/18 px-2 py-1 text-[10px] text-text-secondary transition hover:bg-bg-hover hover:text-text-primary"
+                        className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-bg-tertiary/18 px-2 py-1 text-[10px] text-text-secondary transition hover:bg-bg-hover hover:text-text-primary"
                         aria-label={`Remove search term ${token}`}
                       >
                         <span>{token}</span>
@@ -735,35 +847,41 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
                       placeholder={!deck.leader ? "Search leaders..." : "Search cards..."}
                       className="min-w-0 flex-1 bg-transparent py-1 text-sm text-text-primary outline-none placeholder:text-text-muted"
                     />
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        if (!searchQuery) return;
+                        setSearchQuery("");
+                      }}
+                      aria-label="Clear search"
+                      title="Clear search"
+                      disabled={!searchQuery}
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border/60 bg-bg-tertiary/18 text-text-secondary transition hover:bg-bg-hover hover:text-text-primary disabled:cursor-default disabled:opacity-35"
+                    >
+                      <ClearSearchIcon />
+                    </button>
                   </div>
-                  <div className="flex items-center justify-end gap-2">
+                  <div className="flex items-center justify-end gap-2 md:hidden">
                     <button
                       type="button"
                       onClick={() => setSyntaxHelperOpen((current) => !current)}
                       aria-label="Toggle syntax helper"
-                      className={`inline-flex items-center justify-center border px-1.5 py-0.5 text-[9px] font-medium uppercase leading-none tracking-[0.04em] transition sm:h-5 sm:min-w-[56px] sm:border-border/55 sm:bg-bg-input/75 sm:px-2 sm:py-0 sm:text-[9px] sm:tracking-[0.06em] ${syntaxHelperOpen
-                        ? "border-accent/50 bg-accent/12 text-text-primary sm:border-accent/55 sm:bg-accent/14"
-                        : "border-border bg-bg-tertiary/20 text-text-secondary hover:bg-bg-hover hover:text-text-primary sm:border-border/55 sm:bg-bg-input/75"}`}
+                      className={`${DECK_CONTROL_CLASS} gap-1.5 px-2 text-[9px] tracking-[0.02em] ${syntaxHelperOpen
+                        ? "border-accent/55 bg-accent/14 text-text-primary"
+                        : "text-text-secondary"}`}
                     >
-                      syntax
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSearchQuery("")}
-                      aria-label="Clear search"
-                      className="inline-flex items-center justify-center border border-border bg-bg-tertiary/20 px-1.5 py-0.5 text-[9px] font-medium uppercase leading-none tracking-[0.04em] text-text-secondary transition hover:bg-bg-hover hover:text-text-primary sm:h-5 sm:min-w-[40px] sm:border-border/55 sm:bg-bg-input/75 sm:px-2 sm:py-0 sm:text-[9px] sm:tracking-[0.06em]"
-                    >
-                      clear
+                      <SyntaxIcon />
+                      Syntax
                     </button>
                   </div>
                 </div>
-                {syntaxHelperOpen && (
-                  <div className="absolute left-0 right-0 top-full z-20 mt-1 border border-border/70 bg-bg-card/96 p-1.5 shadow-[0_16px_40px_rgba(0,0,0,0.32)] backdrop-blur">
-                    <div className="flex flex-wrap items-center gap-1.5">
+                <div className={`${syntaxHelperOpen ? "block" : "hidden"} absolute left-0 right-0 top-full z-20 mt-1 rounded-xl border border-border/70 bg-bg-card/96 p-1.5 shadow-[0_16px_40px_rgba(0,0,0,0.32)] backdrop-blur md:static md:z-auto md:mt-2 md:block md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-0`}>
+                    <div className="grid grid-cols-1 gap-1.5 md:flex md:flex-wrap md:items-center">
                       {(["cost", "power", "counter"] as SyntaxField[]).map((field) => {
                         const draft = syntaxDrafts[field];
                         return (
-                          <div key={field} className="flex items-center gap-1 border border-border/60 bg-bg-tertiary/10 px-1 py-1">
+                          <div key={field} className="flex min-w-0 items-center gap-1 rounded-md border border-border/60 bg-bg-tertiary/10 px-1 py-1">
                             <span className="min-w-0 text-[9px] font-medium uppercase tracking-[0.06em] text-text-secondary">
                               {field}
                             </span>
@@ -805,9 +923,46 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
                           </div>
                         );
                       })}
+                      <div className="flex min-w-0 items-center gap-1 rounded-md border border-border/60 bg-bg-tertiary/10 px-1 py-1">
+                        <span className="min-w-0 text-[9px] font-medium uppercase tracking-[0.06em] text-text-secondary">
+                          Trigger
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => appendSimpleSyntaxToken("has:trigger")}
+                          className="flex h-5 w-5 items-center justify-center border border-border/55 bg-bg-input/75 text-[10px] font-semibold text-text-primary transition hover:bg-bg-hover"
+                          aria-label="Add trigger syntax filter"
+                        >
+                          +
+                        </button>
+                      </div>
+                      <div className="flex min-w-0 items-center gap-1 rounded-md border border-border/60 bg-bg-tertiary/10 px-1 py-1">
+                        <span className="min-w-0 text-[9px] font-medium uppercase tracking-[0.06em] text-text-secondary">
+                          Trait
+                        </span>
+                        <input
+                          value={traitDraft}
+                          onChange={(event) => setTraitDraft(event.target.value)}
+                          onKeyDown={(event) => {
+                            if (event.key !== "Enter") return;
+                            event.preventDefault();
+                            appendTraitSyntaxToken();
+                          }}
+                          placeholder="straw hat"
+                          className="h-5 w-24 border border-border/55 bg-bg-input/75 px-1.5 text-[8px] font-medium text-text-primary outline-none placeholder:text-text-muted"
+                        />
+                        <button
+                          type="button"
+                          onClick={appendTraitSyntaxToken}
+                          disabled={traitDraft.trim().length === 0}
+                          className="flex h-5 w-5 items-center justify-center border border-border/55 bg-bg-input/75 text-[10px] font-semibold text-text-primary transition hover:bg-bg-hover disabled:cursor-not-allowed disabled:opacity-35"
+                          aria-label="Add trait syntax filter"
+                        >
+                          +
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                )}
+                </div>
                 {searchQueryResult.error && (
                   <p className="mt-2 text-sm text-banned">{(searchQueryResult.error as Error).message}</p>
                 )}
@@ -820,7 +975,7 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
       </section>
 
       <div className={`grid gap-3 ${mode === "edit" ? "xl:grid-cols-[minmax(0,2fr)_300px]" : "lg:grid-cols-[minmax(0,2fr)_300px]"}`}>
-        <section className="rounded-xl border border-border/70 bg-bg-card/70 p-2.5 sm:p-3">
+        <section className={`${DECK_SURFACE_CLASS} p-2 sm:p-3`}>
           {mode === "edit" ? (
             <div className="space-y-2">
               {trimmedSearchQuery.length === 0 && deck.leader && (
@@ -909,14 +1064,22 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
 
         {(mode === "edit" || mode === "view") && (
           <section className="space-y-3">
-            <section className="overflow-hidden rounded-t-xl rounded-b-none border border-border/70 bg-bg-card/70 pt-2.5 sm:pt-3">
-              <div className="mb-3 space-y-2 px-2.5 sm:px-3">
+            <section className={`overflow-hidden rounded-t-2xl rounded-b-none border border-border/70 bg-bg-card/72 pt-2.5 sm:pt-3`}>
+              <div className="mb-3 space-y-2 px-2 sm:px-3">
                 <div className="flex items-center justify-between gap-3">
                   <h2 className="text-base font-semibold text-text-primary">Deck</h2>
                   {mode === "edit" && (
-                    <HoverLabelIconButton label="Clear deck" onClick={clearDeck} tone="danger">
-                      <TrashIcon />
-                    </HoverLabelIconButton>
+                    <div className="flex items-center gap-1.5">
+                      <HoverLabelIconButton label="Undo last change" onClick={undoLastDeckChange} disabled={undoHistory.length === 0}>
+                        <UndoIcon />
+                      </HoverLabelIconButton>
+                      <HoverLabelIconButton label="Redo last change" onClick={redoLastDeckChange} disabled={redoHistory.length === 0}>
+                        <RedoIcon />
+                      </HoverLabelIconButton>
+                      <HoverLabelIconButton label="Clear deck" onClick={() => setConfirmClearDeckOpen(true)} tone="danger">
+                        <TrashIcon />
+                      </HoverLabelIconButton>
+                    </div>
                   )}
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -936,11 +1099,11 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
                   forceStaticCount
                 />
               ) : (
-                <div className="mb-3 px-2.5 text-[11px] text-text-muted sm:px-3">Leader will stay pinned here once selected.</div>
+                <div className="mb-3 px-2 text-[11px] text-text-muted sm:px-3">Leader will stay pinned here once selected.</div>
               )}
 
               {deck.main.length === 0 ? (
-                <p className="mx-2.5 rounded-lg border border-dashed border-border/70 bg-bg-tertiary/10 px-3 py-4 text-center text-xs text-text-secondary sm:mx-3">
+                <p className="mx-2 rounded-xl border border-dashed border-border/70 bg-bg-tertiary/10 px-3 py-4 text-center text-xs text-text-secondary sm:mx-3">
                   No main-deck cards selected yet.
                 </p>
               ) : (
@@ -978,6 +1141,15 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
           isLoading={previewQuery.isLoading}
           loadError={previewQuery.error instanceof Error ? previewQuery.error.message : null}
           onClose={closePreview}
+        />
+      )}
+      {confirmClearDeckOpen && (
+        <ConfirmClearDeckModal
+          onCancel={() => setConfirmClearDeckOpen(false)}
+          onConfirm={() => {
+            clearDeck();
+            setConfirmClearDeckOpen(false);
+          }}
         />
       )}
     </div>
@@ -1150,7 +1322,7 @@ function ChartTooltip({
 }) {
   return (
     <div
-      className="pointer-events-none absolute z-10 min-w-[88px] border border-border/70 bg-bg-primary/96 px-2.5 py-1 text-[10px] text-text-primary shadow-[0_10px_24px_rgba(0,0,0,0.35)]"
+      className="pointer-events-none absolute z-10 min-w-[168px] rounded-xl border border-border/70 bg-bg-primary/97 px-3.5 py-2.5 text-[13px] font-medium leading-snug text-text-primary shadow-[0_14px_32px_rgba(0,0,0,0.4)]"
       style={style}
     >
       {children}
@@ -1160,13 +1332,12 @@ function ChartTooltip({
 
 function CombinedCostCurveChart({
   typeCurve,
-  counterCurve,
   curveTooltip,
   onClearTooltip,
   onShowTooltip,
+  showLegend = true,
 }: {
   typeCurve: DeckCurveBin[];
-  counterCurve: DeckCurveBin[];
   curveTooltip: {
     x: number;
     y: number;
@@ -1177,42 +1348,36 @@ function CombinedCostCurveChart({
   } | null;
   onClearTooltip: () => void;
   onShowTooltip: (event: { currentTarget: EventTarget & Element }, costLabel: string, seriesLabel: string, segmentLabel: string, count: number) => void;
+  showLegend?: boolean;
 }) {
-  if (typeCurve.length === 0 && counterCurve.length === 0) return null;
+  if (typeCurve.length === 0) return null;
 
-  const bins = typeCurve.map((typeBin, index) => ({
+  const bins = typeCurve.map((typeBin) => ({
     label: typeBin.label,
     count: typeBin.count,
     typeSegments: typeBin.segments,
-    counterSegments: counterCurve[index]?.segments ?? [],
     typeHeight: typeBin.height,
-    counterHeight: counterCurve[index]?.height ?? 0,
   }));
 
   return (
     <div className="space-y-1.5">
-      <div className="h-[22px] overflow-hidden">
-        <div className="flex flex-wrap items-start gap-x-3 gap-y-1 text-[9px] text-text-secondary">
-          <div className="inline-flex flex-wrap items-center gap-1">
-            <span className="font-medium uppercase tracking-[0.08em] text-text-muted">type</span>
-            {typeCurve[0]?.segments.map((segment) => (
-              <span key={segment.key} className="inline-flex items-center gap-1">
-                <span className={`h-2 w-2 ${segment.colorClass}`} />
-                <span>{segment.label.toLowerCase()}</span>
-              </span>
-            ))}
-          </div>
-          <div className="inline-flex flex-wrap items-center gap-1">
-            <span className="font-medium uppercase tracking-[0.08em] text-text-muted">counter</span>
-            {counterCurve[0]?.segments.map((segment) => (
-              <span key={segment.key} className="inline-flex items-center gap-1">
-                <span className={`h-2 w-2 ${segment.colorClass}`} />
-                <span>{segment.label.toLowerCase()}</span>
-              </span>
-            ))}
+      {showLegend ? (
+        <div className="h-[22px] overflow-hidden">
+          <div className="flex flex-wrap items-start gap-x-3 gap-y-1 text-[13px] text-text-secondary">
+            <div className="inline-flex flex-wrap items-center gap-1">
+              <span className="font-medium uppercase tracking-[0.08em] text-text-muted">card type</span>
+              {typeCurve[0]?.segments.map((segment) => (
+                <span key={segment.key} className="inline-flex items-center gap-1">
+                  <span className={`h-2 w-2 ${segment.colorClass}`} />
+                  <span>{segment.label}</span>
+                </span>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <div aria-hidden="true" className="h-[22px]" />
+      )}
       <div
         data-curve-chart
         className="relative"
@@ -1226,17 +1391,17 @@ function CombinedCostCurveChart({
               transform: "translateX(-50%)",
             }}
           >
-            {curveTooltip.costLabel} cost {curveTooltip.seriesLabel.toLowerCase()} {curveTooltip.segmentLabel.toLowerCase()}: {curveTooltip.count}
+            {curveTooltip.costLabel} Cost {curveTooltip.segmentLabel === "0" ? "Brick" : curveTooltip.segmentLabel}: {curveTooltip.count}
           </ChartTooltip>
         )}
         <div className="grid grid-cols-11 gap-2">
-          {bins.map(({ label, count, typeSegments, counterSegments, typeHeight, counterHeight }) => (
-            <div key={label} className="grid min-w-0 grid-rows-[12px_84px_12px] items-end gap-1">
-              <span className="text-center text-[9px] font-semibold leading-none text-text-primary">
+          {bins.map(({ label, count, typeSegments, typeHeight }) => (
+            <div key={label} className="grid min-w-0 grid-rows-[14px_105px_14px] items-end gap-1">
+              <span className="text-center text-[13px] font-semibold leading-none text-text-primary">
                 {count > 0 ? count : ""}
               </span>
               <div
-                className="mx-auto grid h-[84px] w-[78%] grid-cols-2 gap-px overflow-hidden border border-border/40 bg-border/40"
+                className="mx-auto grid h-[105px] w-[64%] grid-cols-1 gap-px overflow-hidden border border-border/40 bg-border/40"
                 title={`${label} cost: ${count}`}
               >
                 <div className="flex min-w-0 items-end bg-transparent">
@@ -1256,39 +1421,15 @@ function CombinedCostCurveChart({
                             onClick={(event) => onShowTooltip(event, label, "type", segment.label, segment.count)}
                             className={`block w-full ${segment.colorClass}`}
                             style={{ height: `${segment.percentOfBin}%` }}
-                            title={`${label} cost type ${segment.label}: ${segment.count}`}
-                            aria-label={`${label} cost type ${segment.label}: ${segment.count}`}
-                          />
-                        ))}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex min-w-0 items-end bg-transparent">
-                  <div
-                    className="w-full"
-                    style={{ height: `${counterHeight}%`, minHeight: count > 0 ? "4px" : "0px" }}
-                  >
-                    <div className="flex h-full flex-col-reverse">
-                      {counterSegments
-                        .filter((segment) => segment.count > 0)
-                        .map((segment) => (
-                          <button
-                            key={segment.key}
-                            type="button"
-                            onMouseEnter={(event) => onShowTooltip(event, label, "counter", segment.label, segment.count)}
-                            onFocus={(event) => onShowTooltip(event, label, "counter", segment.label, segment.count)}
-                            onClick={(event) => onShowTooltip(event, label, "counter", segment.label, segment.count)}
-                            className={`block w-full ${segment.colorClass}`}
-                            style={{ height: `${segment.percentOfBin}%` }}
-                            title={`${label} cost counter ${segment.label}: ${segment.count}`}
-                            aria-label={`${label} cost counter ${segment.label}: ${segment.count}`}
+                            title={`${label} cost ${segment.label}: ${segment.count}`}
+                            aria-label={`${label} cost ${segment.label}: ${segment.count}`}
                           />
                         ))}
                     </div>
                   </div>
                 </div>
               </div>
-              <span className="text-center text-[9px] uppercase tracking-[0.04em] text-text-secondary">
+              <span className="text-center text-[13px] tracking-[0.04em] text-text-secondary">
                 {label}
               </span>
             </div>
@@ -1336,16 +1477,16 @@ function CounterBarChart({
               transform: "translate(-50%, calc(-100% - 6px))",
             }}
           >
-            {tooltip.label.toLowerCase()} counter: {tooltip.count}
+            {(tooltip.label === "0" ? "Brick" : tooltip.label)} Counter: {tooltip.count}
           </ChartTooltip>
         )}
       <div className="grid grid-cols-3 gap-2">
         {bars.map((bar) => (
-          <div key={bar.label} className="grid min-w-0 grid-rows-[12px_84px_12px] items-end gap-1">
-            <span className="text-center text-[9px] font-semibold leading-none text-text-primary">
+          <div key={bar.label} className="grid min-w-0 grid-rows-[14px_105px_14px] items-end gap-1">
+            <span className="text-center text-[13px] font-semibold leading-none text-text-primary">
               {bar.count > 0 ? bar.count : ""}
             </span>
-            <div className="flex h-[84px] items-end justify-center">
+            <div className="flex h-[105px] items-end justify-center">
               <div
                 className="flex h-full w-[78%] cursor-pointer items-end overflow-hidden border border-border/40 bg-border/40"
                 title={`${bar.label} counter: ${bar.count}`}
@@ -1393,7 +1534,7 @@ function CounterBarChart({
                 </div>
               </div>
             </div>
-            <span className="text-center text-[9px] uppercase tracking-[0.04em] text-text-secondary">
+            <span className="text-center text-[13px] tracking-[0.04em] text-text-secondary">
               {bar.label}
             </span>
           </div>
@@ -1406,8 +1547,10 @@ function CounterBarChart({
 
 function TypePieChart({
   counts,
+  showLegend = true,
 }: {
   counts: Array<{ type: string; count: number }>;
+  showLegend?: boolean;
 }) {
   const [tooltip, setTooltip] = useState<{
     x: number;
@@ -1415,32 +1558,8 @@ function TypePieChart({
     label: string;
     count: number;
   } | null>(null);
-  const total = counts.reduce((sum, item) => sum + item.count, 0);
+  const { total, slices } = buildTypePieSlices(counts);
   if (total <= 0) return null;
-
-  const palette = [
-    { color: "rgba(52, 211, 153, 0.9)", dotClass: "bg-emerald-400/90" },
-    { color: "rgba(232, 121, 249, 0.9)", dotClass: "bg-fuchsia-400/90" },
-    { color: "rgba(103, 232, 249, 0.9)", dotClass: "bg-cyan-300/90" },
-    { color: "rgba(252, 211, 77, 0.9)", dotClass: "bg-amber-300/90" },
-    { color: "rgba(251, 113, 133, 0.9)", dotClass: "bg-rose-400/90" },
-    { color: "rgba(167, 139, 250, 0.9)", dotClass: "bg-violet-400/90" },
-    { color: "rgba(56, 189, 248, 0.9)", dotClass: "bg-sky-400/90" },
-    { color: "rgba(190, 242, 100, 0.9)", dotClass: "bg-lime-300/90" },
-  ];
-
-  let cumulative = 0;
-  const slices = counts.map((item, index) => {
-    const start = cumulative / total;
-    cumulative += item.count;
-    const end = cumulative / total;
-    return {
-      ...item,
-      ...(palette[index % palette.length] ?? { color: "rgba(203, 213, 225, 0.9)", dotClass: "bg-slate-300/90" }),
-      offset: start,
-      size: end - start,
-    };
-  });
 
   const gradient = `conic-gradient(${slices.map((slice) => {
     const start = slice.offset * 360;
@@ -1449,11 +1568,11 @@ function TypePieChart({
   }).join(", ")})`;
 
   return (
-    <div className="grid gap-3 sm:grid-cols-[104px_minmax(0,1fr)] sm:items-center">
-      <div
-        className="relative mx-auto h-[104px] w-[104px]"
-        onMouseLeave={() => setTooltip(null)}
-      >
+    <div
+      className={showLegend ? "grid gap-4 sm:grid-cols-[128px_minmax(0,1fr)] sm:items-start" : "flex h-full min-h-[133px] items-center justify-center"}
+      onMouseLeave={() => setTooltip(null)}
+    >
+      <div className="relative mx-auto h-[144px] w-[144px] self-center justify-self-center">
         {tooltip && (
           <ChartTooltip
             style={{
@@ -1462,21 +1581,21 @@ function TypePieChart({
               transform: "translate(-50%, calc(-100% - 6px))",
             }}
           >
-            {tooltip.label.toLowerCase()}: {tooltip.count}
+            {tooltip.label}: {tooltip.count} • {Math.round((tooltip.count / total) * 100)}%
           </ChartTooltip>
         )}
         <div
           className="h-full w-full rounded-full border border-border/50"
           style={{ background: gradient }}
         />
-        <svg viewBox="0 0 104 104" className="absolute inset-0 h-full w-full overflow-visible">
+        <svg viewBox="0 0 144 144" className="absolute inset-0 h-full w-full overflow-visible">
           {slices.map((slice) => {
             const startAngle = (slice.offset * 360) - 90;
             const endAngle = ((slice.offset + slice.size) * 360) - 90;
             return (
               <path
                 key={slice.type}
-                d={describePieSlice(52, 52, 44, startAngle, endAngle)}
+                d={describePieSlice(72, 72, 61, startAngle, endAngle)}
                 fill="transparent"
                 onMouseEnter={(event) => {
                   const rect = event.currentTarget.ownerSVGElement?.getBoundingClientRect();
@@ -1524,21 +1643,151 @@ function TypePieChart({
           })}
         </svg>
       </div>
-      <div className="flex flex-wrap gap-1.5">
-        {slices.map((slice) => (
-          <span
-            key={slice.type}
-            className="inline-flex items-center gap-1 border border-border/60 bg-bg-tertiary/14 px-2 py-1 text-[10px] text-text-secondary"
-            title={`${slice.type}: ${slice.count}`}
-          >
-            <span className={`h-2 w-2 ${slice.dotClass}`} />
-            <span className="truncate">{slice.type}</span>
-            <span className="font-semibold text-text-primary">{slice.count}</span>
-          </span>
-        ))}
-      </div>
+      {showLegend && (
+        <div className="max-h-[140px] overflow-y-auto pl-2 pr-1">
+          <div className="space-y-1">
+            {slices.map((slice) => (
+              <button
+                key={slice.type}
+                type="button"
+                className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-2 border border-border/60 bg-bg-tertiary/14 px-1.5 py-0.5 text-[13px] text-text-secondary"
+                title={`${slice.type}: ${slice.count}`}
+                onMouseEnter={(event) => {
+                  const rect = event.currentTarget.parentElement?.parentElement?.getBoundingClientRect();
+                  const currentRect = event.currentTarget.getBoundingClientRect();
+                  if (!rect) return;
+                  setTooltip({
+                    x: currentRect.left - rect.left + (currentRect.width / 2),
+                    y: currentRect.top - rect.top,
+                    label: slice.type,
+                    count: slice.count,
+                  });
+                }}
+                onMouseMove={(event) => {
+                  const rect = event.currentTarget.parentElement?.parentElement?.getBoundingClientRect();
+                  const currentRect = event.currentTarget.getBoundingClientRect();
+                  if (!rect) return;
+                  setTooltip({
+                    x: currentRect.left - rect.left + (currentRect.width / 2),
+                    y: currentRect.top - rect.top,
+                    label: slice.type,
+                    count: slice.count,
+                  });
+                }}
+                onClick={(event) => {
+                  const rect = event.currentTarget.parentElement?.parentElement?.getBoundingClientRect();
+                  const currentRect = event.currentTarget.getBoundingClientRect();
+                  if (!rect) return;
+                  setTooltip({
+                    x: currentRect.left - rect.left + (currentRect.width / 2),
+                    y: currentRect.top - rect.top,
+                    label: slice.type,
+                    count: slice.count,
+                  });
+                }}
+                onFocus={(event) => {
+                  const rect = event.currentTarget.parentElement?.parentElement?.getBoundingClientRect();
+                  const currentRect = event.currentTarget.getBoundingClientRect();
+                  if (!rect) return;
+                  setTooltip({
+                    x: currentRect.left - rect.left + (currentRect.width / 2),
+                    y: currentRect.top - rect.top,
+                    label: slice.type,
+                    count: slice.count,
+                  });
+                }}
+              >
+                <span className="flex min-w-0 items-center gap-1 overflow-hidden">
+                  <span className={`h-1.5 w-1.5 shrink-0 ${slice.dotClass}`} />
+                  <span className="min-w-0 truncate text-left">{slice.type}</span>
+                </span>
+                <span className="w-[3ch] text-right font-medium tabular-nums text-text-primary/90">
+                  {slice.count}
+                </span>
+                <span className="w-[4ch] text-right tabular-nums text-text-secondary">
+                  {Math.round((slice.count / total) * 100)}%
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
+}
+
+const TYPE_PIE_PALETTE = [
+  { color: "rgba(244, 63, 94, 0.9)", dotClass: "bg-[#f43f5e]/90", hue: 345 },
+  { color: "rgba(99, 102, 241, 0.9)", dotClass: "bg-[#6366f1]/90", hue: 235 },
+  { color: "rgba(249, 115, 22, 0.9)", dotClass: "bg-[#f97316]/90", hue: 25 },
+  { color: "rgba(132, 204, 22, 0.9)", dotClass: "bg-[#84cc16]/90", hue: 82 },
+  { color: "rgba(168, 85, 247, 0.9)", dotClass: "bg-[#a855f7]/90", hue: 278 },
+  { color: "rgba(180, 83, 9, 0.9)", dotClass: "bg-[#b45309]/90", hue: 20 },
+  { color: "rgba(168, 162, 158, 0.9)", dotClass: "bg-[#a8a29e]/90", hue: null },
+  { color: "rgba(212, 212, 216, 0.9)", dotClass: "bg-[#d4d4d8]/90", hue: null },
+];
+
+function buildTypePieSlices(counts: Array<{ type: string; count: number }>) {
+  const total = counts.reduce((sum, item) => sum + item.count, 0);
+  const paletteOrder = buildTypePiePaletteOrder(counts.length);
+  let cumulative = 0;
+
+  return {
+    total,
+    slices: counts.map((item, index) => {
+      const start = cumulative / Math.max(1, total);
+      cumulative += item.count;
+      const end = cumulative / Math.max(1, total);
+      return {
+        ...item,
+        ...(paletteOrder[index] ?? { color: "rgba(203, 213, 225, 0.9)", dotClass: "bg-slate-300/90", hue: null }),
+        offset: start,
+        size: end - start,
+      };
+    }),
+  };
+}
+
+function buildTypePiePaletteOrder(count: number) {
+  if (count <= 0) return [];
+
+  const available = [...TYPE_PIE_PALETTE];
+  const ordered: typeof TYPE_PIE_PALETTE = [];
+
+  const firstIndex = available.findIndex((entry) => entry.hue !== null);
+  ordered.push(available.splice(firstIndex >= 0 ? firstIndex : 0, 1)[0]);
+
+  while (available.length > 0) {
+    const previous = ordered[ordered.length - 1];
+    const first = ordered[0];
+    const remainingAfterPick = ordered.length + 1 === TYPE_PIE_PALETTE.length;
+
+    let bestIndex = 0;
+    let bestScore = Number.NEGATIVE_INFINITY;
+
+    available.forEach((entry, index) => {
+      const previousDistance = getHueDistance(previous.hue, entry.hue);
+      const wrapDistance = remainingAfterPick ? getHueDistance(first.hue, entry.hue) : previousDistance;
+      const neutralPenalty = entry.hue === null ? 18 : 0;
+      const score = Math.min(previousDistance, wrapDistance) - neutralPenalty;
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestIndex = index;
+      }
+    });
+
+    ordered.push(available.splice(bestIndex, 1)[0]);
+  }
+
+  return Array.from({ length: count }, (_, index) => ordered[index % ordered.length]);
+}
+
+function getHueDistance(a: number | null, b: number | null) {
+  if (a === null && b === null) return 0;
+  if (a === null || b === null) return 140;
+  const raw = Math.abs(a - b);
+  return Math.min(raw, 360 - raw);
 }
 
 function polarToCartesian(centerX: number, centerY: number, radius: number, angleInDegrees: number) {
@@ -1603,6 +1852,114 @@ function MagnifierIcon() {
   );
 }
 
+function BarsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M4 20V10" />
+      <path d="M10 20V4" />
+      <path d="M16 20v-7" />
+      <path d="M22 20v-12" />
+    </svg>
+  );
+}
+
+function PieIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 3a9 9 0 1 0 9 9h-9Z" />
+      <path d="M12 3v9h9" />
+    </svg>
+  );
+}
+
+function ShowIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+function HideIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M3 3l18 18" />
+      <path d="M10.6 10.7A3 3 0 0 0 13.4 13.5" />
+      <path d="M9.9 5.2A10.4 10.4 0 0 1 12 5c6.5 0 10 7 10 7a17.8 17.8 0 0 1-3.2 4.2" />
+      <path d="M6.7 6.8A17.4 17.4 0 0 0 2 12s3.5 7 10 7a10.6 10.6 0 0 0 4-.8" />
+    </svg>
+  );
+}
+
+function ClearSearchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M18 6 6 18" />
+      <path d="m6 6 12 12" />
+    </svg>
+  );
+}
+
+function SyntaxIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M8 6 3 12l5 6" />
+      <path d="m16 6 5 6-5 6" />
+      <path d="M14 4 10 20" />
+    </svg>
+  );
+}
+
+function ConfirmClearDeckModal({
+  onCancel,
+  onConfirm,
+}: {
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onCancel();
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onCancel]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/72 p-3 sm:p-6" onClick={onCancel}>
+      <div
+        className="w-full max-w-md rounded-2xl border border-border/80 bg-[#111318] p-4 shadow-[0_32px_120px_rgba(0,0,0,0.55)] sm:p-5"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="space-y-2">
+          <h2 className="text-lg font-semibold text-text-primary">Clear deck?</h2>
+          <p className="text-sm text-text-secondary">
+            This will remove the leader and all main-deck cards from the current deck.
+          </p>
+        </div>
+        <div className="mt-4 flex items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className={`${DECK_HEADER_ACTION_CLASS} px-3`}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className={`${DECK_HEADER_ACTION_CLASS} border-banned/40 bg-banned/12 px-3 text-banned hover:bg-banned/20`}
+          >
+            Clear deck
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CardPreviewModal({
   card,
   detail,
@@ -1655,9 +2012,18 @@ function CardPreviewModal({
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-black/60 text-lg text-white transition hover:scale-105 hover:border-white/35 hover:bg-black/88 hover:text-white"
+          className="hidden absolute right-3 top-3 z-10 h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-black/60 text-lg text-white transition hover:scale-105 hover:border-white/35 hover:bg-black/88 hover:text-white"
         >
           ×
+        </button>
+
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close preview"
+          className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-md border border-border/70 bg-bg-input/70 text-text-secondary transition hover:bg-bg-hover hover:text-text-primary"
+        >
+          <ClearSearchIcon />
         </button>
 
         <div className="grid max-h-[92vh] overflow-y-auto lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]">
@@ -1837,11 +2203,11 @@ function DeckEntryRow({
       </div>
 
       {readOnly ? (
-        <div className="flex min-w-[34px] items-center justify-center text-center text-xs font-semibold text-text-primary">
+        <div className="flex min-w-[34px] items-center justify-center pr-1 text-center text-xs font-semibold text-text-primary">
           x{entry.count}
         </div>
       ) : forceStaticCount ? (
-        <div className="grid grid-cols-[auto_auto] items-center gap-1">
+        <div className="grid grid-cols-[auto_auto] items-center gap-1 pr-1">
           <div className="flex min-w-[26px] items-center justify-center text-center text-xs font-semibold text-text-primary">
             x{entry.count}
           </div>
@@ -1856,7 +2222,7 @@ function DeckEntryRow({
           ) : <div className="h-6 w-6" />}
         </div>
       ) : (
-        <div className="grid grid-cols-[auto_auto] items-center gap-1">
+        <div className="grid grid-cols-[auto_auto] items-center gap-1 pr-1">
           <div className="flex min-w-[26px] items-center justify-center text-center text-xs font-semibold text-text-primary">
             x{entry.count}
           </div>
@@ -1957,17 +2323,17 @@ function getDeckCostBadgeClass(colors: string[]) {
 
   switch (key) {
     case "black":
-      return "border-slate-300/20 bg-slate-800";
+      return "border-black/60 bg-black";
     case "blue":
       return "border-sky-300/25 bg-sky-700";
     case "green":
       return "border-emerald-300/25 bg-emerald-700";
     case "purple":
-      return "border-violet-300/25 bg-violet-700";
+      return "border-violet-300/20 bg-violet-800";
     case "red":
       return "border-rose-300/25 bg-rose-700";
     case "yellow":
-      return "border-amber-300/30 bg-amber-600 text-slate-950";
+      return "border-yellow-200/40 bg-yellow-500 text-slate-950";
     case "blue,green":
       return "border-teal-200/25 bg-[linear-gradient(135deg,rgba(3,105,161,1)_0%,rgba(4,120,87,1)_100%)]";
     case "blue,purple":
@@ -2014,11 +2380,13 @@ function HoverLabelIconButton({
   label,
   onClick,
   tone = "neutral",
+  disabled = false,
 }: {
   children: ReactNode;
   label: string;
   onClick: () => void;
   tone?: "neutral" | "danger";
+  disabled?: boolean;
 }) {
   const className = tone === "danger"
     ? "border-banned/30 bg-banned/10 text-banned hover:border-banned/45 hover:bg-banned/18 hover:text-[#ff8e8e]"
@@ -2030,11 +2398,12 @@ function HoverLabelIconButton({
         type="button"
         onClick={onClick}
         aria-label={label}
-        className={`flex h-7 w-7 items-center justify-center rounded-md border transition ${className}`}
+        disabled={disabled}
+        className={`flex h-7 w-7 items-center justify-center rounded-md border transition ${className} ${disabled ? "cursor-default opacity-35 hover:bg-inherit" : ""}`}
       >
         {children}
       </button>
-      <span className="pointer-events-none absolute right-0 top-full mt-1 whitespace-nowrap rounded-md border border-border/70 bg-bg-primary/95 px-2 py-1 text-[10px] font-medium text-text-secondary opacity-0 shadow-md transition-opacity group-hover:opacity-100">
+      <span className={`pointer-events-none absolute right-0 top-full mt-1 whitespace-nowrap rounded-md border border-border/70 bg-bg-primary/95 px-2 py-1 text-[10px] font-medium text-text-secondary shadow-md transition-opacity ${disabled ? "opacity-0" : "opacity-0 group-hover:opacity-100"}`}>
         {label}
       </span>
     </div>
@@ -2049,6 +2418,24 @@ function TrashIcon() {
       <path d="M19 6l-1 14H6L5 6" />
       <path d="M10 11v6" />
       <path d="M14 11v6" />
+    </svg>
+  );
+}
+
+function UndoIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M9 14 4 9l5-5" />
+      <path d="M4 9h9a7 7 0 1 1 0 14h-1" />
+    </svg>
+  );
+}
+
+function RedoIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="m15 14 5-5-5-5" />
+      <path d="M20 9h-9a7 7 0 1 0 0 14h1" />
     </svg>
   );
 }
@@ -2069,7 +2456,7 @@ function CompactStatusPill({
       : "border-border bg-bg-secondary/50 text-text-secondary";
 
   return (
-    <div className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1 ${toneClass}`}>
+    <div className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 ${toneClass}`}>
       <span className="text-[10px] uppercase tracking-[0.12em]">{label}</span>
       <span className="font-semibold text-text-primary">{value}</span>
     </div>
@@ -2101,13 +2488,14 @@ function buildCombinedSearchQuery(plainText: string, syntaxTokens: string[]) {
   return [plainText.trim(), ...syntaxTokens].filter(Boolean).join(" ");
 }
 
+function isSameDeckState(left: Deck, right: Deck) {
+  return buildDeckExport(left) === buildDeckExport(right);
+}
+
 function parseSearchQuery(query: string) {
   const normalized = query.replace(/\s+/g, " ");
   const hasTrailingWhitespace = /\s$/.test(query);
-  const parts = normalized
-    .split(" ")
-    .map((token) => token.trim())
-    .filter(Boolean);
+  const parts = Array.from(normalized.matchAll(/trait:"[^"]+"|\S+/gi), (match) => match[0].trim()).filter(Boolean);
 
   const syntaxTokens: string[] = [];
   const plainTokens: string[] = [];
@@ -2115,7 +2503,10 @@ function parseSearchQuery(query: string) {
   parts.forEach((token, index) => {
     const isLastToken = index === parts.length - 1;
     const isCommitted = !isLastToken || hasTrailingWhitespace;
-    const isSyntaxToken = /^(cost|power|counter)(>=|<=|=|>|<)\d+$/i.test(token);
+    const isSyntaxToken =
+      /^(cost|power|counter)(>=|<=|=|>|<)\d+$/i.test(token)
+      || /^has:trigger$/i.test(token)
+      || /^trait:"[^"]+"$/i.test(token);
 
     if (isCommitted && isSyntaxToken) {
       syntaxTokens.push(token);
@@ -2208,23 +2599,55 @@ function buildDeckTypeCounts(deck: Deck, cardsByNumber: Record<string, CardDetai
     .map(([type, count]) => ({ type, count }));
 }
 
+function buildDeckTraitCounts(deck: Deck, cardsByNumber: Record<string, CardDetail>) {
+  const counts = new Map<string, number>();
+
+  for (const entry of deck.main) {
+    const card = cardsByNumber[entry.card_number];
+    if (!card || !Array.isArray(card.types)) continue;
+
+    const traitLabel = formatTraitComboLabel(card.types);
+    if (!traitLabel) continue;
+
+    counts.set(traitLabel, (counts.get(traitLabel) ?? 0) + entry.count);
+  }
+
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([type, count]) => ({ type, count }));
+}
+
+function formatTraitComboLabel(types: string[]) {
+  const uniqueTypes = [
+    ...new Set(
+      types
+        .map((type) => type.trim())
+        .filter(Boolean),
+    ),
+  ];
+
+  if (uniqueTypes.length === 0) return "";
+  return uniqueTypes.join(" / ");
+}
+
 function buildDeckCurve(
   deck: Deck,
   cardsByNumber: Record<string, CardDetail>,
-  mode: "type" | "counter",
+  mode: "type" | "counter" | "trait",
+  traitSlices: TypePieSlice[] = [],
 ) {
   const bins = [
-    { label: "0", min: 0, max: 0, count: 0, character: 0, event: 0, stage: 0, counter0: 0, counter1k: 0, counter2k: 0 },
-    { label: "1", min: 1, max: 1, count: 0, character: 0, event: 0, stage: 0, counter0: 0, counter1k: 0, counter2k: 0 },
-    { label: "2", min: 2, max: 2, count: 0, character: 0, event: 0, stage: 0, counter0: 0, counter1k: 0, counter2k: 0 },
-    { label: "3", min: 3, max: 3, count: 0, character: 0, event: 0, stage: 0, counter0: 0, counter1k: 0, counter2k: 0 },
-    { label: "4", min: 4, max: 4, count: 0, character: 0, event: 0, stage: 0, counter0: 0, counter1k: 0, counter2k: 0 },
-    { label: "5", min: 5, max: 5, count: 0, character: 0, event: 0, stage: 0, counter0: 0, counter1k: 0, counter2k: 0 },
-    { label: "6", min: 6, max: 6, count: 0, character: 0, event: 0, stage: 0, counter0: 0, counter1k: 0, counter2k: 0 },
-    { label: "7", min: 7, max: 7, count: 0, character: 0, event: 0, stage: 0, counter0: 0, counter1k: 0, counter2k: 0 },
-    { label: "8", min: 8, max: 8, count: 0, character: 0, event: 0, stage: 0, counter0: 0, counter1k: 0, counter2k: 0 },
-    { label: "9", min: 9, max: 9, count: 0, character: 0, event: 0, stage: 0, counter0: 0, counter1k: 0, counter2k: 0 },
-    { label: "10", min: 10, max: Number.POSITIVE_INFINITY, count: 0, character: 0, event: 0, stage: 0, counter0: 0, counter1k: 0, counter2k: 0 },
+    { label: "0", min: 0, max: 0, count: 0, character: 0, event: 0, stage: 0, counter0: 0, counter1k: 0, counter2k: 0, traits: new Map<string, number>() },
+    { label: "1", min: 1, max: 1, count: 0, character: 0, event: 0, stage: 0, counter0: 0, counter1k: 0, counter2k: 0, traits: new Map<string, number>() },
+    { label: "2", min: 2, max: 2, count: 0, character: 0, event: 0, stage: 0, counter0: 0, counter1k: 0, counter2k: 0, traits: new Map<string, number>() },
+    { label: "3", min: 3, max: 3, count: 0, character: 0, event: 0, stage: 0, counter0: 0, counter1k: 0, counter2k: 0, traits: new Map<string, number>() },
+    { label: "4", min: 4, max: 4, count: 0, character: 0, event: 0, stage: 0, counter0: 0, counter1k: 0, counter2k: 0, traits: new Map<string, number>() },
+    { label: "5", min: 5, max: 5, count: 0, character: 0, event: 0, stage: 0, counter0: 0, counter1k: 0, counter2k: 0, traits: new Map<string, number>() },
+    { label: "6", min: 6, max: 6, count: 0, character: 0, event: 0, stage: 0, counter0: 0, counter1k: 0, counter2k: 0, traits: new Map<string, number>() },
+    { label: "7", min: 7, max: 7, count: 0, character: 0, event: 0, stage: 0, counter0: 0, counter1k: 0, counter2k: 0, traits: new Map<string, number>() },
+    { label: "8", min: 8, max: 8, count: 0, character: 0, event: 0, stage: 0, counter0: 0, counter1k: 0, counter2k: 0, traits: new Map<string, number>() },
+    { label: "9", min: 9, max: 9, count: 0, character: 0, event: 0, stage: 0, counter0: 0, counter1k: 0, counter2k: 0, traits: new Map<string, number>() },
+    { label: "10", min: 10, max: Number.POSITIVE_INFINITY, count: 0, character: 0, event: 0, stage: 0, counter0: 0, counter1k: 0, counter2k: 0, traits: new Map<string, number>() },
   ];
 
   for (const entry of deck.main) {
@@ -2252,22 +2675,37 @@ function buildDeckCurve(
       } else {
         bin.counter0 += entry.count;
       }
+
+      if (Array.isArray(card.types)) {
+        const traitLabel = formatTraitComboLabel(card.types);
+        if (traitLabel) {
+          bin.traits.set(traitLabel, (bin.traits.get(traitLabel) ?? 0) + entry.count);
+        }
+      }
     }
   }
 
   const maxCount = Math.max(1, ...bins.map((bin) => bin.count));
   return bins.map((bin) => {
+    const traitColorMap = new Map(traitSlices.map((slice) => [slice.type, slice.dotClass]));
     const segments = mode === "counter"
       ? [
           { key: "counter0", label: "0", count: bin.counter0, colorClass: "bg-slate-400/80" },
-          { key: "counter1k", label: "1000", count: bin.counter1k, colorClass: "bg-sky-400/80" },
-          { key: "counter2k", label: "2000", count: bin.counter2k, colorClass: "bg-amber-300/85" },
+          { key: "counter1k", label: "1k", count: bin.counter1k, colorClass: "bg-sky-400/80" },
+          { key: "counter2k", label: "2k", count: bin.counter2k, colorClass: "bg-amber-300/85" },
         ]
-      : [
+      : mode === "type"
+        ? [
           { key: "character", label: "Character", count: bin.character, colorClass: "bg-emerald-400/80" },
           { key: "event", label: "Event", count: bin.event, colorClass: "bg-fuchsia-400/80" },
           { key: "stage", label: "Stage", count: bin.stage, colorClass: "bg-cyan-300/85" },
-        ];
+        ]
+        : traitSlices.map((slice) => ({
+          key: `trait-${slice.type}`,
+          label: slice.type,
+          count: bin.traits.get(slice.type) ?? 0,
+          colorClass: traitColorMap.get(slice.type) ?? "bg-slate-300/85",
+        }));
 
     return {
       ...bin,
