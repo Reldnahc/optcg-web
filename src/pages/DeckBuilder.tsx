@@ -10,7 +10,7 @@ import { DEFAULT_PAGE_CONTAINER_CLASS } from "../components/layout/container";
 import { useDebounce } from "../hooks/useDebounce";
 import { usePageMeta } from "../hooks/usePageMeta";
 import { createEmptyDeck, decodeDeckHash, deckHashToEditPath, deckHashToViewPath, encodeDeckHash } from "../decks/hash";
-import { createSavedDeckRecord, getSavedDeckRecordByHash, upsertSavedDeckRecord } from "../decks/library";
+import { createSavedDeckRecord, getSavedDeckRecord, getSavedDeckRecordByHash, upsertSavedDeckRecord } from "../decks/library";
 import {
   addCardToDeck,
   buildDeckExport,
@@ -138,6 +138,7 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
   } | null>(null);
   const [searchPage, setSearchPage] = useState(1);
   const [loadedSearchResults, setLoadedSearchResults] = useState<Card[]>([]);
+  const [savedDeckRevision, setSavedDeckRevision] = useState(0);
   const [syntaxDrafts, setSyntaxDrafts] = useState<Record<SyntaxField, SyntaxDraft>>({
     cost: { operator: ">=", value: "" },
     power: { operator: ">=", value: "" },
@@ -148,11 +149,16 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const debouncedSearchQuery = useDebounce(searchQuery, 250);
   const explicitSavedDeckId = useMemo(() => new URLSearchParams(location.search).get("saved"), [location.search]);
+  const explicitSavedDeck = useMemo(
+    () => explicitSavedDeckId ? getSavedDeckRecord(explicitSavedDeckId) : null,
+    [explicitSavedDeckId, savedDeckRevision],
+  );
   const matchedSavedDeck = useMemo(
     () => explicitSavedDeckId || !hash ? null : getSavedDeckRecordByHash(hash),
-    [explicitSavedDeckId, hash],
+    [explicitSavedDeckId, hash, savedDeckRevision],
   );
-  const savedDeckId = explicitSavedDeckId ?? matchedSavedDeck?.id ?? null;
+  const savedDeckRecord = explicitSavedDeck ?? matchedSavedDeck;
+  const savedDeckId = savedDeckRecord?.id ?? null;
 
   useEffect(() => {
     if (!hash || explicitSavedDeckId || !matchedSavedDeck) return;
@@ -263,10 +269,12 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
   }, [searchEnabled, Boolean(deck?.leader), searchPage, searchQueryResult.data]);
 
   const effectiveHash = currentHash ?? hash ?? hydratedHashRef.current ?? null;
+  const isDirtySavedDeck = Boolean(mode === "edit" && savedDeckRecord && effectiveHash && savedDeckRecord.hash !== effectiveHash);
+  const shouldWarnOnLeave = isDirtySavedDeck;
   const sharePath = effectiveHash ? deckHashToViewPath(effectiveHash) : null;
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const shareUrl = sharePath ? `${origin}${sharePath}` : "";
-  const canSaveToLibrary = Boolean(mode === "edit" && deck && effectiveHash && !savedDeckId);
+  const canSaveToLibrary = Boolean(mode === "edit" && deck && effectiveHash && (!savedDeckId || isDirtySavedDeck));
   const exportText = deck ? buildDeckExport(deck) : "";
   const totalMainCards = deck ? mainDeckCount(deck) : 0;
   const totalUniqueMain = deck ? uniqueMainCount(deck) : 0;
@@ -283,6 +291,75 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
     () => deck ? sortDeckEntriesForDisplay(deck.main, cardsByNumber) : [],
     [cardsByNumber, deck],
   );
+
+  useEffect(() => {
+    if (!shouldWarnOnLeave || typeof window === "undefined") return;
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [shouldWarnOnLeave]);
+
+  useEffect(() => {
+    if (!shouldWarnOnLeave || typeof window === "undefined" || typeof document === "undefined") return;
+
+    let ignoreNextPopState = false;
+
+    const confirmLeave = () => window.confirm("This saved deck has unsaved changes. Leave without saving?");
+
+    const handleDocumentClick = (event: MouseEvent) => {
+      if (event.defaultPrevented) return;
+      if (event.button !== 0) return;
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+
+      const anchor = target.closest("a[href]");
+      if (!(anchor instanceof HTMLAnchorElement)) return;
+      if (anchor.target && anchor.target !== "_self") return;
+      if (anchor.hasAttribute("download")) return;
+
+      const nextUrl = new URL(anchor.href, window.location.href);
+      const currentUrl = new URL(window.location.href);
+      const isSameDocument = nextUrl.pathname === currentUrl.pathname
+        && nextUrl.search === currentUrl.search
+        && nextUrl.hash === currentUrl.hash;
+
+      if (nextUrl.origin !== currentUrl.origin || isSameDocument) return;
+
+      if (!confirmLeave()) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
+
+    const handlePopState = () => {
+      if (ignoreNextPopState) {
+        ignoreNextPopState = false;
+        return;
+      }
+
+      if (confirmLeave()) return;
+
+      ignoreNextPopState = true;
+      window.history.go(1);
+    };
+
+    document.addEventListener("click", handleDocumentClick, true);
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      document.removeEventListener("click", handleDocumentClick, true);
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [shouldWarnOnLeave]);
   const parsedSearchQuery = useMemo(() => parseSearchQuery(searchQuery), [searchQuery]);
   const syntaxSearchTokens = parsedSearchQuery.syntaxTokens;
   const plainSearchText = parsedSearchQuery.plainText;
@@ -362,11 +439,13 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
 
     if (savedDeckId) {
       upsertSavedDeckRecord(savedDeckId, effectiveHash, deck);
+      setSavedDeckRevision((current) => current + 1);
       setSaveError(null);
       return;
     }
 
     const savedDeck = createSavedDeckRecord(effectiveHash, deck);
+    setSavedDeckRevision((current) => current + 1);
     hydratedHashRef.current = effectiveHash;
     setCurrentHash(effectiveHash);
     setSaveError(null);
@@ -529,20 +608,6 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
                 <span className="text-text-muted">Missing: {batchQuery.data.missing.join(", ")}</span>
               )}
             </div>
-
-            {deckTypeCounts.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {deckTypeCounts.map(({ type, count }) => (
-                  <span
-                    key={type}
-                    className="inline-flex items-center gap-1 border border-border/60 bg-bg-tertiary/14 px-2 py-1 text-[10px] text-text-secondary"
-                  >
-                    <span className="truncate">{type}</span>
-                    <span className="font-semibold text-text-primary">{count}</span>
-                  </span>
-                ))}
-              </div>
-            )}
 
             {(deckCurveByType.length > 0 || deckCurveByCounter.length > 0) && (
               <div className="border border-border/55 bg-bg-tertiary/10 px-2 py-2">
