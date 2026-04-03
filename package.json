@@ -5,8 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "generate:card-dictionary": "npx tsx scripts/generate-card-dictionary.ts",
-    "build": "npm run generate:card-dictionary && tsc -b && npx tsx scripts/generate-sitemap.ts && npx tsx scripts/generate-prerender-manifest.ts && vite build && npx tsx scripts/prerender.ts",
+    "build": "tsc -b && npx tsx scripts/generate-sitemap.ts && npx tsx scripts/generate-prerender-manifest.ts && vite build && npx tsx scripts/prerender.ts",
     "lint": "eslint .",
     "preview": "vite preview"
   },

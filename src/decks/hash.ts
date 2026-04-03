@@ -1,4 +1,4 @@
-import { CARD_DICTIONARY, CARD_INDEX_BY_NUMBER } from "./cardDictionary.generated";
+import { ensureCardDictionary, getCardDictionary, getCardIndexByNumber } from "./cardDictionary";
 import type { Deck, DeckEntry } from "./types";
 
 const RAW_DECK_HASH_PREFIX = "!";
@@ -28,6 +28,7 @@ export function createEmptyDeck(): Deck {
 }
 
 export async function encodeDeckHash(deck: Deck): Promise<string> {
+  await ensureCardDictionary();
   const writer = new BitWriter();
 
   writer.writeBit(deck.leader ? 1 : 0);
@@ -67,6 +68,7 @@ export async function encodeDeckHash(deck: Deck): Promise<string> {
 }
 
 export async function decodeDeckHash(hash: string): Promise<Deck> {
+  await ensureCardDictionary();
   if (hash.startsWith(RAW_DECK_HASH_PREFIX)) {
     return decodePackedDeck(base64UrlToUint8(hash.slice(RAW_DECK_HASH_PREFIX.length)));
   }
@@ -344,7 +346,7 @@ function compareEntriesForEncoding(a: DeckEntry, b: DeckEntry) {
 }
 
 function getDictionaryId(cardNumber: string) {
-  const cardId = CARD_INDEX_BY_NUMBER.get(cardNumber);
+  const cardId = getCardIndexByNumber().get(cardNumber);
   if (cardId == null || cardId > MAX_DICTIONARY_ID) {
     return null;
   }
@@ -352,7 +354,7 @@ function getDictionaryId(cardNumber: string) {
 }
 
 function readDictionaryCard(cardId: number) {
-  const cardNumber = CARD_DICTIONARY[cardId];
+  const cardNumber = getCardDictionary()[cardId];
   if (!cardNumber) {
     throw new Error("Unknown card dictionary id");
   }
