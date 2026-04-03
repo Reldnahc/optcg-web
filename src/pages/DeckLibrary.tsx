@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCardsBatch } from "../api/hooks";
 import type { CardDetail } from "../api/types";
+import { DeckPageLoadingState } from "../components/deck/DeckPageLoadingState";
 import { ActionModal } from "../components/Modal";
 import { DEFAULT_PAGE_CONTAINER_CLASS } from "../components/layout/container";
 import { createEmptyDeck, deckHashToEditPath, deckHashToViewPath, encodeDeckHash } from "../decks/hash";
@@ -60,6 +61,7 @@ export function DeckLibraryPage() {
   );
   const leadersQuery = useCardsBatch(leaderCardNumbers);
   const leadersByNumber = leadersQuery.data?.data ?? {};
+  const isLibraryLoading = savedDecks.length > 0 && leadersQuery.isLoading && !leadersQuery.data;
 
   usePageMeta({
     title: "Decks",
@@ -147,6 +149,15 @@ export function DeckLibraryPage() {
   useEffect(() => {
     setSelectedDeckIds((current) => current.filter((id) => savedDecks.some((deck) => deck.id === id)));
   }, [savedDecks]);
+
+  if (isLibraryLoading) {
+    return (
+      <DeckPageLoadingState
+        title="Loading deck library"
+        description="Fetching saved decks and leader previews."
+      />
+    );
+  }
 
   function refreshLibrary() {
     const nextDecks = listSavedDecks();
@@ -817,7 +828,7 @@ function SavedDeckRow({
       <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-2 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center">
         <div className="flex flex-col items-start pt-5">
           {isRenaming ? (
-            <div className="h-[48px] w-[72px] overflow-hidden rounded-[3px] bg-bg-tertiary/40">
+            <div className="h-[48px] w-[72px] overflow-hidden rounded-[3px] bg-bg-tertiary/40 sm:h-[72px] sm:w-[108px]">
               {imageUrl ? (
                 <img
                   src={imageUrl}
@@ -834,7 +845,7 @@ function SavedDeckRow({
           ) : (
             <Link
               to={deckHashToViewPath(savedDeck.hash, savedDeck.id)}
-              className="block h-[48px] w-[72px] overflow-hidden rounded-[3px] bg-bg-tertiary/40 transition hover:opacity-95 hover:no-underline"
+              className="block h-[48px] w-[72px] overflow-hidden rounded-[3px] bg-bg-tertiary/40 transition hover:opacity-95 hover:no-underline sm:h-[72px] sm:w-[108px]"
               aria-label={`Open ${title}`}
             >
               {imageUrl ? (
@@ -1007,7 +1018,7 @@ function HoverLabelIconButton({
   className?: string;
 }) {
   return (
-    <div className="group relative">
+    <div className="group/icon-button relative">
       <button
         type="button"
         onClick={onClick}
@@ -1017,7 +1028,7 @@ function HoverLabelIconButton({
       >
         {children}
       </button>
-      <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded-md border border-border/70 bg-bg-primary/96 px-2 py-1 text-[10px] font-medium uppercase tracking-[0.04em] text-text-primary shadow-[0_10px_24px_rgba(0,0,0,0.35)] group-hover:block">
+      <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded-md border border-border/70 bg-bg-primary/96 px-2 py-1 text-[10px] font-medium uppercase tracking-[0.04em] text-text-primary shadow-[0_10px_24px_rgba(0,0,0,0.35)] group-hover/icon-button:block">
         {label}
       </div>
     </div>

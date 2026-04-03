@@ -2504,7 +2504,8 @@ export const CARD_DICTIONARY: string[] = [
   "OP16-044",
   "OP16-091",
   "OP16-096",
-  "OP16-102"
+  "OP16-102",
+  "OP16-090"
 ];
 export const CARD_INDEX_BY_NUMBER = new Map<string, number>(
   CARD_DICTIONARY.map((cardNumber, index) => [cardNumber, index]),

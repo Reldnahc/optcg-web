@@ -1,6 +1,7 @@
 import { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { DeckPageLoadingState } from "./components/deck/DeckPageLoadingState";
 import { Layout } from "./components/layout/Layout";
 import { Home } from "./pages/Home";
 const Search = lazy(async () => import("./pages/Search").then((module) => ({ default: module.Search })));
@@ -58,11 +59,11 @@ export default function App() {
               <Route path="/report" element={<ReportIssue />} />
               <Route path="/scans" element={<ScanProgress />} />
               <Route path="/terms" element={<TermsOfUse />} />
-              <Route path="/decks" element={<DeckLibraryPage />} />
-              <Route path="/decks/new" element={<NewDeckRedirect />} />
-              <Route path="/decks/edit/:hash" element={<DeckEditPage />} />
-              <Route path="/decks/view/:hash" element={<LegacyDeckViewRedirect />} />
-              <Route path="/decks/:hash" element={<DeckViewPage />} />
+              <Route path="/decks" element={<Suspense fallback={<DeckRouteLoadingFallback title="Loading deck library" />}><DeckLibraryPage /></Suspense>} />
+              <Route path="/decks/new" element={<Suspense fallback={<DeckRouteLoadingFallback title="Creating deck" description="Preparing the editor." />}><NewDeckRedirect /></Suspense>} />
+              <Route path="/decks/edit/:hash" element={<Suspense fallback={<DeckRouteLoadingFallback title="Loading deck" description="Preparing the editor." />}><DeckEditPage /></Suspense>} />
+              <Route path="/decks/view/:hash" element={<Suspense fallback={<DeckRouteLoadingFallback title="Loading deck" description="Preparing the viewer." />}><LegacyDeckViewRedirect /></Suspense>} />
+              <Route path="/decks/:hash" element={<Suspense fallback={<DeckRouteLoadingFallback title="Loading deck" description="Preparing the viewer." />}><DeckViewPage /></Suspense>} />
             </Route>
           </Routes>
         </Suspense>
@@ -77,4 +78,14 @@ function RouteLoadingFallback() {
       Loading...
     </div>
   );
+}
+
+function DeckRouteLoadingFallback({
+  title,
+  description,
+}: {
+  title: string;
+  description?: string;
+}) {
+  return <DeckPageLoadingState title={title} description={description} compact />;
 }

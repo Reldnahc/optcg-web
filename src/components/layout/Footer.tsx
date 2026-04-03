@@ -10,6 +10,7 @@ export function Footer() {
             <h4 className="text-text-primary font-semibold mb-2">Explore</h4>
             <ul className="space-y-1 text-text-muted">
               <li><Link to="/" className="hover:text-text-secondary">Home</Link></li>
+              <li><Link to="/decks" className="hover:text-text-secondary">Decks</Link></li>
               <li><Link to="/search?q=" className="hover:text-text-secondary">Search</Link></li>
               <li><Link to="/advanced" className="hover:text-text-secondary">Advanced Search</Link></li>
               <li><Link to="/random-redirect" className="hover:text-text-secondary">Random Card</Link></li>

@@ -53,7 +53,7 @@ export function Home() {
         <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6 text-center text-[13px] text-text-muted">
           <HomeLink to="/sets" label="Browse Sets" desc="All sets and products" />
           <HomeLink to="/formats" label="Formats" desc="Legality & banlists" />
-          <HomeLink to="/don" label="DON!! Cards" desc="DON card browser" />
+          <HomeLink to="/decks" label="Decks" desc="Local library and builder" />
           <HomeLink to="/api" label="API" desc="Developer documentation" />
         </div>
       </div>

@@ -839,7 +839,7 @@ function CardImageViewer({
     window.localStorage.setItem(IMAGE_AUTO_PREFERENCE_STORAGE_KEY, imagePreference);
   }, [imagePreference]);
 
-  const displayUrl = resolveImageDisplayUrl(current, imagePreference);
+  const displayUrl = resolveVariantThumbnailUrl(current, imagePreference);
   const isScrollableVariantStrip = variants.length >= 4;
 
   const handleVariantStripMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -1003,17 +1003,6 @@ function CardImageViewer({
       )}
     </div>
   );
-}
-
-function resolveImageDisplayUrl(
-  variant: CardVariant | undefined,
-  preference: ImagePreference,
-): string | null | undefined {
-  if (!variant) return null;
-
-  return preference === "scan"
-    ? variant.media.scan_url ?? variant.media.image_url
-    : variant.media.image_url ?? variant.media.scan_url;
 }
 
 function resolveVariantThumbnailUrl(

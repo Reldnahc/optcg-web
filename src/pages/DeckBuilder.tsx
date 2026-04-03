@@ -3,6 +3,7 @@ import { Link, Navigate, useLocation, useNavigate, useParams } from "react-route
 import { useCard, useCardSearch, useCardsBatch } from "../api/hooks";
 import type { Card, CardDetail } from "../api/types";
 import { CopyButton } from "../components/CopyButton";
+import { DeckPageLoadingState } from "../components/deck/DeckPageLoadingState";
 import { ActionModal, ModalBackdrop, ModalCloseButton, ModalSurface } from "../components/Modal";
 import { CardRulesText } from "../components/card/CardRulesText";
 import { TriggerBlock } from "../components/card/TriggerBlock";
@@ -111,9 +112,10 @@ export function NewDeckRedirect() {
   }
 
   return (
-    <div className={`${DEFAULT_PAGE_CONTAINER_CLASS} py-6`}>
-      <p className="text-text-secondary">Creating deck...</p>
-    </div>
+    <DeckPageLoadingState
+      title="Creating deck"
+      description="Generating a fresh deck link and opening the editor."
+    />
   );
 }
 
@@ -303,7 +305,8 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
   const sharePath = effectiveHash ? deckHashToViewPath(effectiveHash) : null;
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const shareUrl = sharePath ? `${origin}${sharePath}` : "";
-  const canSaveToLibrary = Boolean(mode === "edit" && deck && effectiveHash && (!savedDeckId || isDirtySavedDeck));
+  const canSaveToLibrary = Boolean(deck && effectiveHash && (!savedDeckId || (mode === "edit" && isDirtySavedDeck)));
+  const canSaveAsNewToLibrary = Boolean(mode === "edit" && canSaveToLibrary);
   const exportText = deck ? buildDeckExport(deck) : "";
   const totalMainCards = deck ? mainDeckCount(deck) : 0;
   const totalUniqueMain = deck ? uniqueMainCount(deck) : 0;
@@ -425,11 +428,7 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
   }
 
   if (!deck) {
-    return (
-      <div className={`${DEFAULT_PAGE_CONTAINER_CLASS} py-6`}>
-        <p className="text-text-secondary">Loading deck...</p>
-      </div>
-    );
+    return <DeckPageLoadingState title="Loading deck" description="Decoding the deck link and preparing the editor." />;
   }
 
   const closePreview = () => {
@@ -504,7 +503,7 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
   };
 
   const saveDeckToLibrary = () => {
-    if (mode !== "edit" || !deck || !effectiveHash) return;
+    if (!deck || !effectiveHash) return;
 
     if (savedDeckId) {
       upsertSavedDeckRecord(savedDeckId, effectiveHash, deck);
@@ -514,6 +513,26 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
     }
 
     const savedDeck = createSavedDeckRecord(effectiveHash, deck);
+    setSavedDeckRevision((current) => current + 1);
+    hydratedHashRef.current = effectiveHash;
+    setCurrentHash(effectiveHash);
+    setSaveError(null);
+    navigate(
+      mode === "edit"
+        ? deckHashToEditPath(effectiveHash, savedDeck.id)
+        : deckHashToViewPath(effectiveHash, savedDeck.id),
+      { replace: true },
+    );
+  };
+
+  const saveDeckAsNewToLibrary = () => {
+    if (mode !== "edit" || !deck || !effectiveHash) return;
+
+    const savedDeck = createSavedDeckRecord(effectiveHash, deck, {
+      folderId: savedDeckRecord?.folderId ?? null,
+      localName: savedDeckRecord?.localName ?? null,
+    });
+
     setSavedDeckRevision((current) => current + 1);
     hydratedHashRef.current = effectiveHash;
     setCurrentHash(effectiveHash);
@@ -645,6 +664,16 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
                       Save
                     </button>
                   )}
+                  {canSaveAsNewToLibrary && (
+                    <button
+                      type="button"
+                      onClick={saveDeckAsNewToLibrary}
+                      className={DECK_HEADER_ACTION_CLASS}
+                    >
+                      <DeckSaveActionIcon />
+                      Save New
+                    </button>
+                  )}
                   {effectiveHash && (
                     mode === "edit" ? (
                       <a
@@ -755,7 +784,7 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
                               {deckCurveByType[0]?.segments.map((segment) => (
                                 <span key={segment.key} className="inline-flex items-center gap-1">
                                   <span className={`h-2 w-2 ${segment.colorClass}`} />
-                                  <span>{segment.label.toLowerCase()}</span>
+                                  <span>{segment.label}</span>
                                 </span>
                               ))}
                             </div>
@@ -764,7 +793,7 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
                               {deckCurveByCounter[0]?.segments.map((segment) => (
                                 <span key={segment.key} className="inline-flex items-center gap-1">
                                   <span className={`h-2 w-2 ${segment.colorClass}`} />
-                                  <span>{segment.label.toLowerCase()}</span>
+                                  <span>{segment.label}</span>
                                 </span>
                               ))}
                             </div>

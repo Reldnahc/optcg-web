@@ -124,15 +124,23 @@ export function deleteSavedDeckFolder(id: string) {
     : record));
 }
 
-export function createSavedDeckRecord(hash: string, deck: Deck, options?: { folderId?: string | null }) {
+export function createSavedDeckRecord(
+  hash: string,
+  deck: Deck,
+  options?: {
+    folderId?: string | null;
+    localName?: string | null;
+    favorite?: boolean;
+  },
+) {
   const record: SavedDeckRecord = {
     id: createSavedDeckId(),
     hash,
     leaderCardNumber: deck.leader?.card_number ?? null,
     mainCount: mainDeckCount(deck),
-    localName: null,
+    localName: options?.localName ?? null,
     folderId: options?.folderId ?? null,
-    favorite: false,
+    favorite: options?.favorite ?? false,
     createdAt: deck.created_at,
     updatedAt: deck.updated_at,
   };
