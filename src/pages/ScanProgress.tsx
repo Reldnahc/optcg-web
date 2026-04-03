@@ -153,16 +153,31 @@ function GroupRow({ group, lang }: { group: ScanProgressGroup; lang: string }) {
   const variantPercent = pct(group.scanned_variants, group.total_variants);
   const cardComplete = group.scanned_cards === group.total_cards;
   const variantComplete = group.scanned_variants === group.total_variants;
-  const groupTitle = group.bucket_type === "other_products"
-    ? `${group.bucket_label} (${group.product_count} products)`
-    : group.bucket_label;
+  const isSetBucket = group.bucket_type === "set_product";
+  const groupTitle = isSetBucket
+    ? group.bucket_label
+    : `${group.bucket_label} (${group.product_count} products)`;
 
   return (
     <div className="rounded-lg border border-border bg-bg-card/35 px-4 py-3">
       <div className="flex items-center justify-between gap-3">
-        <span className={`text-sm ${group.bucket_type === "other_products" ? "text-text-secondary" : "font-mono text-text-secondary"}`}>
-          {groupTitle}
-        </span>
+        <div className="min-w-0">
+          {isSetBucket ? (
+            <Link
+              to={`/sets/${encodeURIComponent(group.bucket_label)}`}
+              className="inline-flex items-center gap-2 text-sm font-mono text-link hover:text-link-hover hover:underline"
+            >
+              {groupTitle}
+            </Link>
+          ) : (
+            <span className="text-sm text-text-secondary">{groupTitle}</span>
+          )}
+          <p className="mt-0.5 text-xs text-text-muted">
+            {isSetBucket
+              ? "Set coverage"
+              : "Products not mapped to a known set"}
+          </p>
+        </div>
         <button
           type="button"
           onClick={() => setShowMissing((current) => !current)}
@@ -258,8 +273,9 @@ export function ScanProgress() {
       </div>
       <p className="text-text-secondary text-sm mb-6">
         We track scan coverage in two different ways: cards and variants. Cards tell you whether a card number has any
-        scan at all. Variants tell you whether each distinct version of that card has its own scan. Progress buckets are
-        based on product buckets, not raw card set codes.
+        scan at all. Variants tell you whether each distinct version of that card has its own scan. The coverage
+        breakdown below is organized around sets first, with a single fallback bucket for products that are not mapped
+        to a known set.
       </p>
 
       <div className="grid gap-3 sm:grid-cols-2 mb-8">
@@ -278,10 +294,11 @@ export function ScanProgress() {
           </p>
         </div>
         <div className="rounded-lg border border-border bg-bg-card/35 px-4 py-4 sm:col-span-2">
-          <p className="text-xs uppercase tracking-wide text-text-muted">Product Buckets</p>
+          <p className="text-xs uppercase tracking-wide text-text-muted">Set Groups</p>
           <p className="mt-2 text-sm text-text-secondary">
-            Scan progress is grouped by products. Products whose `product_set_code` matches a known set get their own
-            bucket by set code. Everything else is grouped into one `Other Products` bucket.
+            Scan progress is grouped by set code when a product maps cleanly to a known set. Anything without a known
+            set mapping falls into one `Other Products` bucket so it still shows up without competing with the real set
+            view.
           </p>
         </div>
       </div>
@@ -323,14 +340,14 @@ export function ScanProgress() {
 
       <div>
         <div className="mb-3 flex items-baseline justify-between gap-3">
-          <h2 className="text-lg font-semibold text-text-primary">By Product Bucket</h2>
+          <h2 className="text-lg font-semibold text-text-primary">By Set</h2>
           <p className="text-xs text-text-muted">
-            {completeGroupCount} / {d.groups.length} buckets card-complete
+            {completeGroupCount} / {d.groups.length} groups card-complete
           </p>
         </div>
         <p className="mb-3 text-sm text-text-secondary">
-          Each bucket row shows both the broader card-level coverage and the stricter variant-level coverage. A bucket
-          only counts as card-complete when every card number in that bucket has at least one scan.
+          Each row shows set-level coverage first, then variant-level coverage inside that same set. The only non-set
+          row is `Other Products`, which catches anything that has not been mapped to a known set yet.
         </p>
         <div className="space-y-2">
           {d.groups.map((group) => (
