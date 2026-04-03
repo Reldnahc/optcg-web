@@ -293,14 +293,6 @@ export function ScanProgress() {
             each individual version, not just the card in general?&quot;
           </p>
         </div>
-        <div className="rounded-lg border border-border bg-bg-card/35 px-4 py-4 sm:col-span-2">
-          <p className="text-xs uppercase tracking-wide text-text-muted">Set Groups</p>
-          <p className="mt-2 text-sm text-text-secondary">
-            Scan progress is grouped by set code when a product maps cleanly to a known set. Anything without a known
-            set mapping falls into one `Other Products` bucket so it still shows up without competing with the real set
-            view.
-          </p>
-        </div>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
