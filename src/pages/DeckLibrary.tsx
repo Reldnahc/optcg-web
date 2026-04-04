@@ -828,7 +828,7 @@ function SavedDeckRow({
   }
 
   return (
-    <article className={`group/row relative overflow-hidden rounded-lg border transition ${
+    <article className={`group/row relative rounded-lg border transition ${
       selected
         ? "border-accent/45 bg-accent/8"
         : "border-border/70 bg-bg-card/65 hover:border-border hover:bg-bg-card/85"
