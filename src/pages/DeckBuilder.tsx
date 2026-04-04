@@ -2041,11 +2041,23 @@ function CardPreviewModal({
   const imageUrl = detail?.variants[0]?.media.scan_url
     ?? detail?.variants[0]?.media.image_url
     ?? detail?.variants[0]?.media.scan_thumbnail_url
+    ?? detail?.variants[0]?.media.image_thumb_url
     ?? detail?.variants[0]?.media.thumbnail_url
     ?? card.scan_url
     ?? card.image_url
     ?? card.scan_thumb_url
     ?? card.thumbnail_url
+    ?? null;
+  const fullSizeImageUrl = detail?.variants[0]?.media.scan_download_url
+    ?? detail?.variants[0]?.media.image_url
+    ?? detail?.variants[0]?.media.scan_url
+    ?? detail?.variants[0]?.media.image_thumb_url
+    ?? detail?.variants[0]?.media.scan_thumbnail_url
+    ?? detail?.variants[0]?.media.thumbnail_url
+    ?? card.image_url
+    ?? card.scan_url
+    ?? card.thumbnail_url
+    ?? card.scan_thumb_url
     ?? null;
   const stats = [
     detail?.cost != null ? `${detail.cost} Cost` : card.cost != null ? `${card.cost} Cost` : null,
@@ -2088,7 +2100,13 @@ function CardPreviewModal({
 
         <div className="grid max-h-[92vh] overflow-y-auto lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]">
           <div className="border-b border-border/70 bg-[#0d1015] p-4 lg:border-b-0 lg:border-r">
-            <div className="overflow-hidden rounded-2xl border border-border/70 bg-black/30">
+            <a
+              href={fullSizeImageUrl ?? undefined}
+              target={fullSizeImageUrl ? "_blank" : undefined}
+              rel={fullSizeImageUrl ? "noopener noreferrer" : undefined}
+              className={`block overflow-hidden rounded-2xl border border-border/70 bg-black/30 ${fullSizeImageUrl ? "cursor-zoom-in transition hover:opacity-95" : ""}`}
+              aria-label={fullSizeImageUrl ? `Open full-size image for ${detail?.name ?? card.name}` : undefined}
+            >
               {imageUrl ? (
                 <img src={imageUrl} alt={detail?.name ?? card.name} className="block w-full" />
               ) : (
@@ -2096,7 +2114,7 @@ function CardPreviewModal({
                   No image available
                 </div>
               )}
-            </div>
+            </a>
           </div>
 
           <div className="space-y-4 p-4 sm:p-5">

@@ -835,6 +835,7 @@ function CardImageViewer({
   });
   const suppressClickRef = useRef(false);
   const displayUrl = resolveVariantDisplayUrl(current);
+  const fullSizeUrl = resolveVariantFullSizeUrl(current);
   const isScrollableVariantStrip = variants.length >= 4;
 
   const handleVariantStripMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -894,7 +895,13 @@ function CardImageViewer({
 
   return (
     <div>
-      <div className="rounded-2xl overflow-hidden bg-bg-card shadow-lg shadow-black/40">
+      <a
+        href={fullSizeUrl ?? undefined}
+        target={fullSizeUrl ? "_blank" : undefined}
+        rel={fullSizeUrl ? "noopener noreferrer" : undefined}
+        className={`block rounded-2xl overflow-hidden bg-bg-card shadow-lg shadow-black/40 ${fullSizeUrl ? "cursor-zoom-in transition hover:opacity-95" : ""}`}
+        aria-label={fullSizeUrl ? `Open full-size image for ${cardName}` : undefined}
+      >
         {displayUrl ? (
           <img
             src={displayUrl}
@@ -907,7 +914,7 @@ function CardImageViewer({
             No image available
           </div>
         )}
-      </div>
+      </a>
 
       {/* Variant strip */}
       {variants.length > 1 && (
@@ -975,6 +982,17 @@ function resolveVariantDisplayUrl(
 ): string | null | undefined {
   return variant.media.scan_url
     ?? variant.media.image_url;
+}
+
+function resolveVariantFullSizeUrl(
+  variant: CardVariant,
+): string | null | undefined {
+  return variant.media.scan_download_url
+    ?? variant.media.image_url
+    ?? variant.media.scan_url
+    ?? variant.media.image_thumb_url
+    ?? variant.media.scan_thumbnail_url
+    ?? variant.media.thumbnail_url;
 }
 
 function resolveVariantThumbnailUrl(
