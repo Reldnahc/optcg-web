@@ -810,7 +810,7 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
                               showLegend={false}
                             />
                           </div>
-                          <div className="px-1 py-1.5 sm:px-1.5 sm:py-2">
+                          <div className="px-1 py-1.5 sm:px-1.5 sm:py-2 lg:border-l lg:border-border/60 lg:pl-3">
                             <div className="mb-2 text-[10px] font-medium uppercase tracking-[0.08em] text-text-secondary">Counter</div>
                             <CounterBarChart
                               bricks={deckStats?.bricks ?? 0}
@@ -826,7 +826,7 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
                           <div className="mb-2 text-[10px] font-medium uppercase tracking-[0.08em] text-text-secondary">Card Type</div>
                           <TypePieChart counts={deckCardTypeCounts} />
                         </div>
-                        <div className="px-1 py-1.5 sm:px-1.5 sm:py-2">
+                        <div className="px-1 py-1.5 sm:px-1.5 sm:py-2 lg:border-l lg:border-border/60 lg:pl-3">
                           <div className="mb-2 text-[10px] font-medium uppercase tracking-[0.08em] text-text-secondary">Counter</div>
                           <TypePieChart counts={deckCounterCounts} />
                         </div>
@@ -834,7 +834,7 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
                           <div className="mb-2 text-[10px] font-medium uppercase tracking-[0.08em] text-text-secondary">Traits</div>
                           <TypePieChart counts={deckTraitCounts} />
                         </div>
-                        <div className="px-1 py-1.5 sm:px-1.5 sm:py-2">
+                        <div className="px-1 py-1.5 sm:px-1.5 sm:py-2 lg:border-l lg:border-border/60 lg:pl-3">
                           <div className="mb-2 text-[10px] font-medium uppercase tracking-[0.08em] text-text-secondary">Trait Pairs</div>
                           <TypePieChart counts={deckTraitPairCounts} />
                         </div>

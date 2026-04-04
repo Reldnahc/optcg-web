@@ -655,21 +655,19 @@ function FolderCard({
   onDelete: () => void;
 }) {
   const [isRenaming, setIsRenaming] = useState(false);
-  const [draftName, setDraftName] = useState(folder.name);
-
-  useEffect(() => {
-    setDraftName(folder.name);
-  }, [folder.name]);
+  const [draftName, setDraftName] = useState<string | null>(null);
+  const currentDraftName = draftName ?? folder.name;
 
   function commitRename() {
-    const normalizedName = draftName.trim();
+    const normalizedName = currentDraftName.trim();
     if (!normalizedName) {
-      setDraftName(folder.name);
+      setDraftName(null);
       setIsRenaming(false);
       return;
     }
 
     onRename(folder.id, normalizedName);
+    setDraftName(null);
     setIsRenaming(false);
   }
 
@@ -691,7 +689,7 @@ function FolderCard({
                 <FolderIcon />
               </span>
               <input
-                value={draftName}
+                value={currentDraftName}
                 onChange={(event) => setDraftName(event.target.value)}
                 onBlur={commitRename}
                 onKeyDown={(event) => {
@@ -699,7 +697,7 @@ function FolderCard({
                     event.preventDefault();
                     commitRename();
                   } else if (event.key === "Escape") {
-                    setDraftName(folder.name);
+                    setDraftName(null);
                     setIsRenaming(false);
                   }
                 }}
@@ -741,13 +739,16 @@ function FolderCard({
               onClick={() => onToggleFavorite(folder.id)}
               className={folder.favorite
                 ? "border-amber-300/50 bg-amber-300/12 text-amber-200 hover:bg-amber-300/18"
-                : "border-border bg-bg-tertiary/20 text-text-primary hover:bg-bg-hover"}
+                : "border-transparent text-text-muted hover:text-text-primary"}
             >
               <FavoriteIcon filled={folder.favorite} />
             </HoverLabelIconButton>
             <HoverLabelIconButton
               label="rename folder"
-              onClick={() => setIsRenaming(true)}
+              onClick={() => {
+                setDraftName(folder.name);
+                setIsRenaming(true);
+              }}
               className="border-border bg-bg-tertiary/20 text-text-primary hover:bg-bg-hover"
             >
               <EditIcon />
@@ -789,8 +790,13 @@ function SavedDeckRow({
   onAssignFolder: (id: string, folderId: string | null) => void;
   onDelete: () => void;
 }) {
+  const navigate = useNavigate();
   const [isRenaming, setIsRenaming] = useState(false);
-  const [draftName, setDraftName] = useState(savedDeck.localName ?? "");
+  const [showActions, setShowActions] = useState(false);
+  const [menuDirection, setMenuDirection] = useState<"down" | "up">("down");
+  const [draftName, setDraftName] = useState<string | null>(null);
+  const actionsRef = useRef<HTMLDivElement | null>(null);
+  const menuButtonRef = useRef<HTMLButtonElement | null>(null);
   const imageUrl = leader?.variants[0]?.media.thumbnail_url
     ?? leader?.variants[0]?.media.image_url
     ?? null;
@@ -798,165 +804,203 @@ function SavedDeckRow({
     ? `${leader.card_number.split("-")[0]} ${leader.name}`
     : "Untitled deck";
   const title = savedDeck.localName?.trim() || fallbackTitle;
+  const leaderName = leader?.name ?? null;
+  const leaderColors = leader?.color ?? [];
+  const colorLabel = leaderColors.length > 0 ? leaderColors.join("/") : null;
+  const currentDraftName = draftName ?? savedDeck.localName ?? "";
 
   useEffect(() => {
-    setDraftName(savedDeck.localName ?? "");
-  }, [savedDeck.localName]);
+    if (!showActions) return;
+    function handleClickOutside(event: MouseEvent) {
+      if (actionsRef.current && !actionsRef.current.contains(event.target as Node)) {
+        setShowActions(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showActions]);
 
   function commitRename() {
-    const normalized = draftName.trim();
+    const normalized = currentDraftName.trim();
     onRename(savedDeck.id, normalized.length > 0 ? normalized : null);
-    setDraftName(normalized);
+    setDraftName(null);
     setIsRenaming(false);
   }
 
   return (
-    <article className={`relative rounded-lg border p-2 transition ${
+    <article className={`group/row relative rounded-lg border transition ${
       selected
         ? "border-accent/45 bg-accent/8"
         : "border-border/70 bg-bg-card/65 hover:border-border hover:bg-bg-card/85"
     }`}>
-      <div className="absolute left-2 top-2 z-10">
-        <SelectionToggle
-          checked={selected}
-          onChange={onToggleSelected}
-          label={`Select ${title}`}
-          compact
-        />
-      </div>
-
-      <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-2 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center">
-        <div className="flex flex-col items-start pt-5">
-          {isRenaming ? (
-            <div className="h-[48px] w-[72px] overflow-hidden rounded-[3px] bg-bg-tertiary/40 sm:h-[72px] sm:w-[108px]">
-              {imageUrl ? (
-                <img
-                  src={imageUrl}
-                  alt={leader?.name ?? title}
-                  className="block h-full w-full scale-[1.2] object-cover object-[50%_14%]"
-                  loading="lazy"
-                />
-              ) : (
-                <div className="flex h-full items-center justify-center px-2 text-center text-[10px] text-text-muted">
-                  {leader?.card_number ?? "Deck"}
-                </div>
-              )}
-            </div>
-          ) : (
-            <Link
-              to={deckHashToViewPath(savedDeck.hash, savedDeck.id)}
-              className="block h-[48px] w-[72px] overflow-hidden rounded-[3px] bg-bg-tertiary/40 transition hover:opacity-95 hover:no-underline sm:h-[72px] sm:w-[108px]"
-              aria-label={`Open ${title}`}
-            >
-              {imageUrl ? (
-                <img
-                  src={imageUrl}
-                  alt={leader?.name ?? title}
-                  className="block h-full w-full scale-[1.2] object-cover object-[50%_14%]"
-                  loading="lazy"
-                />
-              ) : (
-                <div className="flex h-full items-center justify-center px-2 text-center text-[10px] text-text-muted">
-                  {leader?.card_number ?? "Deck"}
-                </div>
-              )}
-            </Link>
-          )}
+      <div className="flex items-stretch">
+        {/* Checkbox */}
+        <div className="flex shrink-0 items-center justify-center px-2">
+          <SelectionToggle
+            checked={selected}
+            onChange={onToggleSelected}
+            label={`Select ${title}`}
+            compact
+          />
         </div>
 
-        <div className="min-w-0">
-          <div className="min-w-0">
-            {isRenaming ? (
-              <input
-                value={draftName}
-                onChange={(event) => setDraftName(event.target.value)}
-                onBlur={commitRename}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    commitRename();
-                  } else if (event.key === "Escape") {
-                    setDraftName(savedDeck.localName ?? "");
-                    setIsRenaming(false);
-                  }
-                }}
-                autoFocus
-                className="h-7 w-full rounded-md border border-border bg-bg-input px-2 text-sm font-semibold text-text-primary outline-none"
-              />
-            ) : (
-              <div className="min-w-0 rounded-md px-1 py-0.5">
-                <div className="flex items-start gap-1.5">
-                  <Link
-                    to={deckHashToViewPath(savedDeck.hash, savedDeck.id)}
-                    className="min-w-0 max-w-full rounded-md transition hover:bg-bg-primary/20 hover:no-underline"
-                  >
-                    <div className="truncate text-sm font-semibold text-text-primary">{title}</div>
-                  </Link>
-                  <HoverLabelIconButton
-                    label="rename"
-                    onClick={() => setIsRenaming(true)}
-                    className="mt-0.5 h-6 w-6 shrink-0 border-border bg-bg-tertiary/20 text-text-primary hover:bg-bg-hover"
-                  >
-                    <EditIcon />
-                  </HoverLabelIconButton>
-                </div>
-                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-text-secondary">
-                  <span>{savedDeck.mainCount}/50 cards</span>
-                  {folderName && <span>{folderName}</span>}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="mt-1.5">
-            <select
-              value={savedDeck.folderId ?? NO_FOLDER_VALUE}
-              onChange={(event) => onAssignFolder(savedDeck.id, event.target.value === NO_FOLDER_VALUE ? null : event.target.value)}
-              className="h-7 min-w-[150px] rounded-md border border-border bg-bg-input px-2 text-[11px] text-text-primary outline-none transition focus:border-accent/60"
-              aria-label={`Folder for ${title}`}
-            >
-              <option value={NO_FOLDER_VALUE}>No folder</option>
-              {folders.map((folder) => (
-                <option key={folder.id} value={folder.id}>{folder.name}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="mt-1 text-[11px] text-text-secondary">
-            updated {formatDeckTimestamp(savedDeck.updatedAt)}
-          </div>
-        </div>
-
-        <div className="col-span-2 flex flex-wrap items-center justify-end gap-1.5 border-t border-border/50 pt-2 sm:col-span-1 sm:border-t-0 sm:pt-0">
-          <HoverLabelIconButton
-            label={savedDeck.favorite ? "unfavorite" : "favorite"}
-            onClick={() => onToggleFavorite(savedDeck.id)}
-            className={savedDeck.favorite
-              ? "h-7 w-7 border-amber-300/50 bg-amber-300/12 text-amber-200 hover:bg-amber-300/18"
-              : "h-7 w-7 border-border bg-bg-tertiary/20 text-text-primary hover:bg-bg-hover"}
-          >
-            <FavoriteIcon filled={savedDeck.favorite} />
-          </HoverLabelIconButton>
-          <Link
-            to={deckHashToEditPath(savedDeck.hash, savedDeck.id)}
-            className="inline-flex h-7 items-center gap-1.5 rounded-md border border-border bg-bg-tertiary/20 px-2.5 text-[11px] font-medium text-text-primary hover:bg-bg-hover hover:no-underline"
-          >
-            <EditIcon />
-            Edit deck
-          </Link>
+        {/* Image */}
+        <div className="relative w-[80px] shrink-0 sm:w-[140px]">
           <Link
             to={deckHashToViewPath(savedDeck.hash, savedDeck.id)}
-            className="inline-flex h-7 items-center gap-1.5 rounded-md border border-border bg-bg-tertiary/20 px-2.5 text-[11px] font-medium text-text-primary hover:bg-bg-hover hover:no-underline"
+            className="absolute inset-0 overflow-hidden bg-bg-tertiary/40 transition hover:opacity-90"
+            aria-label={`Open ${title}`}
           >
-            <span className="text-[10px] font-semibold uppercase tracking-[0.08em]">View</span>
+            {imageUrl ? (
+              <img
+                src={imageUrl}
+                alt={leaderName ?? title}
+                className="block h-full w-full scale-[2.5] object-cover object-[50%_18%] sm:scale-[1.8]"
+                loading="lazy"
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center text-[10px] text-text-muted">
+                {leader?.card_number ?? "Deck"}
+              </div>
+            )}
           </Link>
-          <HoverLabelIconButton
-            label="delete"
-            onClick={onDelete}
-            className="h-7 w-7 border-border bg-bg-tertiary/12 text-banned hover:bg-banned/10"
-          >
-            <TrashIcon />
-          </HoverLabelIconButton>
+        </div>
+
+        {/* Content + Actions */}
+        <div className="flex min-w-0 flex-1 flex-col justify-center px-3 py-2.5">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              {isRenaming ? (
+                <input
+                  value={currentDraftName}
+                  onChange={(event) => setDraftName(event.target.value)}
+                  onBlur={commitRename}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") { event.preventDefault(); commitRename(); }
+                    else if (event.key === "Escape") { setDraftName(null); setIsRenaming(false); }
+                  }}
+                  autoFocus
+                  className="h-7 w-full rounded-md border border-border bg-bg-input px-2 text-sm font-semibold text-text-primary outline-none focus:border-accent/60"
+                />
+              ) : (
+                <Link
+                  to={deckHashToViewPath(savedDeck.hash, savedDeck.id)}
+                  className="group/title min-w-0 hover:no-underline"
+                >
+                  <span className="block truncate text-sm font-semibold text-text-primary group-hover/title:text-accent transition-colors">{title}</span>
+                </Link>
+              )}
+
+              <div className="mt-0.5 flex items-center gap-x-1.5 text-[11px] text-text-secondary">
+                {colorLabel && (
+                  <>
+                    <span>{colorLabel}</span>
+                    <span className="text-border">·</span>
+                  </>
+                )}
+                <span>{savedDeck.mainCount}/50</span>
+                {folderName && (
+                  <>
+                    <span className="text-border">·</span>
+                    <span className="truncate">{folderName}</span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex shrink-0 items-center gap-1">
+              <button
+                type="button"
+                onClick={() => onToggleFavorite(savedDeck.id)}
+                aria-label={savedDeck.favorite ? "unfavorite" : "favorite"}
+                className={`inline-flex h-7 w-7 items-center justify-center rounded-md border transition ${
+                  savedDeck.favorite
+                    ? "border-amber-300/50 bg-amber-300/12 text-amber-200 hover:bg-amber-300/18"
+                    : "border-transparent text-text-muted hover:text-text-primary"
+                }`}
+              >
+                <FavoriteIcon filled={savedDeck.favorite} />
+              </button>
+
+              <Link
+                to={deckHashToEditPath(savedDeck.hash, savedDeck.id)}
+                className="hidden h-7 items-center gap-1.5 rounded-md border border-border bg-bg-tertiary/20 px-2.5 text-[11px] font-medium text-text-primary hover:bg-bg-hover hover:no-underline sm:inline-flex"
+              >
+                <EditIcon />
+                Edit
+              </Link>
+
+              {/* Overflow menu */}
+              <div className="relative" ref={actionsRef}>
+                <button
+                  ref={menuButtonRef}
+                  type="button"
+                  onClick={() => {
+                    if (!showActions && menuButtonRef.current) {
+                      const rect = menuButtonRef.current.getBoundingClientRect();
+                      const spaceBelow = window.innerHeight - rect.bottom;
+                      setMenuDirection(spaceBelow < 220 ? "up" : "down");
+                    }
+                    setShowActions(!showActions);
+                  }}
+                  aria-label="More actions"
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-text-muted transition hover:border-border hover:bg-bg-hover hover:text-text-primary"
+                >
+                  <MoreIcon />
+                </button>
+                {showActions && (
+                  <div className={`absolute right-0 z-20 w-44 rounded-lg border border-border/80 bg-bg-primary shadow-[0_8px_24px_rgba(0,0,0,0.4)] ${
+                    menuDirection === "up" ? "bottom-full mb-1" : "top-full mt-1"
+                  }`}>
+                    <div className="py-1">
+                      <button
+                        type="button"
+                        onClick={() => { setShowActions(false); navigate(deckHashToEditPath(savedDeck.hash, savedDeck.id)); }}
+                        className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12px] text-text-primary hover:bg-bg-hover sm:hidden"
+                      >
+                        <EditIcon />
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setDraftName(savedDeck.localName ?? ""); setIsRenaming(true); setShowActions(false); }}
+                        className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12px] text-text-primary hover:bg-bg-hover"
+                      >
+                        <EditIcon />
+                        Rename
+                      </button>
+                      <div className="px-3 py-1.5">
+                        <label className="text-[10px] uppercase tracking-wide text-text-muted">Folder</label>
+                        <select
+                          value={savedDeck.folderId ?? NO_FOLDER_VALUE}
+                          onChange={(event) => {
+                            onAssignFolder(savedDeck.id, event.target.value === NO_FOLDER_VALUE ? null : event.target.value);
+                            setShowActions(false);
+                          }}
+                          className="mt-0.5 h-7 w-full rounded-md border border-border bg-bg-input px-1.5 text-[11px] text-text-primary outline-none"
+                        >
+                          <option value={NO_FOLDER_VALUE}>No folder</option>
+                          {folders.map((folder) => (
+                            <option key={folder.id} value={folder.id}>{folder.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="my-0.5 border-t border-border/60" />
+                      <button
+                        type="button"
+                        onClick={() => { onDelete(); setShowActions(false); }}
+                        className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12px] text-banned hover:bg-banned/10"
+                      >
+                        <TrashIcon />
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </article>
@@ -1070,23 +1114,6 @@ function FolderIcon() {
   );
 }
 
-function formatDeckTimestamp(value: number) {
-  const diffMs = Date.now() - value;
-  const diffMinutes = Math.max(1, Math.round(diffMs / 60000));
-
-  if (diffMinutes < 60) {
-    return `${diffMinutes}m ago`;
-  }
-
-  const diffHours = Math.round(diffMinutes / 60);
-  if (diffHours < 24) {
-    return `${diffHours}h ago`;
-  }
-
-  const diffDays = Math.round(diffHours / 24);
-  return `${diffDays}d ago`;
-}
-
 function TrashIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -1095,6 +1122,16 @@ function TrashIcon() {
       <path d="M19 6l-1 14H6L5 6" />
       <path d="M10 11v6" />
       <path d="M14 11v6" />
+    </svg>
+  );
+}
+
+function MoreIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden="true">
+      <circle cx="12" cy="5" r="1.5" />
+      <circle cx="12" cy="12" r="1.5" />
+      <circle cx="12" cy="19" r="1.5" />
     </svg>
   );
 }
