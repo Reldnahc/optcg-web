@@ -16,7 +16,7 @@ const FILTER_SECTIONS: FilterSection[] = [
   {
     title: "Free Text",
     filters: [
-      { filter: "luffy", desc: "Free-text search for 'luffy' across name, text, set, product, artist, and more", example: "luffy" },
+      { filter: "luffy", desc: "Free-text search for 'luffy' across name, text, set, artist, and more", example: "luffy" },
       { filter: '"Monkey D. Luffy"', desc: "Free-text phrase search. Quotes keep the words together, but this still searches more than just the card name.", example: '"Monkey D. Luffy"' },
       { filter: "text:blocker", desc: "Explicit free-text search across all fields (alias: any)", example: "text:blocker" },
       { filter: "OP01-001", desc: "Typing a card number directly searches for that card", example: "OP01-001" },
@@ -104,7 +104,7 @@ const FILTER_SECTIONS: FilterSection[] = [
     title: "Block & Artist",
     filters: [
       { filter: "block:1", desc: "Cards in block 1", example: "block:1" },
-      { filter: "artist:oda", desc: "Variant artist name contains 'oda'", example: "artist:oda" },
+      { filter: 'artist:"Peach Momoko"', desc: "Variant artist name contains 'Peach Momoko'", example: 'artist:"Peach Momoko"' },
     ],
   },
   {
@@ -208,12 +208,73 @@ const COMBO_EXAMPLES = [
   { query: "prints>=3 r:sr", desc: "Super Rares with 3+ printings", example: "prints>=3 r:sr" },
 ];
 
+const FREE_SEARCH_QUICKSTART = [
+  {
+    title: "Bare words are broad",
+    body: <>Typing <code className="text-accent">luffy</code> is not just a name search. It can match card names, effect text, traits, artist names, set names or codes, and other indexed fields.</>,
+  },
+  {
+    title: "Quoted phrases stay together",
+    body: <>Use quotes when the words should stay as one phrase, like <code className="text-accent">"Monkey D. Luffy"</code> or <code className="text-accent">"draw 2"</code>.</>,
+  },
+  {
+    title: "Use field filters when you mean one field",
+    body: <>If you only want card names, use <code className="text-accent">name:</code>. If you only want effect text, use <code className="text-accent">o:</code>. Free search is intentionally wider than that.</>,
+  },
+  {
+    title: "Mix free search with filters",
+    body: <>Free search is a good starting point when you know text but not structure. Once you know what field matters, add filters to narrow it down.</>,
+  },
+];
+
+const FREE_SEARCH_EXAMPLES = [
+  { code: "luffy", desc: "Finds cards related to Luffy, not just cards named Luffy", example: "luffy" },
+  { code: '"Monkey D. Luffy"', desc: "Searches that exact phrase across indexed text fields", example: '"Monkey D. Luffy"' },
+  { code: "blocker", desc: "Good when you only know a keyword from effect text", example: "blocker" },
+  { code: '"draw 2"', desc: "Good for exact rules-text phrases", example: '"draw 2"' },
+  { code: "straw hat", desc: "Broad match for names, traits, and related text", example: "straw hat" },
+  { code: "op01", desc: "Typing a set code directly is often enough", example: "op01" },
+  { code: "peach momoko", desc: "Can surface cards by matching artist text", example: "peach momoko" },
+];
+
 export function SyntaxHelp() {
   return (
     <PageContainer
       title="Search Syntax"
       subtitle={<>Use these filters in the search bar to find exactly the cards you need. You can also use the <Link to="/advanced" className="text-link hover:text-link-hover">Advanced Search</Link> page to build queries visually.</>}
     >
+      <section className="mb-10">
+        <h2 className="text-lg font-semibold mb-3">How Free Search Works</h2>
+        <div className="rounded-xl border border-border bg-bg-card p-4 sm:p-5">
+          <p className="text-sm leading-relaxed text-text-secondary">
+            Start simple: you can type plain words straight into search without any operators. That free search is intentionally broad and is usually the fastest way to find a card when you only know part of a name, a phrase from the effect, a trait, an artist, or a product.
+          </p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {FREE_SEARCH_QUICKSTART.map((item) => (
+              <div key={item.title} className="rounded-lg border border-border/70 bg-bg-primary/20 p-3">
+                <h3 className="text-sm font-semibold text-text-primary">{item.title}</h3>
+                <p className="mt-1 text-sm leading-relaxed text-text-secondary">{item.body}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 rounded-lg border border-border/70 bg-bg-primary/20 p-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">Rule of thumb</p>
+            <p className="mt-1 text-sm leading-relaxed text-text-secondary">
+              If you are exploring, start with free search. If you know exactly which field you mean, switch to a field filter like <code className="text-accent">name:</code>, <code className="text-accent">o:</code>, <code className="text-accent">trait:</code>, <code className="text-accent">artist:</code>, or <code className="text-accent">set:</code>.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <h3 className="text-sm font-semibold text-text-secondary mb-2">Free Search Examples</h3>
+          <div className="bg-bg-card border border-border rounded-lg divide-y divide-border">
+            {FREE_SEARCH_EXAMPLES.map((example) => (
+              <QueryExampleRow key={example.code} code={example.code} desc={example.desc} example={example.example} />
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="mb-10">
         <h2 className="text-lg font-semibold mb-3">Operators</h2>
         <div className="bg-bg-card border border-border rounded-lg divide-y divide-border">
