@@ -68,7 +68,7 @@ export function CardDetailView({
     toolActions.push({
       key: "scan",
       kind: "scan",
-      href: currentVariant.media.scan_url,
+      href: currentVariant.media.scan_download_url ?? currentVariant.media.scan_url,
       downloadName: buildVariantDownloadName(card.card_number, currentVariant.label, "scan"),
       label: "Download scan",
     });
@@ -80,7 +80,12 @@ export function CardDetailView({
   useEffect(() => {
     const urls: { key: string; url: string }[] = [];
     if (currentVariant?.media.image_url) urls.push({ key: "image", url: currentVariant.media.image_url });
-    if (currentVariant?.media.scan_url) urls.push({ key: "scan", url: currentVariant.media.scan_url });
+    if (currentVariant?.media.scan_download_url || currentVariant?.media.scan_url) {
+      urls.push({
+        key: "scan",
+        url: currentVariant.media.scan_download_url ?? currentVariant.media.scan_url!,
+      });
+    }
     if (urls.length === 0) return;
 
     setFileSizes({});
@@ -101,7 +106,7 @@ export function CardDetailView({
       setFileSizes(sizes);
     });
     return () => { cancelled = true; };
-  }, [currentVariant?.media.image_url, currentVariant?.media.scan_url]);
+  }, [currentVariant?.media.image_url, currentVariant?.media.scan_download_url, currentVariant?.media.scan_url]);
 
   const resolvedToolActions = toolActions.map((a) =>
     a.kind === "image" || a.kind === "scan" ? { ...a, size: fileSizes[a.kind] ?? undefined } : a,

@@ -166,7 +166,7 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
     counter: { operator: ">=", value: "" },
   });
   const [traitDraft, setTraitDraft] = useState("");
-  const [legalDraftFormat, setLegalDraftFormat] = useState("");
+  const [legalDraftFormatIndex, setLegalDraftFormatIndex] = useState(0);
   const [previewCard, setPreviewCard] = useState<Card | null>(null);
   const hydratedHashRef = useRef<string | null>(null);
   const ignoreNextPopStateRef = useRef(false);
@@ -1019,33 +1019,29 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
                           +
                         </button>
                       </div>
-                      <div className="flex min-w-0 items-center gap-1 rounded-md border border-border/60 bg-bg-tertiary/10 px-1 py-1">
-                        <span className="min-w-0 text-[9px] font-medium uppercase tracking-[0.06em] text-text-secondary">
-                          Legal
-                        </span>
-                        <select
-                          value={legalDraftFormat}
-                          onChange={(event) => setLegalDraftFormat(event.target.value)}
-                          className="h-5 border border-border/55 bg-bg-input/75 px-1 text-[8px] font-medium text-text-primary outline-none"
-                        >
-                          <option value="">Format</option>
-                          {formatNames.map((name) => (
-                            <option key={name} value={name}>{name}</option>
-                          ))}
-                        </select>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (!legalDraftFormat) return;
-                            appendSimpleSyntaxToken(`legal:${legalDraftFormat}`);
-                          }}
-                          disabled={!legalDraftFormat}
-                          className="flex h-5 w-5 items-center justify-center border border-border/55 bg-bg-input/75 text-[10px] font-semibold text-text-primary transition hover:bg-bg-hover disabled:cursor-not-allowed disabled:opacity-35"
-                          aria-label="Add legality syntax filter"
-                        >
-                          +
-                        </button>
-                      </div>
+                      {formatNames.length > 0 && (
+                        <div className="flex min-w-0 items-center gap-1 rounded-md border border-border/60 bg-bg-tertiary/10 px-1 py-1">
+                          <span className="min-w-0 text-[9px] font-medium uppercase tracking-[0.06em] text-text-secondary">
+                            Legal
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setLegalDraftFormatIndex((i) => (i + 1) % formatNames.length)}
+                            className="flex h-5 items-center justify-center border border-border/55 bg-bg-input/75 px-1.5 text-[8px] font-medium text-text-primary transition hover:bg-bg-hover"
+                            aria-label="Cycle format"
+                          >
+                            {formatNames[legalDraftFormatIndex % formatNames.length]}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => appendSimpleSyntaxToken(`legal:${formatNames[legalDraftFormatIndex % formatNames.length]}`)}
+                            className="flex h-5 w-5 items-center justify-center border border-border/55 bg-bg-input/75 text-[10px] font-semibold text-text-primary transition hover:bg-bg-hover"
+                            aria-label="Add legality syntax filter"
+                          >
+                            +
+                          </button>
+                        </div>
+                      )}
                     </div>
                 </div>
                 {searchQueryResult.error && (

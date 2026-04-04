@@ -36,7 +36,7 @@ export function Home() {
           <SearchBar autoFocus />
         </div>
 
-        <div className="mt-4 flex items-center gap-3 text-sm">
+        <div className="mt-4 flex items-center justify-center gap-3 text-center text-sm">
           <button
             onClick={handleRandom}
             disabled={isFetching}
