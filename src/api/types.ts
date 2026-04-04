@@ -51,6 +51,7 @@ export interface CardVariant {
   };
   media: {
     image_url: string | null;
+    image_thumb_url: string | null;
     thumbnail_url: string | null;
     scan_url: string | null;
     scan_thumbnail_url: string | null;
