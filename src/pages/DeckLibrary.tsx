@@ -828,7 +828,7 @@ function SavedDeckRow({
   }
 
   return (
-    <article className={`group/row relative rounded-lg border transition ${
+    <article className={`group/row relative overflow-hidden rounded-lg border transition ${
       selected
         ? "border-accent/45 bg-accent/8"
         : "border-border/70 bg-bg-card/65 hover:border-border hover:bg-bg-card/85"
@@ -845,7 +845,7 @@ function SavedDeckRow({
         </div>
 
         {/* Image */}
-        <div className="relative w-[80px] shrink-0 sm:w-[140px]">
+        <div className="relative w-[80px] shrink-0 overflow-hidden sm:w-[140px]">
           <Link
             to={deckHashToViewPath(savedDeck.hash, savedDeck.id)}
             className="absolute inset-0 overflow-hidden bg-bg-tertiary/40 transition hover:opacity-90"
@@ -868,7 +868,7 @@ function SavedDeckRow({
 
         {/* Content + Actions */}
         <div className="flex min-w-0 flex-1 flex-col justify-center px-3 py-2.5">
-          <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center justify-between gap-2">
             <div className="min-w-0 flex-1">
               {isRenaming ? (
                 <input
