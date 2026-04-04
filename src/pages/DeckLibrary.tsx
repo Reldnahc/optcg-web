@@ -845,7 +845,7 @@ function SavedDeckRow({
         </div>
 
         {/* Image */}
-        <div className="relative w-[80px] shrink-0 overflow-hidden sm:w-[140px]">
+        <div className="relative w-[80px] shrink-0 overflow-hidden rounded-l-lg sm:w-[140px]">
           <Link
             to={deckHashToViewPath(savedDeck.hash, savedDeck.id)}
             className="absolute inset-0 overflow-hidden bg-bg-tertiary/40 transition hover:opacity-90"

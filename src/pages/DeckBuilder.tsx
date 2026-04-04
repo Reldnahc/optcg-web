@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
-import { useCard, useCardSearch, useCardsBatch } from "../api/hooks";
+import { useCard, useCardSearch, useCardsBatch, useFormats } from "../api/hooks";
 import type { Card, CardDetail } from "../api/types";
 import { CopyButton } from "../components/CopyButton";
 import { DeckPageLoadingState } from "../components/deck/DeckPageLoadingState";
@@ -166,6 +166,7 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
     counter: { operator: ">=", value: "" },
   });
   const [traitDraft, setTraitDraft] = useState("");
+  const [legalDraftFormat, setLegalDraftFormat] = useState("");
   const [previewCard, setPreviewCard] = useState<Card | null>(null);
   const hydratedHashRef = useRef<string | null>(null);
   const ignoreNextPopStateRef = useRef(false);
@@ -320,6 +321,15 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
   const deckTraitPairCounts = deck ? buildDeckTraitCounts(deck, cardsByNumber) : [];
   const deckCurveByType = deck ? buildDeckCurve(deck, cardsByNumber, "type") : [];
   const deckCurveByCounter = deck ? buildDeckCurve(deck, cardsByNumber, "counter") : [];
+  const formatsQuery = useFormats();
+  const formatNames = useMemo(
+    () => (formatsQuery.data?.data ?? []).map((f) => f.name),
+    [formatsQuery.data],
+  );
+  const deckLegality = useMemo(
+    () => deck ? buildDeckLegality(deck, cardsByNumber, formatNames) : [],
+    [deck, cardsByNumber, formatNames],
+  );
   const deckCardTypeCounts = useMemo(
     () => [
       { type: "character", count: deckStats?.characters ?? 0 },
@@ -727,6 +737,9 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
                   <CompactStatusPill label="Stages" value={String(deckStats.stages)} />
                 </>
               )}
+              {deckLegality.map((result) => (
+                <LegalityPill key={result.format} result={result} />
+              ))}
               {batchQuery.data && batchQuery.data.missing.length > 0 && (
                 <span className="text-text-muted">Missing: {batchQuery.data.missing.join(", ")}</span>
               )}
@@ -1002,6 +1015,33 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
                           disabled={traitDraft.trim().length === 0}
                           className="flex h-5 w-5 items-center justify-center border border-border/55 bg-bg-input/75 text-[10px] font-semibold text-text-primary transition hover:bg-bg-hover disabled:cursor-not-allowed disabled:opacity-35"
                           aria-label="Add trait syntax filter"
+                        >
+                          +
+                        </button>
+                      </div>
+                      <div className="flex min-w-0 items-center gap-1 rounded-md border border-border/60 bg-bg-tertiary/10 px-1 py-1">
+                        <span className="min-w-0 text-[9px] font-medium uppercase tracking-[0.06em] text-text-secondary">
+                          Legal
+                        </span>
+                        <select
+                          value={legalDraftFormat}
+                          onChange={(event) => setLegalDraftFormat(event.target.value)}
+                          className="h-5 border border-border/55 bg-bg-input/75 px-1 text-[8px] font-medium text-text-primary outline-none"
+                        >
+                          <option value="">Format</option>
+                          {formatNames.map((name) => (
+                            <option key={name} value={name}>{name}</option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!legalDraftFormat) return;
+                            appendSimpleSyntaxToken(`legal:${legalDraftFormat}`);
+                          }}
+                          disabled={!legalDraftFormat}
+                          className="flex h-5 w-5 items-center justify-center border border-border/55 bg-bg-input/75 text-[10px] font-semibold text-text-primary transition hover:bg-bg-hover disabled:cursor-not-allowed disabled:opacity-35"
+                          aria-label="Add legality syntax filter"
                         >
                           +
                         </button>
@@ -2432,6 +2472,22 @@ function HoverLabelIconButton({
   );
 }
 
+function LegalCheckIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M3 8.5 6.5 12 13 4" />
+    </svg>
+  );
+}
+
+function IllegalXIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M4 4 12 12M12 4 4 12" />
+    </svg>
+  );
+}
+
 function TrashIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -2485,6 +2541,38 @@ function CompactStatusPill({
   );
 }
 
+function LegalityPill({ result }: { result: FormatLegalityResult }) {
+  const [showTooltip, setShowTooltip] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const tooltipText = result.legal
+    ? `Legal in ${result.format}`
+    : result.reasons.join("\n");
+
+  return (
+    <div
+      ref={ref}
+      className="relative"
+      onMouseEnter={() => setShowTooltip(true)}
+      onMouseLeave={() => setShowTooltip(false)}
+    >
+      <div className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 ${
+        result.legal
+          ? "border-legal/25 bg-legal/8 text-legal"
+          : "border-banned/25 bg-banned/8 text-[#f2c1c1]"
+      }`}>
+        <span className="text-[10px] uppercase tracking-[0.12em]">{result.format}</span>
+        {result.legal ? <LegalCheckIcon /> : <IllegalXIcon />}
+      </div>
+      {showTooltip && (
+        <div className="absolute bottom-full left-1/2 z-30 mb-1.5 -translate-x-1/2 whitespace-pre rounded-lg border border-border/80 bg-bg-primary px-3 py-2 text-[11px] text-text-primary shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
+          {tooltipText}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function buildDeckWarnings(deck: Deck) {
   const warnings: string[] = [];
 
@@ -2494,6 +2582,63 @@ function buildDeckWarnings(deck: Deck) {
   }
 
   return warnings;
+}
+
+type FormatLegalityResult = {
+  format: string;
+  legal: boolean;
+  reasons: string[];
+};
+
+function buildDeckLegality(
+  deck: Deck,
+  cardsByNumber: Record<string, CardDetail>,
+  formatNames: string[],
+): FormatLegalityResult[] {
+  const allEntries: { card_number: string; count: number }[] = [
+    ...(deck.leader ? [{ card_number: deck.leader.card_number, count: 1 }] : []),
+    ...deck.main,
+  ];
+
+  const mainCount = deck.main.reduce((sum, e) => sum + e.count, 0);
+
+  return formatNames.map((format) => {
+    const reasons: string[] = [];
+
+    if (!deck.leader) {
+      reasons.push("No leader selected");
+    }
+    if (mainCount !== 50) {
+      reasons.push(`Main deck has ${mainCount} cards (must be exactly 50)`);
+    }
+
+    for (const entry of allEntries) {
+      const card = cardsByNumber[entry.card_number];
+      if (!card) continue;
+
+      const legality = card.legality?.[format];
+      if (!legality) continue;
+
+      if (legality.status === "banned") {
+        reasons.push(`${card.card_number} is banned`);
+      } else if (legality.status === "restricted") {
+        const maxCopies = legality.max_copies ?? 1;
+        if (entry.count > maxCopies) {
+          reasons.push(`${card.card_number} is restricted to ${maxCopies} ${maxCopies === 1 ? "copy" : "copies"}`);
+        }
+      } else if (legality.status === "pair") {
+        const partners = legality.paired_with ?? [];
+        for (const partner of partners) {
+          const partnerInDeck = allEntries.some((e) => e.card_number === partner);
+          if (partnerInDeck) {
+            reasons.push(`${card.card_number} cannot be used with ${partner}`);
+          }
+        }
+      }
+    }
+
+    return { format, legal: reasons.length === 0, reasons };
+  });
 }
 
 function isDonCard(card: Card | CardDetail) {
