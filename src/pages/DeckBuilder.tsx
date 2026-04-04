@@ -1283,7 +1283,7 @@ function SearchResultTile({
   onSubtract: () => void;
   onPreview: () => void;
 }) {
-  const thumbnailUrl = card.thumbnail_url ?? card.image_url;
+  const thumbnailUrl = card.scan_thumb_url ?? card.scan_url ?? card.thumbnail_url ?? card.image_url;
   const isLeader = card.card_type.toLowerCase() === "leader";
   const mainEntry = deck.main.find((entry) => entry.card_number === card.card_number);
   const currentCount = isLeader
@@ -2038,11 +2038,13 @@ function CardPreviewModal({
   loadError: string | null;
   onClose: () => void;
 }) {
-  const imageUrl = detail?.variants[0]?.media.image_url
-    ?? detail?.variants[0]?.media.scan_url
-    ?? detail?.variants[0]?.media.thumbnail_url
+  const imageUrl = detail?.variants[0]?.media.scan_url
+    ?? detail?.variants[0]?.media.image_url
     ?? detail?.variants[0]?.media.scan_thumbnail_url
+    ?? detail?.variants[0]?.media.thumbnail_url
+    ?? card.scan_url
     ?? card.image_url
+    ?? card.scan_thumb_url
     ?? card.thumbnail_url
     ?? null;
   const stats = [

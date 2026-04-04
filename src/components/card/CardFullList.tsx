@@ -17,7 +17,7 @@ export function CardFullList({ cards }: { cards: Card[] }) {
   return (
     <div className="space-y-5">
       {cards.map((card) => {
-        const imageUrl = card.thumbnail_url ?? card.image_url;
+        const imageUrl = card.scan_thumb_url ?? card.scan_url ?? card.thumbnail_url ?? card.image_url;
 
         return (
           <div

@@ -797,7 +797,9 @@ function SavedDeckRow({
   const [draftName, setDraftName] = useState<string | null>(null);
   const actionsRef = useRef<HTMLDivElement | null>(null);
   const menuButtonRef = useRef<HTMLButtonElement | null>(null);
-  const imageUrl = leader?.variants[0]?.media.thumbnail_url
+  const imageUrl = leader?.variants[0]?.media.scan_thumbnail_url
+    ?? leader?.variants[0]?.media.scan_url
+    ?? leader?.variants[0]?.media.thumbnail_url
     ?? leader?.variants[0]?.media.image_url
     ?? null;
   const fallbackTitle = leader

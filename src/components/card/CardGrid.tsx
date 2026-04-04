@@ -25,7 +25,7 @@ function cardLink(card: Card): string {
 }
 
 function CardThumbnail({ card }: { card: Card }) {
-  const thumbnailUrl = card.thumbnail_url ?? card.image_url;
+  const thumbnailUrl = card.scan_thumb_url ?? card.scan_url ?? card.thumbnail_url ?? card.image_url;
 
   return (
     <Link

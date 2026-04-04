@@ -27,6 +27,8 @@ export interface Card {
   block: string | null;
   image_url?: string | null;
   thumbnail_url?: string | null;
+  scan_url?: string | null;
+  scan_thumb_url?: string | null;
   label?: string | null;
   variant_index?: number;
   variant_product_name?: string | null;

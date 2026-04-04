@@ -35,10 +35,14 @@ export function CardHoverPreviewLink({
   });
 
   const preview = data?.data;
-  const thumbnailUrl = preview?.thumbnail_url
-    ?? preview?.image_url
+  const thumbnailUrl = preview?.variants?.[0]?.media.scan_thumbnail_url
+    ?? preview?.variants?.[0]?.media.scan_url
     ?? preview?.variants?.[0]?.media.thumbnail_url
     ?? preview?.variants?.[0]?.media.image_url
+    ?? preview?.scan_thumb_url
+    ?? preview?.scan_url
+    ?? preview?.thumbnail_url
+    ?? preview?.image_url
     ?? null;
   const effectText = preview?.effect ?? null;
   const triggerText = preview?.trigger ?? null;

@@ -34,7 +34,6 @@ const STATUS_BADGE_STYLE: Record<string, string> = {
   unreleased: "border-accent/30 bg-accent/10 text-accent",
 };
 const TCGPLAYER_AFFILIATE_BASE_URL = "https://partner.tcgplayer.com/poneglyph";
-const IMAGE_AUTO_PREFERENCE_STORAGE_KEY = "optcg.imageDisplayAutoPreference";
 
 export function CardDetailView({
   card,
@@ -815,22 +814,18 @@ function abbreviateVariantStripLabel(label: string): string {
   return words.map((word) => word[0]?.toUpperCase() ?? "").join("");
 }
 
-type ImagePreference = "digital" | "scan";
-
 function CardImageViewer({
   variants,
   selected,
   onSelect,
   cardName,
-}: {
-  variants: CardVariant[];
-  selected: number;
-  onSelect: (i: number) => void;
-  cardName: string;
-}) {
+  }: {
+    variants: CardVariant[];
+    selected: number;
+    onSelect: (i: number) => void;
+    cardName: string;
+  }) {
   const current = variants[selected];
-  const hasAnyScans = variants.some((variant) => !!variant.media.scan_url);
-  const [imagePreference, setImagePreference] = useState<ImagePreference>(getStoredImagePreference);
   const stripRef = useRef<HTMLDivElement | null>(null);
   const dragStateRef = useRef<{ dragging: boolean; startX: number; startScrollLeft: number; moved: boolean }>({
     dragging: false,
@@ -839,12 +834,7 @@ function CardImageViewer({
     moved: false,
   });
   const suppressClickRef = useRef(false);
-
-  useEffect(() => {
-    window.localStorage.setItem(IMAGE_AUTO_PREFERENCE_STORAGE_KEY, imagePreference);
-  }, [imagePreference]);
-
-  const displayUrl = resolveVariantDisplayUrl(current, imagePreference);
+  const displayUrl = resolveVariantDisplayUrl(current);
   const isScrollableVariantStrip = variants.length >= 4;
 
   const handleVariantStripMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -919,36 +909,6 @@ function CardImageViewer({
         )}
       </div>
 
-      {/* Digital / Scan toggle */}
-      {hasAnyScans && (
-        <div className="mt-2 flex justify-end">
-          <div className="flex gap-px rounded-md bg-bg-tertiary/35 p-px">
-            <button
-              type="button"
-              onClick={() => setImagePreference("digital")}
-              className={`rounded-md px-2 py-0.5 text-[10px] font-medium transition-colors ${
-                imagePreference === "digital"
-                  ? "bg-accent text-bg-primary"
-                  : "text-text-muted hover:text-text-primary"
-              }`}
-            >
-              Digital
-            </button>
-            <button
-              type="button"
-              onClick={() => setImagePreference("scan")}
-              className={`rounded-md px-2 py-0.5 text-[10px] font-medium transition-colors ${
-                imagePreference === "scan"
-                  ? "bg-accent text-bg-primary"
-                  : "text-text-muted hover:text-text-primary"
-              }`}
-            >
-              Scan
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Variant strip */}
       {variants.length > 1 && (
         <div className="relative mt-3">
@@ -961,7 +921,7 @@ function CardImageViewer({
             onMouseLeave={finishVariantStripDrag}
           >
             {variants.map((variant, i) => {
-              const thumbnailUrl = resolveVariantThumbnailUrl(variant, imagePreference);
+              const thumbnailUrl = resolveVariantThumbnailUrl(variant);
               const market = getVariantMarketInfo(variant);
               const marketLabel = fmtPrice(market.marketPrice);
               const variantLabel = variant.label || `Variant ${variant.variant_index}`;
@@ -1012,33 +972,16 @@ function CardImageViewer({
 
 function resolveVariantDisplayUrl(
   variant: CardVariant,
-  preference: ImagePreference,
 ): string | null | undefined {
-  return preference === "scan"
-    ? variant.media.scan_url
-      ?? variant.media.image_url
-    : variant.media.image_url
-      ?? variant.media.scan_url;
+  return variant.media.scan_url
+    ?? variant.media.image_url;
 }
 
 function resolveVariantThumbnailUrl(
   variant: CardVariant,
-  preference: ImagePreference,
 ): string | null | undefined {
-  return preference === "scan"
-    ? variant.media.scan_thumbnail_url
-      ?? variant.media.scan_url
-      ?? variant.media.thumbnail_url
-      ?? variant.media.image_url
-    : variant.media.thumbnail_url
-      ?? variant.media.image_url
-      ?? variant.media.scan_thumbnail_url
-      ?? variant.media.scan_url;
-}
-
-function getStoredImagePreference(): ImagePreference {
-  if (typeof window === "undefined") return "scan";
-
-  const stored = window.localStorage.getItem(IMAGE_AUTO_PREFERENCE_STORAGE_KEY);
-  return stored === "digital" ? "digital" : "scan";
+  return variant.media.scan_thumbnail_url
+    ?? variant.media.scan_url
+    ?? variant.media.thumbnail_url
+    ?? variant.media.image_url;
 }

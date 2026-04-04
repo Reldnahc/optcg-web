@@ -43,7 +43,15 @@ export function CardPage() {
         card.power !== null ? `${card.power} Power` : null,
       ].filter(Boolean).join(" · ")
     : undefined;
-  const cardImage = card?.image_url || card?.thumbnail_url || undefined;
+  const cardImage = card?.variants?.[0]?.media.scan_url
+    || card?.variants?.[0]?.media.image_url
+    || card?.scan_url
+    || card?.image_url
+    || card?.variants?.[0]?.media.scan_thumbnail_url
+    || card?.variants?.[0]?.media.thumbnail_url
+    || card?.scan_thumb_url
+    || card?.thumbnail_url
+    || undefined;
   const firstVariant = card?.variants?.[0];
   const marketPrice = firstVariant?.market?.prices
     ? Object.values(firstVariant.market.prices).find((p) => p.market_price)?.market_price
