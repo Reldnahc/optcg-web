@@ -5,6 +5,7 @@ interface FilterEntry {
   filter: string;
   desc: string;
   example: string;
+  aliases?: string[];
 }
 
 interface FilterSection {
@@ -18,7 +19,7 @@ const FILTER_SECTIONS: FilterSection[] = [
     filters: [
       { filter: "luffy", desc: "Free-text search for 'luffy' across name, text, set, artist, and more", example: "luffy" },
       { filter: '"Monkey D. Luffy"', desc: "Free-text phrase search. Quotes keep the words together, but this still searches more than just the card name.", example: '"Monkey D. Luffy"' },
-      { filter: "text:blocker", desc: "Explicit free-text search across all fields (alias: any)", example: "text:blocker" },
+      { filter: "text:blocker", desc: "Explicit free-text search across all indexed text fields", example: "text:blocker", aliases: ["any:blocker"] },
       { filter: "OP01-001", desc: "Typing a card number directly searches for that card", example: "OP01-001" },
       { filter: "OP01", desc: "Typing a set code directly filters to that set", example: "OP01" },
     ],
@@ -26,29 +27,27 @@ const FILTER_SECTIONS: FilterSection[] = [
   {
     title: "Card Name",
     filters: [
-      { filter: "name:luffy", desc: "Card name contains 'luffy'", example: "name:luffy" },
-      { filter: 'name="Monkey D. Luffy"', desc: "Exact card name match", example: 'name="Monkey D. Luffy"' },
-      { filter: "n:luffy", desc: "Short alias: card name includes 'luffy'", example: "n:luffy" },
-      { filter: 'n="Monkey D. Luffy"', desc: "Short alias: exact card name match", example: 'n="Monkey D. Luffy"' },
+      { filter: "name:luffy", desc: "Card name contains 'luffy'", example: "name:luffy", aliases: ["n:luffy"] },
+      { filter: 'name="Monkey D. Luffy"', desc: "Exact card name match", example: 'name="Monkey D. Luffy"', aliases: ['n="Monkey D. Luffy"'] },
     ],
   },
   {
     title: "Color",
     filters: [
-      { filter: "c:red", desc: "Color includes red", example: "c:red" },
-      { filter: "c=red", desc: "Color is exactly red (no multicolor)", example: "c=red" },
-      { filter: "c:red,green", desc: "Red or green", example: "c:red,green" },
-      { filter: "c=red,green", desc: "Exactly red and green", example: "c=red,green" },
-      { filter: "-c:purple", desc: "Not purple", example: "-c:purple" },
+      { filter: "color:red", desc: "Color includes red", example: "color:red", aliases: ["c:red"] },
+      { filter: "color=red", desc: "Color is exactly red (no multicolor)", example: "color=red", aliases: ["c=red"] },
+      { filter: "color:red,green", desc: "Red or green", example: "color:red,green", aliases: ["c:red,green"] },
+      { filter: "color=red,green", desc: "Exactly red and green", example: "color=red,green", aliases: ["c=red,green"] },
+      { filter: "-color:purple", desc: "Not purple", example: "-color:purple", aliases: ["-c:purple"] },
     ],
   },
   {
     title: "Card Type",
     filters: [
-      { filter: "t:leader", desc: "Leaders", example: "t:leader" },
-      { filter: "t:character", desc: "Characters", example: "t:character" },
-      { filter: "t:event", desc: "Events", example: "t:event" },
-      { filter: "t:stage", desc: "Stages", example: "t:stage" },
+      { filter: "type:leader", desc: "Leaders", example: "type:leader", aliases: ["t:leader"] },
+      { filter: "type:character", desc: "Characters", example: "type:character", aliases: ["t:character"] },
+      { filter: "type:event", desc: "Events", example: "type:event", aliases: ["t:event"] },
+      { filter: "type:stage", desc: "Stages", example: "type:stage", aliases: ["t:stage"] },
     ],
   },
   {
@@ -56,8 +55,8 @@ const FILTER_SECTIONS: FilterSection[] = [
     filters: [
       { filter: "cost>=5", desc: "Cost is 5 or more", example: "cost>=5" },
       { filter: "cost=0", desc: "Cost is exactly 0", example: "cost=0" },
-      { filter: "power>6000", desc: "Power greater than 6000", example: "power>6000" },
-      { filter: "power<=4000", desc: "Power 4000 or less", example: "power<=4000" },
+      { filter: "power>6000", desc: "Power greater than 6000", example: "power>6000", aliases: ["p>6000", "pow>6000"] },
+      { filter: "power<=4000", desc: "Power 4000 or less", example: "power<=4000", aliases: ["p<=4000", "pow<=4000"] },
       { filter: "counter:1000", desc: "Counter value is 1000", example: "counter:1000" },
       { filter: "life>=5", desc: "Life is 5 or more (Leaders)", example: "life>=5" },
     ],
@@ -65,9 +64,9 @@ const FILTER_SECTIONS: FilterSection[] = [
   {
     title: "Rarity",
     filters: [
-      { filter: "r:sr", desc: "Super Rare", example: "r:sr" },
-      { filter: "r:sec", desc: "Secret Rare", example: "r:sec" },
-      { filter: "r:l", desc: "Leader", example: "r:l" },
+      { filter: "rarity:sr", desc: "Super Rare", example: "rarity:sr", aliases: ["r:sr"] },
+      { filter: "rarity:sec", desc: "Secret Rare", example: "rarity:sec", aliases: ["r:sec"] },
+      { filter: "rarity:l", desc: "Leader", example: "rarity:l", aliases: ["r:l"] },
     ],
   },
   {
@@ -84,20 +83,20 @@ const FILTER_SECTIONS: FilterSection[] = [
   {
     title: "Effect & Trigger Text",
     filters: [
-      { filter: "o:blocker", desc: "Effect text contains 'blocker'", example: "o:blocker" },
-      { filter: 'o:"draw 2"', desc: "Effect text contains 'draw 2'", example: 'o:"draw 2"' },
-      { filter: "o:rush", desc: "Cards with Rush", example: "o:rush" },
+      { filter: "effect:blocker", desc: "Effect text contains 'blocker'", example: "effect:blocker", aliases: ["o:blocker"] },
+      { filter: 'effect:"draw 2"', desc: "Effect text contains 'draw 2'", example: 'effect:"draw 2"', aliases: ['o:"draw 2"'] },
+      { filter: "effect:rush", desc: "Cards with Rush", example: "effect:rush", aliases: ["o:rush"] },
       { filter: "trigger:draw", desc: "Trigger text contains 'draw'", example: "trigger:draw" },
     ],
   },
   {
     title: "Trait & Attribute",
     filters: [
-      { filter: 'trait:"Straw Hat Crew"', desc: "Has trait containing 'Straw Hat Crew'", example: 'trait:"Straw Hat Crew"' },
-      { filter: 'trait:"Fish-Man"', desc: "Fish-Man trait", example: 'trait:"Fish-Man"' },
-      { filter: "a:strike", desc: "Attribute includes Strike", example: "a:strike" },
-      { filter: "a:slash", desc: "Attribute includes Slash", example: "a:slash" },
-      { filter: "a:ranged", desc: "Attribute includes Ranged", example: "a:ranged" },
+      { filter: 'trait:"Straw Hat Crew"', desc: "Has trait containing 'Straw Hat Crew'", example: 'trait:"Straw Hat Crew"', aliases: ['tr:"Straw Hat Crew"'] },
+      { filter: 'trait:"Fish-Man"', desc: "Fish-Man trait", example: 'trait:"Fish-Man"', aliases: ['tr:"Fish-Man"'] },
+      { filter: "attribute:strike", desc: "Attribute includes Strike", example: "attribute:strike", aliases: ["a:strike"] },
+      { filter: "attribute:slash", desc: "Attribute includes Slash", example: "attribute:slash", aliases: ["a:slash"] },
+      { filter: "attribute:ranged", desc: "Attribute includes Ranged", example: "attribute:ranged", aliases: ["a:ranged"] },
     ],
   },
   {
@@ -191,21 +190,35 @@ const SORT_FIELDS = [
 ];
 
 const SORT_EXAMPLES = [
-  { query: "c:red order:cost dir:asc", desc: "Red cards sorted by cost, lowest first", example: "c:red order:cost dir:asc" },
-  { query: "c:red order:cost dir:desc", desc: "Red cards sorted by cost, highest first", example: "c:red order:cost dir:desc" },
-  { query: "t:leader order:name", desc: "Leaders sorted by name A-Z", example: "t:leader order:name" },
+  { query: "color:red order:cost direction:asc", desc: "Red cards sorted by cost, lowest first", example: "color:red order:cost direction:asc", aliases: ["c:red sort:cost dir:asc"] },
+  { query: "color:red order:cost direction:desc", desc: "Red cards sorted by cost, highest first", example: "color:red order:cost direction:desc", aliases: ["c:red sort:cost dir:desc"] },
+  { query: "type:leader order:name", desc: "Leaders sorted by name A-Z", example: "type:leader order:name", aliases: ["t:leader sort:name"] },
   { query: "set:OP01 order:power dir:desc", desc: "OP01 cards by highest power", example: "set:OP01 order:power dir:desc" },
   { query: "has:price order:market_price dir:desc", desc: "Most expensive cards first", example: "has:price order:market_price dir:desc" },
   { query: "order:released dir:desc", desc: "Newest releases first", example: "order:released dir:desc" },
 ];
 
 const COMBO_EXAMPLES = [
-  { query: 'c:red t:character cost<=3 o:"draw"', desc: "Cheap red characters that draw cards", example: 'c:red t:character cost<=3 o:"draw"' },
-  { query: "set:OP01 r:sr is:multicolor", desc: "Multicolor Super Rares from OP01", example: "set:OP01 r:sr is:multicolor" },
-  { query: "t:leader life>=5 c:red,green", desc: "Red or green Leaders with 5+ life", example: "t:leader life>=5 c:red,green" },
-  { query: "legal:standard o:blocker power>=6000", desc: "Standard-legal blockers with 6000+ power", example: "legal:standard o:blocker power>=6000" },
-  { query: 'trait:"Straw Hat Crew" -t:leader -t:event', desc: "Straw Hat characters and stages", example: 'trait:"Straw Hat Crew" -t:leader -t:event' },
-  { query: "prints>=3 r:sr", desc: "Super Rares with 3+ printings", example: "prints>=3 r:sr" },
+  { query: 'color:red type:character cost<=3 effect:"draw"', desc: "Cheap red characters that draw cards", example: 'color:red type:character cost<=3 effect:"draw"', aliases: ['c:red t:character cost<=3 o:"draw"'] },
+  { query: "set:OP01 rarity:sr is:multicolor", desc: "Multicolor Super Rares from OP01", example: "set:OP01 rarity:sr is:multicolor", aliases: ["set:OP01 r:sr is:multicolor"] },
+  { query: "type:leader life>=5 color:red,green", desc: "Red or green Leaders with 5+ life", example: "type:leader life>=5 color:red,green", aliases: ["t:leader life>=5 c:red,green"] },
+  { query: "legal:standard effect:blocker power>=6000", desc: "Standard-legal blockers with 6000+ power", example: "legal:standard effect:blocker power>=6000", aliases: ["legal:standard o:blocker power>=6000"] },
+  { query: 'trait:"Straw Hat Crew" -type:leader -type:event', desc: "Straw Hat characters and stages", example: 'trait:"Straw Hat Crew" -type:leader -type:event', aliases: ['trait:"Straw Hat Crew" -t:leader -t:event'] },
+  { query: "prints>=3 rarity:sr", desc: "Super Rares with 3+ printings", example: "prints>=3 rarity:sr", aliases: ["prints>=3 r:sr"] },
+];
+
+const FIELD_ALIAS_ROWS = [
+  { full: "name", aliases: ["n"], sample: "name:luffy", shortSample: "n:luffy" },
+  { full: "color", aliases: ["c"], sample: "color:red", shortSample: "c:red" },
+  { full: "type", aliases: ["t"], sample: "type:leader", shortSample: "t:leader" },
+  { full: "power", aliases: ["p", "pow"], sample: "power>6000", shortSample: "p>6000 / pow>6000" },
+  { full: "rarity", aliases: ["r"], sample: "rarity:sr", shortSample: "r:sr" },
+  { full: "text", aliases: ["any"], sample: "text:blocker", shortSample: "any:blocker" },
+  { full: "effect", aliases: ["o"], sample: "effect:blocker", shortSample: "o:blocker" },
+  { full: "trait", aliases: ["tr"], sample: 'trait:"Straw Hat Crew"', shortSample: 'tr:"Straw Hat Crew"' },
+  { full: "attribute", aliases: ["a"], sample: "attribute:slash", shortSample: "a:slash" },
+  { full: "order", aliases: ["sort"], sample: "order:power", shortSample: "sort:power" },
+  { full: "direction", aliases: ["dir"], sample: "direction:desc", shortSample: "dir:desc" },
 ];
 
 const FREE_SEARCH_QUICKSTART = [
@@ -247,7 +260,7 @@ export function SyntaxHelp() {
         <h2 className="text-lg font-semibold mb-3">How Free Search Works</h2>
         <div className="rounded-xl border border-border bg-bg-card p-4 sm:p-5">
           <p className="text-sm leading-relaxed text-text-secondary">
-            Start simple: you can type plain words straight into search without any operators. That free search is intentionally broad and is usually the fastest way to find a card when you only know part of a name, a phrase from the effect, a trait, an artist, or a product.
+            Start simple: you can type plain words straight into search without any operators. That free search is intentionally broad and is usually the fastest way to find a card when you only know part of a name, a phrase from the effect, a trait, an artist, or a set.
           </p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             {FREE_SEARCH_QUICKSTART.map((item) => (
@@ -295,6 +308,18 @@ export function SyntaxHelp() {
         <div className="bg-bg-card border border-border rounded-lg divide-y divide-border">
           {LOGIC.map((l) => (
             <QueryExampleRow key={l.syntax} code={l.syntax} desc={l.desc} example={l.example} codeWidthClass="sm:min-w-[240px]" />
+          ))}
+        </div>
+      </section>
+
+      <section className="mb-10">
+        <h2 className="text-lg font-semibold mb-3">Short &amp; Long Forms</h2>
+        <p className="text-sm text-text-secondary mb-3">
+          Short aliases and long field names work the same way. The long form is usually easier to learn; the short form is just faster to type once you know it.
+        </p>
+        <div className="bg-bg-card border border-border rounded-lg divide-y divide-border mb-4">
+          {FIELD_ALIAS_ROWS.map((row) => (
+            <FieldAliasExampleRow key={row.full} full={row.full} aliases={row.aliases} sample={row.sample} shortSample={row.shortSample} />
           ))}
         </div>
       </section>
@@ -356,7 +381,7 @@ export function SyntaxHelp() {
         <h3 className="text-sm font-semibold text-text-secondary mb-2">Examples</h3>
         <div className="bg-bg-card border border-border rounded-lg divide-y divide-border">
           {SORT_EXAMPLES.map((s) => (
-            <QueryExampleRow key={s.query} code={s.query} desc={s.desc} example={s.example} />
+            <QueryExampleRow key={s.query} code={s.query} desc={s.desc} example={s.example} aliases={s.aliases} />
           ))}
         </div>
       </section>
@@ -368,28 +393,8 @@ export function SyntaxHelp() {
         </p>
         <div className="bg-bg-card border border-border rounded-lg divide-y divide-border">
           {COMBO_EXAMPLES.map((e) => (
-            <QueryExampleRow key={e.query} code={e.query} desc={e.desc} example={e.example} />
+            <QueryExampleRow key={e.query} code={e.query} desc={e.desc} example={e.example} aliases={e.aliases} />
           ))}
-        </div>
-      </section>
-
-      <section>
-        <h2 className="text-lg font-semibold mb-3">Field Aliases</h2>
-        <p className="text-sm text-text-secondary mb-3">
-          Many fields have shorter aliases for convenience:
-        </p>
-        <div className="bg-bg-card border border-border rounded-lg divide-y divide-border text-sm">
-          <AliasRow short="n" full="name" />
-          <AliasRow short="c" full="color" />
-          <AliasRow short="t" full="type" />
-          <AliasRow short="r" full="rarity" />
-          <AliasRow short="o" full="effect" />
-          <AliasRow short="a" full="attribute" />
-          <AliasRow short="tr" full="trait" />
-          <AliasRow short="pow" full="power" />
-          <AliasRow short="any" full="text" />
-          <AliasRow short="sort" full="order" />
-          <AliasRow short="dir" full="direction" />
         </div>
       </section>
     </PageContainer>
@@ -419,12 +424,14 @@ function QueryExampleRow({
   code,
   desc,
   example,
+  aliases,
   codeWidthClass,
   rawQuery = false,
 }: {
   code: string;
   desc: string;
   example: string;
+  aliases?: string[];
   codeWidthClass?: string;
   rawQuery?: boolean;
 }) {
@@ -433,9 +440,22 @@ function QueryExampleRow({
   return (
     <div className="px-4 py-3 flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-        <code className={`text-accent font-mono text-[13px] break-all rounded bg-bg-primary/60 px-2 py-1 self-start sm:text-sm sm:break-normal sm:bg-transparent sm:px-0 sm:py-0 ${codeWidthClass ?? ""}`}>
-          {code}
-        </code>
+        <div className={`self-start ${codeWidthClass ?? ""}`}>
+          <code className="text-accent font-mono text-[13px] break-all rounded bg-bg-primary/60 px-2 py-1 self-start sm:text-sm sm:break-normal sm:bg-transparent sm:px-0 sm:py-0">
+            {code}
+          </code>
+          {aliases && aliases.length > 0 ? (
+            <div className="mt-1 text-[11px] text-text-muted sm:text-xs">
+              also:{" "}
+              {aliases.map((alias, index) => (
+                <span key={alias}>
+                  <code className="text-text-secondary">{alias}</code>
+                  {index < aliases.length - 1 ? ", " : ""}
+                </span>
+              ))}
+            </div>
+          ) : null}
+        </div>
         <span className="text-text-secondary">{desc}</span>
       </div>
       <Link to={to} className="text-xs text-link hover:text-link-hover self-start shrink-0 sm:ml-2">
@@ -445,12 +465,31 @@ function QueryExampleRow({
   );
 }
 
-function AliasRow({ short, full }: { short: string; full: string }) {
+function FieldAliasExampleRow({
+  full,
+  aliases,
+  sample,
+  shortSample,
+}: {
+  full: string;
+  aliases: string[];
+  sample: string;
+  shortSample: string;
+}) {
   return (
-    <div className="px-4 py-3 flex items-center gap-3">
-      <code className="text-accent font-mono rounded bg-bg-primary/60 px-2 py-1 w-10 text-center sm:w-8 sm:bg-transparent sm:px-0 sm:py-0">{short}</code>
-      <span className="text-text-muted">&rarr;</span>
-      <code className="text-text-primary font-mono break-all">{full}</code>
+    <div className="px-4 py-3 flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <code className="text-text-primary font-mono">{full}</code>
+          <span className="text-text-muted">↔</span>
+          <code className="text-accent font-mono">{aliases.join(", ")}</code>
+        </div>
+        <div className="mt-1 text-xs text-text-muted">
+          long: <code className="text-text-secondary">{sample}</code>
+          {"  "}
+          short: <code className="text-text-secondary">{shortSample}</code>
+        </div>
+      </div>
     </div>
   );
 }
