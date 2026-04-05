@@ -20,11 +20,12 @@ export function addCardToDeck(deck: Deck, card: Card | CardDetail): Deck {
   const now = Date.now();
   const normalizedCardType = card.card_type.toLowerCase();
   const isLeader = normalizedCardType === "leader";
+  const variantPatch = card.variant_index != null ? { variant_index: card.variant_index } : {};
 
   if (isLeader) {
     return {
       ...deck,
-      leader: { card_number: card.card_number, count: 1 },
+      leader: { card_number: card.card_number, count: 1, ...variantPatch },
       updated_at: now,
     };
   }
@@ -42,7 +43,7 @@ export function addCardToDeck(deck: Deck, card: Card | CardDetail): Deck {
 
   return {
     ...deck,
-    main: [...deck.main, { card_number: card.card_number, count: 1 }],
+    main: [...deck.main, { card_number: card.card_number, count: 1, ...variantPatch }],
     updated_at: now,
   };
 }
@@ -60,6 +61,51 @@ export function updateMainDeckCount(deck: Deck, cardNumber: string, nextCount: n
 
 export function removeLeader(deck: Deck): Deck {
   return { ...deck, leader: null, updated_at: Date.now() };
+}
+
+export function setLeaderVariant(deck: Deck, variantIndex?: number) {
+  if (!deck.leader) return deck;
+
+  if (deck.leader.variant_index === variantIndex) {
+    return deck;
+  }
+
+  const nextLeader = variantIndex == null
+    ? { card_number: deck.leader.card_number, count: deck.leader.count }
+    : { ...deck.leader, variant_index: variantIndex };
+
+  return {
+    ...deck,
+    leader: nextLeader,
+    updated_at: Date.now(),
+  };
+}
+
+export function setMainDeckEntryVariant(deck: Deck, cardNumber: string, variantIndex?: number) {
+  const existing = deck.main.find((entry) => entry.card_number === cardNumber);
+  if (!existing) return deck;
+
+  if (existing.variant_index === variantIndex) {
+    return deck;
+  }
+
+  return {
+    ...deck,
+    main: deck.main.map((entry) => {
+      if (entry.card_number !== cardNumber) return entry;
+      if (variantIndex == null) {
+        return {
+          card_number: entry.card_number,
+          count: entry.count,
+        };
+      }
+      return {
+        ...entry,
+        variant_index: variantIndex,
+      };
+    }),
+    updated_at: Date.now(),
+  };
 }
 
 export function removeDon(deck: Deck): Deck {

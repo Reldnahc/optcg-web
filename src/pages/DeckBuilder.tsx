@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useCard, useCardSearch, useCardsBatch, useFormats } from "../api/hooks";
-import type { Card, CardDetail } from "../api/types";
+import type { Card, CardDetail, CardVariant } from "../api/types";
 import { CopyButton } from "../components/CopyButton";
 import { DeckPageLoadingState } from "../components/deck/DeckPageLoadingState";
 import { ActionModal, ModalBackdrop, ModalCloseButton, ModalSurface } from "../components/Modal";
@@ -18,6 +18,8 @@ import {
   buildDeckExport,
   mainDeckCount,
   removeLeader,
+  setLeaderVariant,
+  setMainDeckEntryVariant,
   sortedDeckEntries,
   uniqueDeckCardNumbers,
   uniqueMainCount,
@@ -31,6 +33,8 @@ type SyntaxOperator = ">" | "<" | "=" | ">=" | "<=";
 type SyntaxDraft = { operator: SyntaxOperator; value: string };
 type DeckChartMode = "bars" | "pies";
 type PendingInternalNavigation = { path: string } | null;
+type DeckViewerCardSize = "sm" | "md" | "lg";
+type DeckQuantityBadgeSize = "sm" | "md" | "lg";
 type DeckCurveSegment = {
   key: string;
   label: string;
@@ -51,6 +55,12 @@ type TypePieSlice = {
   dotClass: string;
   offset: number;
   size: number;
+};
+type PreviewCardState = {
+  card: Card;
+  selectedVariantIndex?: number;
+  onSelectVariant?: (variantIndex?: number) => void;
+  onAddToDeck?: (variantIndex?: number) => void;
 };
 const SYNTAX_OPERATORS: SyntaxOperator[] = [">=", "<=", "=", ">", "<"];
 const COUNTER_SYNTAX_OPERATORS: SyntaxOperator[] = [">=", "="];
@@ -75,6 +85,51 @@ const DeckSaveActionIcon = () => (
     <path d="M7 3v5h8" />
   </svg>
 );
+const DeckFitToScreenIcon = () => (
+  <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M8 3H3v5" />
+    <path d="M16 3h5v5" />
+    <path d="M21 16v5h-5" />
+    <path d="M8 21H3v-5" />
+    <path d="M3 8 9 2" />
+    <path d="m15 2 6 6" />
+    <path d="m21 16-6 6" />
+    <path d="m9 22-6-6" />
+  </svg>
+);
+const DeckExitFitIcon = () => (
+  <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M9 9H3V3" />
+    <path d="M15 9h6V3" />
+    <path d="M15 15h6v6" />
+    <path d="M9 15H3v6" />
+    <path d="m3 3 7 7" />
+    <path d="m21 3-7 7" />
+    <path d="m21 21-7-7" />
+    <path d="m3 21 7-7" />
+  </svg>
+);
+const DeckCardSizeSmIcon = () => (
+  <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" fill="currentColor" stroke="rgba(12,16,22,0.32)" strokeWidth="1" aria-hidden="true">
+    <rect x="4.75" y="5.25" width="6.75" height="12.75" rx="1.2" />
+    <rect x="8.75" y="5.25" width="6.75" height="12.75" rx="1.2" />
+    <rect x="12.75" y="5.25" width="6.75" height="12.75" rx="1.2" />
+  </svg>
+);
+const DeckCardSizeMdIcon = () => (
+  <svg viewBox="0 0 24 24" className="h-5.5 w-5.5" fill="currentColor" stroke="rgba(12,16,22,0.32)" strokeWidth="1" aria-hidden="true">
+    <rect x="1.5" y="2.5" width="9.5" height="18" rx="1.5" />
+    <rect x="7.25" y="2.5" width="9.5" height="18" rx="1.5" />
+    <rect x="13" y="2.5" width="9.5" height="18" rx="1.5" />
+  </svg>
+);
+const ExternalLinkArrowIcon = () => (
+  <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M3.5 12.5 12.5 3.5" />
+    <path d="M6 3.5h6.5V10" />
+  </svg>
+);
+const TCGPLAYER_AFFILIATE_BASE_URL = "https://partner.tcgplayer.com/poneglyph";
 const DECK_SURFACE_CLASS = "rounded-2xl border border-border/70 bg-bg-card/72";
 const DECK_SUBSURFACE_CLASS = "rounded-xl border border-border/55 bg-bg-card/35";
 const DECK_CONTROL_CLASS = "inline-flex h-7 items-center justify-center rounded-md border border-border/70 bg-bg-input/70 px-2 text-[10px] font-medium leading-none text-text-primary transition hover:bg-bg-hover";
@@ -158,6 +213,8 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
   const [savedDeckRevision, setSavedDeckRevision] = useState(0);
   const [confirmClearDeckOpen, setConfirmClearDeckOpen] = useState(false);
   const [pendingInternalNavigation, setPendingInternalNavigation] = useState<PendingInternalNavigation>(null);
+  const [deckViewerCardSize, setDeckViewerCardSize] = useState<DeckViewerCardSize>("md");
+  const [deckViewerOverview, setDeckViewerOverview] = useState(false);
   const [undoHistory, setUndoHistory] = useState<Deck[]>([]);
   const [redoHistory, setRedoHistory] = useState<Deck[]>([]);
   const [syntaxDrafts, setSyntaxDrafts] = useState<Record<SyntaxField, SyntaxDraft>>({
@@ -167,7 +224,7 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
   });
   const [traitDraft, setTraitDraft] = useState("");
   const [legalDraftFormatIndex, setLegalDraftFormatIndex] = useState(0);
-  const [previewCard, setPreviewCard] = useState<Card | null>(null);
+  const [previewCard, setPreviewCard] = useState<PreviewCardState | null>(null);
   const hydratedHashRef = useRef<string | null>(null);
   const ignoreNextPopStateRef = useRef(false);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -245,7 +302,7 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
     return [...colors];
   }, [cardsByNumber, deck]);
   const activeSearchColors = deck?.leader ? leaderColors : deckColors;
-  const previewQuery = useCard(previewCard?.card_number ?? "", "en", Boolean(previewCard));
+  const previewQuery = useCard(previewCard?.card.card_number ?? "", "en", Boolean(previewCard));
 
   const trimmedSearchQuery = debouncedSearchQuery.trim();
   const requiredLeaderColorQuery = !deck?.leader && deckColors.length > 0 ? `c>=${deckColors.join(",")}` : "";
@@ -350,6 +407,7 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
     () => deck ? sortDeckEntriesForDisplay(deck.main, cardsByNumber) : [],
     [cardsByNumber, deck],
   );
+  const showDeckSidebar = mode === "edit" || !deckViewerOverview;
 
   useEffect(() => {
     if (!shouldWarnOnLeave || typeof window === "undefined") return;
@@ -443,6 +501,65 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
 
   const closePreview = () => {
     setPreviewCard(null);
+  };
+
+  const setPreviewSelectedVariant = (variantIndex?: number) => {
+    setPreviewCard((current) => current
+      ? {
+          ...current,
+          selectedVariantIndex: variantIndex,
+        }
+      : current);
+  };
+
+  const previewSearchCard = (card: Card) => {
+    const isLeader = card.card_type.toLowerCase() === "leader";
+    const existingEntry = isLeader
+      ? (deck.leader?.card_number === card.card_number ? deck.leader : null)
+      : (deck.main.find((entry) => entry.card_number === card.card_number) ?? null);
+
+    setPreviewCard({
+      card,
+      selectedVariantIndex: existingEntry?.variant_index ?? card.variant_index,
+      onSelectVariant: existingEntry
+        ? (variantIndex) => {
+          setPreviewSelectedVariant(variantIndex);
+          updateDeck((current) => (
+            isLeader
+              ? setLeaderVariant(current, variantIndex)
+              : setMainDeckEntryVariant(current, card.card_number, variantIndex)
+          ));
+        }
+        : undefined,
+      onAddToDeck: mode === "edit"
+        ? (variantIndex) => {
+          setPreviewSelectedVariant(variantIndex);
+          updateDeck((current) => addCardToDeck(
+            current,
+            variantIndex == null ? card : { ...card, variant_index: variantIndex },
+          ));
+        }
+        : undefined,
+    });
+  };
+
+  const previewDeckEntry = (entry: DeckEntry, card?: CardDetail, isLeader = false) => {
+    if (!card) return;
+
+    setPreviewCard({
+      card,
+      selectedVariantIndex: entry.variant_index,
+      onSelectVariant: mode === "edit"
+        ? (variantIndex) => {
+          setPreviewSelectedVariant(variantIndex);
+          updateDeck((current) => (
+            isLeader
+              ? setLeaderVariant(current, variantIndex)
+              : setMainDeckEntryVariant(current, entry.card_number, variantIndex)
+          ));
+        }
+        : undefined,
+    });
   };
 
   const syncDeckUrl = (nextDeck: Deck) => {
@@ -1055,7 +1172,7 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
         )}
       </section>
 
-      <div className={`grid gap-3 ${mode === "edit" ? "xl:grid-cols-[minmax(0,2fr)_300px]" : "lg:grid-cols-[minmax(0,2fr)_300px]"}`}>
+      <div className={`grid gap-3 ${mode === "edit" ? "xl:grid-cols-[minmax(0,2fr)_300px]" : showDeckSidebar ? "lg:grid-cols-[minmax(0,2fr)_300px]" : ""}`}>
         <section className={`${DECK_SURFACE_CLASS} p-2 sm:p-3`}>
           {mode === "edit" ? (
             <div className="space-y-2">
@@ -1084,7 +1201,7 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
                           const existing = current.main.find((entry) => entry.card_number === card.card_number);
                           return updateMainDeckCount(current, card.card_number, (existing?.count ?? 0) - 1);
                         })}
-                        onPreview={() => setPreviewCard(card)}
+                        onPreview={() => previewSearchCard(card)}
                       />
                     ))}
                   </div>
@@ -1108,14 +1225,78 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
             </div>
           ) : (
             <div className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/55 bg-bg-card/35 px-2.5 py-2">
+                <div className="inline-flex items-center gap-1 rounded-lg border border-border/60 bg-bg-input/50 p-1">
+                  {(["sm", "md"] as const).map((size) => (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() => setDeckViewerCardSize(size)}
+                      aria-label={`Set ${size} card size`}
+                      title={`Set ${size} card size`}
+                      className={`inline-flex h-8 w-8 items-center justify-center rounded-md transition ${
+                        deckViewerCardSize === size
+                          ? "bg-accent text-[#eef2f7]"
+                          : "text-text-secondary hover:bg-bg-hover hover:text-text-primary"
+                      }`}
+                    >
+                      {size === "sm" ? <DeckCardSizeSmIcon /> : <DeckCardSizeMdIcon />}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDeckViewerOverview((current) => !current)}
+                  className={`${DECK_CONTROL_CLASS} w-7 px-0`}
+                  aria-label={deckViewerOverview ? "Show deck details" : "Fit deck to screen"}
+                  title={deckViewerOverview ? "Show deck details" : "Fit deck to screen"}
+                >
+                  {deckViewerOverview ? <DeckExitFitIcon /> : <DeckFitToScreenIcon />}
+                </button>
+              </div>
+              {deckViewerOverview ? (
+                <div>
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <div className="text-[10px] font-medium uppercase tracking-[0.08em] text-text-muted">Full Deck</div>
+                    <div className="text-[11px] text-text-secondary">
+                      {(deck.leader ? 1 : 0) + deck.main.length} cards shown
+                    </div>
+                  </div>
+                  <div className={getReadOnlyDeckGridClass(deckViewerCardSize, true)}>
+                    {deck.leader && (
+                      <ReadOnlyDeckTile
+                        entry={{ ...deck.leader, count: 1 }}
+                        card={cardsByNumber[deck.leader.card_number]}
+                        onPreview={() => previewDeckEntry({ ...deck.leader!, count: 1 }, cardsByNumber[deck.leader!.card_number], true)}
+                        size={deckViewerCardSize}
+                        compact
+                        isLeader
+                      />
+                    )}
+                    {sortedDeckEntries(deck).map((entry) => (
+                      <ReadOnlyDeckTile
+                        key={entry.card_number}
+                        entry={entry}
+                        card={cardsByNumber[entry.card_number]}
+                        onPreview={() => previewDeckEntry(entry, cardsByNumber[entry.card_number])}
+                        size={deckViewerCardSize}
+                        compact
+                      />
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <>
               {deck.leader && (
                 <div>
                   <div className="mb-2 text-[10px] font-medium uppercase tracking-[0.08em] text-text-muted">Leader</div>
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4">
+                  <div className={getReadOnlyDeckGridClass(deckViewerCardSize, false)}>
                     <ReadOnlyDeckTile
                       entry={{ ...deck.leader, count: 1 }}
                       card={cardsByNumber[deck.leader.card_number]}
-                      onPreview={() => setPreviewCard(cardsByNumber[deck.leader!.card_number] ?? null)}
+                      onPreview={() => previewDeckEntry({ ...deck.leader!, count: 1 }, cardsByNumber[deck.leader!.card_number], true)}
+                      size={deckViewerCardSize}
+                      isLeader
                     />
                   </div>
                 </div>
@@ -1123,13 +1304,14 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
               <div>
                 <div className="mb-2 text-[10px] font-medium uppercase tracking-[0.08em] text-text-muted">Main Deck</div>
                 {deck.main.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4">
+                  <div className={getReadOnlyDeckGridClass(deckViewerCardSize, false)}>
                     {sortedDeckEntries(deck).map((entry) => (
                       <ReadOnlyDeckTile
                         key={entry.card_number}
                         entry={entry}
                         card={cardsByNumber[entry.card_number]}
-                        onPreview={() => setPreviewCard(cardsByNumber[entry.card_number] ?? null)}
+                        onPreview={() => previewDeckEntry(entry, cardsByNumber[entry.card_number])}
+                        size={deckViewerCardSize}
                       />
                     ))}
                   </div>
@@ -1139,11 +1321,13 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
                   </p>
                 )}
               </div>
+                </>
+              )}
             </div>
           )}
         </section>
 
-        {(mode === "edit" || mode === "view") && (
+        {(mode === "edit" || (mode === "view" && showDeckSidebar)) && (
           <section className="space-y-3">
             <section className={`overflow-hidden rounded-t-2xl rounded-b-none border border-border/70 bg-bg-card/72 pt-2.5 sm:pt-3`}>
               <div className="mb-3 space-y-2 px-2 sm:px-3">
@@ -1175,7 +1359,7 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
                   entry={{ ...deck.leader, count: 1 }}
                   card={cardsByNumber[deck.leader.card_number]}
                   readOnly={mode === "view"}
-                  onPreview={() => setPreviewCard(cardsByNumber[deck.leader!.card_number] ?? null)}
+                  onPreview={() => previewDeckEntry({ ...deck.leader!, count: 1 }, cardsByNumber[deck.leader!.card_number], true)}
                   onRemove={mode === "edit" ? () => updateDeck((current) => removeLeader(current)) : undefined}
                   forceStaticCount
                 />
@@ -1195,7 +1379,7 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
                       entry={entry}
                       card={cardsByNumber[entry.card_number]}
                       readOnly={mode === "view"}
-                      onPreview={() => setPreviewCard(cardsByNumber[entry.card_number] ?? null)}
+                      onPreview={() => previewDeckEntry(entry, cardsByNumber[entry.card_number])}
                       onDecrease={mode === "edit" ? () => updateDeck((current) => {
                         const existing = current.main.find((row) => row.card_number === entry.card_number);
                         return updateMainDeckCount(current, entry.card_number, (existing?.count ?? 0) - 1);
@@ -1217,10 +1401,13 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
 
       {previewCard && (
         <CardPreviewModal
-          card={previewCard}
+          card={previewCard.card}
           detail={previewDetail}
           isLoading={previewQuery.isLoading}
           loadError={previewQuery.error instanceof Error ? previewQuery.error.message : null}
+          selectedVariantIndex={previewCard.selectedVariantIndex}
+          onSelectVariant={previewCard.onSelectVariant}
+          onAddToDeck={previewCard.onAddToDeck}
           onClose={closePreview}
         />
       )}
@@ -1321,12 +1508,16 @@ function SearchResultTile({
                 {card.card_number}
               </div>
             )}
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-end bg-gradient-to-t from-black/85 via-black/25 to-transparent p-2.5">
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between bg-gradient-to-t from-black/85 via-black/25 to-transparent p-2.5">
               {currentCount > 0 && (
-                <span className="rounded-md border border-white/20 bg-accent px-2.5 py-1.5 text-[16px] font-black leading-none text-bg-primary shadow-[0_6px_16px_rgba(0,0,0,0.4)]">
-                  {isLeader ? "SET" : `x${currentCount}`}
-                </span>
+                <DeckQuantityBadge
+                  label={isLeader ? "SET" : `x${currentCount}`}
+                  size="md"
+                />
               )}
+              <span className="ml-auto rounded-md border border-white/18 bg-black/55 px-1.5 py-0.5 text-[10px] font-medium leading-none text-white shadow-[0_6px_16px_rgba(0,0,0,0.35)]">
+                {card.card_number}
+              </span>
             </div>
           </div>
           <div className="space-y-1.5 p-2.5">
@@ -1334,9 +1525,6 @@ function SearchResultTile({
               <p className="min-w-0 truncate text-[13px] font-semibold leading-tight text-text-primary">
                 {card.name}
               </p>
-              <span className="inline-flex shrink-0 items-center rounded-full border border-border/70 bg-bg-tertiary/45 px-1.5 py-0.5 text-[10px] font-medium text-text-secondary">
-                {card.card_number}
-              </span>
             </div>
             <p className="truncate text-[10px] text-text-secondary">
               {card.card_type}
@@ -1371,19 +1559,39 @@ function ReadOnlyDeckTile({
   entry,
   card,
   onPreview,
+  size = "md",
+  compact = false,
+  isLeader = false,
+  showPreviewButton = true,
 }: {
   entry: DeckEntry;
   card?: CardDetail;
   onPreview: () => void;
+  size?: DeckViewerCardSize;
+  compact?: boolean;
+  isLeader?: boolean;
+  showPreviewButton?: boolean;
 }) {
-  const thumbnailUrl = getPreferredDeckImage(card);
+  const thumbnailUrl = getPreferredDeckImage(card, entry.variant_index);
+  const variantSummary = getCardVariantSummary(getPreferredDeckVariant(card, entry.variant_index));
+  const nameClass = compact
+    ? "min-w-0 truncate text-[11px] font-semibold leading-tight text-text-primary"
+    : "min-w-0 truncate text-[13px] font-semibold leading-tight text-text-primary";
+  const bodyClass = compact ? "space-y-1 p-1.5" : "space-y-1.5 p-2.5";
+  const countLabel = isLeader ? "LDR" : `x${entry.count}`;
+  const tileClass = getReadOnlyDeckTileClass(size, compact);
+  const previewButtonPositionClass = getReadOnlyDeckTilePreviewPositionClass(size, compact);
+  const imageOverlayPaddingClass = getReadOnlyDeckTileOverlayPaddingClass(size, compact);
+  const cardNumberBadgeClass = compact
+    ? "rounded-md border border-white/18 bg-black/55 px-1 py-0.5 text-[9px] font-medium leading-none text-white shadow-[0_6px_16px_rgba(0,0,0,0.35)]"
+    : "rounded-md border border-white/18 bg-black/55 px-1.5 py-0.5 text-[10px] font-medium leading-none text-white shadow-[0_6px_16px_rgba(0,0,0,0.35)]";
 
   return (
     <div className="group relative">
       <button
         type="button"
         onClick={onPreview}
-        className="block w-full text-left"
+        className={`block w-full text-left ${tileClass}`}
       >
         <div className="overflow-hidden rounded-xl border border-border/70 bg-bg-secondary/60 transition-colors group-hover:border-accent/60 group-hover:bg-bg-hover/70">
           <div className="relative bg-bg-tertiary">
@@ -1394,35 +1602,42 @@ function ReadOnlyDeckTile({
                 {entry.card_number}
               </div>
             )}
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-end bg-gradient-to-t from-black/85 via-black/25 to-transparent p-2.5">
-              <span className="rounded-md border border-white/20 bg-accent px-2.5 py-1.5 text-[16px] font-black leading-none text-bg-primary shadow-[0_6px_16px_rgba(0,0,0,0.4)]">
-                x{entry.count}
-              </span>
+            <div className={`pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between bg-gradient-to-t from-black/85 via-black/25 to-transparent ${imageOverlayPaddingClass}`}>
+              <DeckQuantityBadge label={countLabel} size={size} compact={compact} />
+              <span className={cardNumberBadgeClass}>{entry.card_number}</span>
             </div>
           </div>
-          <div className="space-y-1.5 p-2.5">
+          <div className={bodyClass}>
             <div className="flex items-center gap-1.5">
-              <p className="min-w-0 truncate text-[13px] font-semibold leading-tight text-text-primary">
+              <p className={nameClass}>
                 {card?.name ?? entry.card_number}
               </p>
-              <span className="inline-flex shrink-0 items-center rounded-full border border-border/70 bg-bg-tertiary/45 px-1.5 py-0.5 text-[10px] font-medium text-text-secondary">
-                {entry.card_number}
-              </span>
             </div>
-            <p className="truncate text-[10px] text-text-secondary">
-              {card?.card_type ?? "Unknown"}
-              {card?.cost != null ? ` - Cost ${card.cost}` : ""}
-              {(card?.color?.length ?? 0) > 0 ? ` - ${card!.color.join("/")}` : ""}
-            </p>
+            {!compact ? (
+              <>
+                <p className="truncate text-[10px] text-text-secondary">
+                  {card?.card_type ?? "Unknown"}
+                  {card?.cost != null ? ` - Cost ${card.cost}` : ""}
+                  {(card?.color?.length ?? 0) > 0 ? ` - ${card!.color.join("/")}` : ""}
+                </p>
+                {variantSummary ? (
+                  <p className="truncate text-[10px] text-text-secondary">{variantSummary}</p>
+                ) : null}
+              </>
+            ) : variantSummary ? (
+              <p className="truncate text-[9px] text-text-secondary">{variantSummary}</p>
+            ) : null}
           </div>
         </div>
       </button>
 
-      <div className="absolute left-2 top-2">
-        <SearchTileActionButton label={`Preview ${card?.name ?? entry.card_number}`} onClick={onPreview}>
-          <MagnifierIcon />
-        </SearchTileActionButton>
-      </div>
+      {showPreviewButton && (
+        <div className={`absolute ${previewButtonPositionClass}`}>
+          <SearchTileActionButton label={`Preview ${card?.name ?? entry.card_number}`} onClick={onPreview} size={size}>
+            <MagnifierIcon />
+          </SearchTileActionButton>
+        </div>
+      )}
     </div>
   );
 }
@@ -1929,13 +2144,25 @@ function SearchTileActionButton({
   label,
   onClick,
   disabled = false,
+  size = "md",
 }: {
   children: ReactNode;
   label: string;
   onClick: () => void;
   disabled?: boolean;
+  size?: DeckQuantityBadgeSize;
 }) {
   const lastActivationRef = useRef(0);
+  const sizeClass = size === "lg"
+    ? "h-8 w-8 text-sm"
+    : size === "sm"
+      ? "h-6 w-6 text-[11px]"
+      : "h-7 w-7 text-[13px]";
+  const iconClass = size === "lg"
+    ? "[&>svg]:h-4 [&>svg]:w-4"
+    : size === "sm"
+      ? "[&>svg]:h-3 [&>svg]:w-3"
+      : "[&>svg]:h-3.5 [&>svg]:w-3.5";
 
   return (
     <button
@@ -1950,7 +2177,7 @@ function SearchTileActionButton({
         lastActivationRef.current = now;
         onClick();
       }}
-      className="flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-black/78 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(0,0,0,0.35)] backdrop-blur transition hover:bg-black/92 disabled:cursor-not-allowed disabled:border-white/12 disabled:bg-black/58 disabled:text-white/75 disabled:opacity-100"
+      className={`flex transform-gpu items-center justify-center rounded-full border border-white/20 bg-black/78 font-semibold text-white shadow-[0_8px_20px_rgba(0,0,0,0.35)] backdrop-blur transition duration-150 hover:scale-[1.08] hover:bg-black/92 active:scale-[0.96] disabled:cursor-not-allowed disabled:border-white/12 disabled:bg-black/58 disabled:text-white/75 disabled:opacity-100 disabled:hover:scale-100 ${sizeClass} ${iconClass}`}
     >
       {children}
     </button>
@@ -1959,7 +2186,7 @@ function SearchTileActionButton({
 
 function MagnifierIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <circle cx="11" cy="11" r="6" />
       <path d="m20 20-4.2-4.2" />
     </svg>
@@ -2030,35 +2257,48 @@ function CardPreviewModal({
   detail,
   isLoading,
   loadError,
+  selectedVariantIndex,
+  onSelectVariant,
+  onAddToDeck,
   onClose,
 }: {
   card: Card;
   detail: CardDetail | null;
   isLoading: boolean;
   loadError: string | null;
+  selectedVariantIndex?: number;
+  onSelectVariant?: (variantIndex?: number) => void;
+  onAddToDeck?: (variantIndex?: number) => void;
   onClose: () => void;
 }) {
-  const imageUrl = detail?.variants[0]?.media.scan_url
-    ?? detail?.variants[0]?.media.image_url
-    ?? detail?.variants[0]?.media.scan_thumbnail_url
-    ?? detail?.variants[0]?.media.image_thumb_url
-    ?? detail?.variants[0]?.media.thumbnail_url
+  const selectableVariants = detail?.variants.filter(hasDeckVariantImage) ?? [];
+  const selectedVariant = getPreferredDeckVariantFromList(selectableVariants, selectedVariantIndex ?? card.variant_index);
+  const [activeVariantIndex, setActiveVariantIndex] = useState<number | undefined>(
+    selectedVariant?.variant_index ?? selectedVariantIndex ?? card.variant_index,
+  );
+  const activeVariant = getPreferredDeckVariantFromList(selectableVariants, activeVariantIndex);
+  const imageUrl = activeVariant?.media.scan_url
+    ?? activeVariant?.media.image_url
+    ?? activeVariant?.media.scan_thumbnail_url
+    ?? activeVariant?.media.image_thumb_url
+    ?? activeVariant?.media.thumbnail_url
     ?? card.scan_url
     ?? card.image_url
     ?? card.scan_thumb_url
     ?? card.thumbnail_url
     ?? null;
-  const fullSizeImageUrl = detail?.variants[0]?.media.scan_download_url
-    ?? detail?.variants[0]?.media.image_url
-    ?? detail?.variants[0]?.media.scan_url
-    ?? detail?.variants[0]?.media.image_thumb_url
-    ?? detail?.variants[0]?.media.scan_thumbnail_url
-    ?? detail?.variants[0]?.media.thumbnail_url
+  const fullSizeImageUrl = activeVariant?.media.scan_download_url
+    ?? activeVariant?.media.image_url
+    ?? activeVariant?.media.scan_url
+    ?? activeVariant?.media.image_thumb_url
+    ?? activeVariant?.media.scan_thumbnail_url
+    ?? activeVariant?.media.thumbnail_url
     ?? card.image_url
     ?? card.scan_url
     ?? card.thumbnail_url
     ?? card.scan_thumb_url
     ?? null;
+  const variantSummary = getCardVariantSummary(activeVariant);
   const stats = [
     detail?.cost != null ? `${detail.cost} Cost` : card.cost != null ? `${card.cost} Cost` : null,
     detail?.life != null ? `${detail.life} Life` : card.life != null ? `${card.life} Life` : null,
@@ -2072,6 +2312,13 @@ function CardPreviewModal({
   const rarity = detail?.rarity ?? card.rarity;
   const color = detail?.color ?? card.color;
   const cardType = detail?.card_type ?? card.card_type;
+  const activeVariantLowPrice = activeVariant ? formatDeckVariantPrice(getDeckVariantLowPrice(activeVariant)) : "-";
+  const activeVariantMarketPrice = activeVariant ? formatDeckVariantPrice(getDeckVariantMarketPrice(activeVariant)) : "-";
+  const activeVariantTcgplayerHref = activeVariant ? buildDeckTcgplayerAffiliateUrl(getDeckVariantTcgplayerUrl(activeVariant)) : null;
+
+  useEffect(() => {
+    setActiveVariantIndex(selectedVariant?.variant_index ?? selectedVariantIndex ?? card.variant_index);
+  }, [card.variant_index, selectedVariant?.variant_index, selectedVariantIndex]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -2098,7 +2345,7 @@ function CardPreviewModal({
 
         <ModalCloseButton onClose={onClose} />
 
-        <div className="grid max-h-[92vh] overflow-y-auto lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]">
+        <div className="grid max-h-[92vh] overflow-y-auto lg:grid-cols-[minmax(300px,380px)_minmax(0,1fr)]">
           <div className="border-b border-border/70 bg-[#0d1015] p-4 lg:border-b-0 lg:border-r">
             <a
               href={fullSizeImageUrl ?? undefined}
@@ -2115,6 +2362,15 @@ function CardPreviewModal({
                 </div>
               )}
             </a>
+            <div className="mt-3 flex justify-center border-t border-border/70 pt-3">
+              <Link
+                to={`/cards/${detail?.card_number ?? card.card_number}`}
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-link underline-offset-2 hover:text-link-hover hover:underline"
+              >
+                Open full card page
+                <ExternalLinkArrowIcon />
+              </Link>
+            </div>
           </div>
 
           <div className="space-y-4 p-4 sm:p-5">
@@ -2141,6 +2397,12 @@ function CardPreviewModal({
                 <span>{color.join(" / ")}</span>
                 <InlineDot />
                 <span>{cardType}</span>
+                {variantSummary && (
+                  <>
+                    <InlineDot />
+                    <span>{variantSummary}</span>
+                  </>
+                )}
                 {detail?.block && (
                   <>
                     <InlineDot />
@@ -2178,15 +2440,112 @@ function CardPreviewModal({
             {isLoading && <p className="text-sm text-text-secondary">Loading full card data...</p>}
             {loadError && <p className="text-sm text-banned">{loadError}</p>}
 
-            <div className="border-t border-border/70 pt-3">
-              <Link
-                to={`/cards/${detail?.card_number ?? card.card_number}`}
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-link underline-offset-2 hover:text-link-hover hover:underline"
-              >
-                Open full card page
-                <span aria-hidden="true">↗</span>
-              </Link>
-            </div>
+            {detail && selectableVariants.length > 1 && (onSelectVariant || onAddToDeck) && (
+              <section className="space-y-3 rounded-2xl border border-border/70 bg-bg-card/60 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-muted">Variant</p>
+                    <p className="mt-1 text-sm text-text-secondary">Choose which art this deck entry should use.</p>
+                  </div>
+                  {onAddToDeck ? (
+                    <button
+                      type="button"
+                      onClick={() => onAddToDeck(activeVariantIndex)}
+                      className="inline-flex items-center gap-1.5 rounded-md border border-border/70 bg-bg-input/70 px-2.5 py-1.5 text-[11px] font-medium text-text-primary transition hover:bg-bg-hover"
+                    >
+                      {cardType.toLowerCase() === "leader" ? "Set leader" : "Add this variant"}
+                    </button>
+                  ) : null}
+                </div>
+                <div className={getDeckVariantStripContainerClass(selectableVariants.length)}>
+                  {selectableVariants.map((variant) => {
+                    const variantThumb = getDeckVariantThumbnailUrl(variant);
+                    const isActive = variant.variant_index === activeVariant?.variant_index;
+                    const variantLabel = variant.label || `Variant ${variant.variant_index}`;
+                    const marketLabel = formatDeckVariantPrice(getDeckVariantMarketPrice(variant));
+                    const metaLabel = buildDeckVariantMetaLabel(variant);
+                    const tcgplayerUrl = buildDeckTcgplayerAffiliateUrl(getDeckVariantTcgplayerUrl(variant));
+
+                    return (
+                      <div
+                        key={variant.variant_index}
+                        className={getDeckVariantStripItemClass(selectableVariants.length)}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveVariantIndex(variant.variant_index);
+                            onSelectVariant?.(variant.variant_index);
+                          }}
+                          className="block w-full text-left"
+                          title={variantLabel}
+                        >
+                          <div
+                            className={`overflow-hidden rounded-md border-2 transition-colors ${
+                              isActive ? "border-accent" : "border-transparent hover:border-text-muted/40"
+                            }`}
+                          >
+                            {variantThumb ? (
+                              <img
+                                src={variantThumb}
+                                alt={`${detail.name} variant ${variant.variant_index}`}
+                                className="block w-full"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <div className="aspect-[63/88] flex items-center justify-center bg-bg-tertiary px-2 text-center text-[10px] text-text-muted">
+                                {variantLabel}
+                              </div>
+                            )}
+                          </div>
+                        </button>
+                        <div className="mt-1 px-0.5 text-[10px] leading-tight">
+                          {tcgplayerUrl ? (
+                            <a
+                              href={tcgplayerUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block truncate font-medium text-link hover:text-link-hover hover:underline"
+                              onClick={(event) => event.stopPropagation()}
+                            >
+                              {marketLabel}
+                            </a>
+                          ) : (
+                            <p className="truncate font-medium text-text-primary">{marketLabel}</p>
+                          )}
+                          <p className="truncate text-text-muted">{metaLabel}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
+            {activeVariant && (
+              <section className="flex flex-wrap items-center gap-2 rounded-xl border border-border/70 bg-bg-card/45 px-3 py-2">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-muted">Market</span>
+                <span className="text-sm text-text-secondary">Low</span>
+                <span className="text-sm font-medium text-text-primary">{activeVariantLowPrice}</span>
+                <InlineDot />
+                <span className="text-sm text-text-secondary">Market</span>
+                <span className="text-sm font-medium text-text-primary">{activeVariantMarketPrice}</span>
+                <InlineDot />
+                {activeVariantTcgplayerHref ? (
+                  <a
+                    href={activeVariantTcgplayerHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm font-medium text-link hover:text-link-hover hover:underline"
+                  >
+                    Buy on TCGplayer
+                  </a>
+                ) : (
+                  <span className="text-sm text-text-secondary">No TCGplayer listing</span>
+                )}
+              </section>
+            )}
+
           </div>
         </div>
       </ModalSurface>
@@ -2217,7 +2576,8 @@ function DeckEntryRow({
   onRemove?: () => void;
   forceStaticCount?: boolean;
 }) {
-  const previewImage = getPreferredDeckImage(card);
+  const previewImage = getPreferredDeckImage(card, entry.variant_index);
+  const variantSummary = getCardVariantSummary(getPreferredDeckVariant(card, entry.variant_index));
   const rowToneClass = getDeckRowToneClass(card?.color ?? []);
   const costBadgeClass = getDeckCostBadgeClass(card?.color ?? []);
   const showCostBadge = !forceStaticCount;
@@ -2276,6 +2636,7 @@ function DeckEntryRow({
       <div className="min-w-0 flex-1 pl-1">
         <p className="min-w-0 truncate text-[13px] font-semibold text-text-primary">{card?.name ?? entry.card_number}</p>
         <p className="truncate text-[10px] font-medium text-text-secondary">{entry.card_number}</p>
+        {variantSummary ? <p className="truncate text-[10px] text-text-secondary">{variantSummary}</p> : null}
         {card?.power != null && <p className="truncate text-[10px] text-text-secondary">Power {card.power}</p>}
         {card?.counter != null && <p className="truncate text-[10px] text-text-secondary">Counter +{card.counter}</p>}
       </div>
@@ -2346,18 +2707,202 @@ function DeckActionButton({
       }}
       aria-label={label}
       disabled={!onClick}
-      className={`flex h-6 w-6 items-center justify-center rounded-md border text-sm transition disabled:cursor-default disabled:opacity-40 ${className}`}
+      className={`flex h-6 w-6 transform-gpu items-center justify-center rounded-md border text-sm transition duration-150 hover:scale-[1.08] active:scale-[0.96] disabled:cursor-default disabled:opacity-40 disabled:hover:scale-100 ${className}`}
     >
       {children}
     </button>
   );
 }
 
-function getPreferredDeckImage(card?: CardDetail) {
-  return card?.variants[0]?.media.scan_thumbnail_url
-    ?? card?.variants[0]?.media.scan_url
-    ?? card?.variants[0]?.media.thumbnail_url
-    ?? card?.variants[0]?.media.image_url
+function getPreferredDeckVariant(card?: CardDetail | null, variantIndex?: number) {
+  if (!card?.variants?.length) return null;
+  return card.variants.find((variant) => variant.variant_index === variantIndex) ?? card.variants[0] ?? null;
+}
+
+function getPreferredDeckVariantFromList(variants: CardVariant[], variantIndex?: number) {
+  if (variants.length === 0) return null;
+  return variants.find((variant) => variant.variant_index === variantIndex) ?? variants[0] ?? null;
+}
+
+function hasDeckVariantImage(variant: CardVariant) {
+  return Boolean(
+    variant.media.scan_url
+    ?? variant.media.scan_thumbnail_url
+    ?? variant.media.scan_download_url
+    ?? variant.media.image_url
+    ?? variant.media.image_thumb_url
+    ?? variant.media.thumbnail_url,
+  );
+}
+
+function formatDeckVariantPrice(val: string | null) {
+  if (!val) return "-";
+  return `$${parseFloat(val).toFixed(2)}`;
+}
+
+function getDeckVariantMarketPrice(variant: CardVariant): string | null {
+  const firstPrice = Object.values(variant.market.prices)[0];
+  return firstPrice?.market_price ?? null;
+}
+
+function getDeckVariantLowPrice(variant: CardVariant): string | null {
+  const firstPrice = Object.values(variant.market.prices)[0];
+  return firstPrice?.low_price ?? null;
+}
+
+function getDeckVariantTcgplayerUrl(variant: CardVariant): string | null {
+  const firstPrice = Object.values(variant.market.prices)[0];
+  return firstPrice?.tcgplayer_url ?? variant.market.tcgplayer_url ?? null;
+}
+
+function buildDeckTcgplayerAffiliateUrl(href: string | null): string | null {
+  if (!href) return null;
+
+  try {
+    const targetUrl = new URL(href);
+    if (targetUrl.hostname === "partner.tcgplayer.com") {
+      return href;
+    }
+
+    const affiliateUrl = new URL(TCGPLAYER_AFFILIATE_BASE_URL);
+    affiliateUrl.searchParams.set("u", targetUrl.toString());
+    return affiliateUrl.toString();
+  } catch {
+    return href;
+  }
+}
+
+function getDeckVariantThumbnailUrl(variant: CardVariant) {
+  return variant.media.scan_thumbnail_url
+    ?? variant.media.scan_url
+    ?? variant.media.thumbnail_url
+    ?? variant.media.image_url
+    ?? null;
+}
+
+function getDeckVariantStripContainerClass(count: number): string {
+  if (count >= 4) return "flex gap-1.25 overflow-x-auto pb-1";
+  if (count >= 2) return "grid grid-cols-7 gap-1";
+  return "grid grid-cols-1 gap-1.5";
+}
+
+function getDeckVariantStripItemClass(count: number): string {
+  if (count >= 4) {
+    return "w-[calc((100%-1rem)/7)] min-w-[calc((100%-1rem)/7)] shrink-0";
+  }
+  return "min-w-0";
+}
+
+function getReadOnlyDeckGridClass(size: DeckViewerCardSize, overview: boolean) {
+  if (overview) {
+    switch (size) {
+      case "sm":
+        return "grid grid-cols-4 gap-1.5 sm:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10";
+      case "lg":
+        return "grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5";
+      case "md":
+      default:
+        return "grid grid-cols-3 gap-1.5 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7";
+    }
+  }
+
+  switch (size) {
+    case "sm":
+      return "grid grid-cols-3 gap-2 sm:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6";
+    case "lg":
+      return "grid grid-cols-2 gap-2 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-3";
+    case "md":
+    default:
+      return "grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4";
+  }
+}
+
+function getReadOnlyDeckTileClass(size: DeckViewerCardSize, compact: boolean) {
+  if (compact) return "min-w-0";
+
+  switch (size) {
+    case "sm":
+      return "max-w-[10rem]";
+    case "lg":
+      return "max-w-[14rem]";
+    case "md":
+    default:
+      return "max-w-[12rem]";
+  }
+}
+
+function getReadOnlyDeckTilePreviewPositionClass(size: DeckViewerCardSize, compact: boolean) {
+  if (compact && size === "sm") return "left-1 top-1";
+  if (compact || size === "sm") return "left-1.5 top-1.5";
+  if (size === "lg") return "left-2.5 top-2.5";
+  return "left-2 top-2";
+}
+
+function getReadOnlyDeckTileOverlayPaddingClass(size: DeckViewerCardSize, compact: boolean) {
+  if (compact && size === "sm") return "p-1";
+  if (compact || size === "sm") return "p-1.5";
+  if (size === "lg") return "p-2.5";
+  return "p-2";
+}
+
+function getDeckQuantityBadgeClass(size: DeckQuantityBadgeSize, compact = false) {
+  if (size === "lg") {
+    return "rounded-md border border-white/20 bg-accent px-2.5 py-1.5 text-[16px] font-black leading-none text-bg-primary shadow-[0_6px_16px_rgba(0,0,0,0.4)]";
+  }
+
+  if (size === "sm") {
+    return compact
+      ? "rounded-md border border-white/20 bg-accent px-1.25 py-0.5 text-[10px] font-black leading-none text-bg-primary shadow-[0_6px_16px_rgba(0,0,0,0.4)]"
+      : "rounded-md border border-white/20 bg-accent px-1.5 py-0.75 text-[11px] font-black leading-none text-bg-primary shadow-[0_6px_16px_rgba(0,0,0,0.4)]";
+  }
+
+  return compact
+    ? "rounded-md border border-white/20 bg-accent px-2 py-1 text-[13px] font-black leading-none text-bg-primary shadow-[0_6px_16px_rgba(0,0,0,0.4)]"
+    : "rounded-md border border-white/20 bg-accent px-2.25 py-1.25 text-[15px] font-black leading-none text-bg-primary shadow-[0_6px_16px_rgba(0,0,0,0.4)]";
+}
+
+function DeckQuantityBadge({
+  label,
+  size,
+  compact = false,
+}: {
+  label: string;
+  size: DeckQuantityBadgeSize;
+  compact?: boolean;
+}) {
+  return <span className={getDeckQuantityBadgeClass(size, compact)}>{label}</span>;
+}
+
+function abbreviateDeckVariantLabel(label: string): string {
+  const words = label.match(/[A-Za-z0-9]+/g) ?? [];
+  if (words.length <= 1) return label;
+  return words.map((word) => word[0]?.toUpperCase() ?? "").join("");
+}
+
+function buildDeckVariantMetaLabel(variant: CardVariant) {
+  const variantLabel = variant.label || `Variant ${variant.variant_index}`;
+  const shortLabel = abbreviateDeckVariantLabel(variantLabel);
+  return variant.product.set_code
+    ? `${shortLabel} (${variant.product.set_code})`
+    : shortLabel;
+}
+
+function getCardVariantSummary(variant?: CardVariant | null) {
+  if (!variant) return "";
+
+  const parts = [variant.label, variant.product.name]
+    .map((value) => value?.trim())
+    .filter((value): value is string => Boolean(value));
+
+  return [...new Set(parts)].join(" · ");
+}
+
+function getPreferredDeckImage(card?: CardDetail, variantIndex?: number) {
+  const variant = getPreferredDeckVariant(card, variantIndex);
+  return variant?.media.scan_thumbnail_url
+    ?? variant?.media.scan_url
+    ?? variant?.media.thumbnail_url
+    ?? variant?.media.image_url
     ?? null;
 }
 
@@ -2685,7 +3230,26 @@ function buildCombinedSearchQuery(plainText: string, syntaxTokens: string[]) {
 }
 
 function isSameDeckState(left: Deck, right: Deck) {
-  return buildDeckExport(left) === buildDeckExport(right);
+  return JSON.stringify(normalizeDeckForComparison(left)) === JSON.stringify(normalizeDeckForComparison(right));
+}
+
+function normalizeDeckForComparison(deck: Deck) {
+  const normalizeEntry = (entry: DeckEntry | null) => entry
+    ? {
+        card_number: entry.card_number.toUpperCase(),
+        count: entry.count,
+        ...(entry.variant_index != null ? { variant_index: entry.variant_index } : {}),
+      }
+    : null;
+
+  return {
+    leader: normalizeEntry(deck.leader),
+    don: normalizeEntry(deck.don),
+    format: deck.format ?? null,
+    main: [...deck.main]
+      .map((entry) => normalizeEntry(entry)!)
+      .sort((a, b) => a.card_number.localeCompare(b.card_number, undefined, { numeric: true })),
+  };
 }
 
 function parseSearchQuery(query: string) {
