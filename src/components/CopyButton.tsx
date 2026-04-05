@@ -59,7 +59,7 @@ export function CopyButton({
       aria-label={accessibleLabel}
       title={state === "idle" ? label : state === "copied" ? copiedLabel : "Copy failed"}
       className={[
-        "inline-flex h-5 w-5 items-center justify-center rounded border transition-colors",
+        "inline-flex h-5 w-5 cursor-pointer items-center justify-center rounded border transition-colors",
         toneClass,
         className,
       ].filter(Boolean).join(" ")}

@@ -132,7 +132,7 @@ const ExternalLinkArrowIcon = () => (
 const TCGPLAYER_AFFILIATE_BASE_URL = "https://partner.tcgplayer.com/poneglyph";
 const DECK_SURFACE_CLASS = "rounded-2xl border border-border/70 bg-bg-card/72";
 const DECK_SUBSURFACE_CLASS = "rounded-xl border border-border/55 bg-bg-card/35";
-const DECK_CONTROL_CLASS = "inline-flex h-7 items-center justify-center rounded-md border border-border/70 bg-bg-input/70 px-2 text-[10px] font-medium leading-none text-text-primary transition hover:bg-bg-hover";
+const DECK_CONTROL_CLASS = "inline-flex h-7 cursor-pointer items-center justify-center rounded-md border border-border/70 bg-bg-input/70 px-2 text-[10px] font-medium leading-none text-text-primary transition hover:bg-bg-hover";
 const DECK_HEADER_ACTION_CLASS = `${DECK_CONTROL_CLASS} gap-1.5 px-2.5 text-[11px]`;
 
 export function NewDeckRedirect() {
@@ -803,21 +803,23 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
                   )}
                   {effectiveHash && (
                     mode === "edit" ? (
-                      <a
-                        href={deckHashToViewPath(effectiveHash, savedDeckId)}
-                        className={`${DECK_HEADER_ACTION_CLASS} hover:no-underline`}
+                      <button
+                        type="button"
+                        onClick={() => navigate(deckHashToViewPath(effectiveHash, savedDeckId))}
+                        className={`${DECK_HEADER_ACTION_CLASS} border-accent/55 bg-accent/16 text-text-primary shadow-[0_0_0_1px_rgba(255,255,255,0.02)] hover:bg-accent/24`}
                       >
                         <DeckViewActionIcon />
                         View
-                      </a>
+                      </button>
                     ) : (
-                      <Link
-                        to={deckHashToEditPath(effectiveHash, savedDeckId)}
-                        className={`${DECK_HEADER_ACTION_CLASS} bg-bg-tertiary/20 hover:no-underline`}
+                      <button
+                        type="button"
+                        onClick={() => navigate(deckHashToEditPath(effectiveHash, savedDeckId))}
+                        className={`${DECK_HEADER_ACTION_CLASS} bg-bg-tertiary/20 text-text-primary`}
                       >
                         <DeckEditActionIcon />
                         Edit
-                      </Link>
+                      </button>
                     )
                   )}
                 </div>
@@ -891,7 +893,7 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
                         }}
                         aria-label={mode === "bars" ? "Bar charts" : "Pie charts"}
                         title={mode === "bars" ? "Bar charts" : "Pie charts"}
-                        className={`inline-flex h-6 w-8 items-center justify-center rounded-[3px] transition ${
+                        className={`inline-flex h-6 w-8 cursor-pointer items-center justify-center rounded-[3px] transition ${
                           deckChartMode === mode
                             ? "bg-bg-card text-text-primary"
                             : "text-text-secondary hover:bg-bg-hover hover:text-text-primary"
@@ -1000,7 +1002,7 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
                           event.stopPropagation();
                           removeSearchToken(token);
                         }}
-                        className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-bg-tertiary/18 px-2 py-1 text-[10px] text-text-secondary transition hover:bg-bg-hover hover:text-text-primary"
+                        className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-border/60 bg-bg-tertiary/18 px-2 py-1 text-[10px] text-text-secondary transition hover:bg-bg-hover hover:text-text-primary"
                         aria-label={`Remove search term ${token}`}
                       >
                         <span>{token}</span>
@@ -1032,7 +1034,7 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
                       aria-label="Clear search"
                       title="Clear search"
                       disabled={!searchQuery}
-                      className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border/60 bg-bg-tertiary/18 text-text-secondary transition hover:bg-bg-hover hover:text-text-primary disabled:cursor-default disabled:opacity-35"
+                      className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-border/60 bg-bg-tertiary/18 text-text-secondary transition hover:bg-bg-hover hover:text-text-primary disabled:cursor-default disabled:opacity-35"
                     >
                       <ClearSearchIcon />
                     </button>
@@ -1063,7 +1065,7 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
                             <button
                               type="button"
                               onClick={() => cycleSyntaxOperator(field)}
-                              className="flex h-5 w-9 items-center justify-center border border-border/55 bg-bg-input/75 px-1 text-[9px] font-semibold tabular-nums text-text-primary transition hover:bg-bg-hover"
+                              className="flex h-5 w-9 cursor-pointer items-center justify-center border border-border/55 bg-bg-input/75 px-1 text-[9px] font-semibold tabular-nums text-text-primary transition hover:bg-bg-hover"
                               aria-label={`Cycle ${field} operator`}
                             >
                               {draft.operator}
@@ -1072,7 +1074,7 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
                               <button
                                 type="button"
                                 onClick={cycleCounterValue}
-                                className="flex h-5 w-12 items-center justify-center border border-border/55 bg-bg-input/75 px-1 text-[8px] font-medium tabular-nums text-text-primary transition hover:bg-bg-hover"
+                                className="flex h-5 w-12 cursor-pointer items-center justify-center border border-border/55 bg-bg-input/75 px-1 text-[8px] font-medium tabular-nums text-text-primary transition hover:bg-bg-hover"
                                 aria-label="Cycle counter value"
                               >
                                 {draft.value || "-"}
@@ -1090,7 +1092,7 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
                               type="button"
                               onClick={() => appendSyntaxFilter(field)}
                               disabled={field !== "counter" && draft.value.trim().length === 0}
-                              className="flex h-5 w-5 items-center justify-center border border-border/55 bg-bg-input/75 text-[10px] font-semibold text-text-primary transition hover:bg-bg-hover disabled:cursor-not-allowed disabled:opacity-35"
+                              className="flex h-5 w-5 cursor-pointer items-center justify-center border border-border/55 bg-bg-input/75 text-[10px] font-semibold text-text-primary transition hover:bg-bg-hover disabled:cursor-not-allowed disabled:opacity-35"
                               aria-label={`Add ${field} syntax filter`}
                             >
                               +
@@ -1105,7 +1107,7 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
                         <button
                           type="button"
                           onClick={() => appendSimpleSyntaxToken("has:trigger")}
-                          className="flex h-5 w-5 items-center justify-center border border-border/55 bg-bg-input/75 text-[10px] font-semibold text-text-primary transition hover:bg-bg-hover"
+                          className="flex h-5 w-5 cursor-pointer items-center justify-center border border-border/55 bg-bg-input/75 text-[10px] font-semibold text-text-primary transition hover:bg-bg-hover"
                           aria-label="Add trigger syntax filter"
                         >
                           +
@@ -1130,7 +1132,7 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
                           type="button"
                           onClick={appendTraitSyntaxToken}
                           disabled={traitDraft.trim().length === 0}
-                          className="flex h-5 w-5 items-center justify-center border border-border/55 bg-bg-input/75 text-[10px] font-semibold text-text-primary transition hover:bg-bg-hover disabled:cursor-not-allowed disabled:opacity-35"
+                          className="flex h-5 w-5 cursor-pointer items-center justify-center border border-border/55 bg-bg-input/75 text-[10px] font-semibold text-text-primary transition hover:bg-bg-hover disabled:cursor-not-allowed disabled:opacity-35"
                           aria-label="Add trait syntax filter"
                         >
                           +
@@ -1144,15 +1146,17 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
                           <button
                             type="button"
                             onClick={() => setLegalDraftFormatIndex((i) => (i + 1) % formatNames.length)}
-                            className="flex h-5 items-center justify-center border border-border/55 bg-bg-input/75 px-1.5 text-[8px] font-medium text-text-primary transition hover:bg-bg-hover"
+                            className="flex h-5 w-[118px] cursor-pointer items-center justify-center overflow-hidden whitespace-nowrap border border-border/55 bg-bg-input/75 px-1.5 text-[8px] font-medium text-text-primary transition hover:bg-bg-hover"
                             aria-label="Cycle format"
                           >
-                            {formatNames[legalDraftFormatIndex % formatNames.length]}
+                            <span className="min-w-0 truncate">
+                              {formatNames[legalDraftFormatIndex % formatNames.length]}
+                            </span>
                           </button>
                           <button
                             type="button"
                             onClick={() => appendSimpleSyntaxToken(`legal:${formatNames[legalDraftFormatIndex % formatNames.length]}`)}
-                            className="flex h-5 w-5 items-center justify-center border border-border/55 bg-bg-input/75 text-[10px] font-semibold text-text-primary transition hover:bg-bg-hover"
+                            className="flex h-5 w-5 cursor-pointer items-center justify-center border border-border/55 bg-bg-input/75 text-[10px] font-semibold text-text-primary transition hover:bg-bg-hover"
                             aria-label="Add legality syntax filter"
                           >
                             +
@@ -1211,7 +1215,7 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
                         type="button"
                         onClick={() => setSearchPage((current) => current + 1)}
                         disabled={searchQueryResult.isFetching}
-                        className="border border-border/60 bg-bg-tertiary/14 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.08em] text-text-secondary transition hover:bg-bg-hover hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
+                        className="cursor-pointer border border-border/60 bg-bg-tertiary/14 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.08em] text-text-secondary transition hover:bg-bg-hover hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {searchQueryResult.isFetching ? "Loading..." : "Load more"}
                       </button>
@@ -1234,7 +1238,7 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
                       onClick={() => setDeckViewerCardSize(size)}
                       aria-label={`Set ${size} card size`}
                       title={`Set ${size} card size`}
-                      className={`inline-flex h-8 w-8 items-center justify-center rounded-md transition ${
+                      className={`inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-md transition ${
                         deckViewerCardSize === size
                           ? "bg-accent text-[#eef2f7]"
                           : "text-text-secondary hover:bg-bg-hover hover:text-text-primary"
@@ -1497,7 +1501,7 @@ function SearchResultTile({
             onAdd();
           }
         }}
-        className={`block w-full text-left ${isMaxed ? "cursor-not-allowed opacity-60" : ""}`}
+        className={`block w-full text-left ${isMaxed ? "cursor-not-allowed opacity-35" : "cursor-pointer"}`}
       >
         <div className="overflow-hidden rounded-xl border border-border/70 bg-bg-secondary/60 transition-colors group-hover:border-accent/60 group-hover:bg-bg-hover/70">
           <div className="relative bg-bg-tertiary">
@@ -1591,7 +1595,7 @@ function ReadOnlyDeckTile({
       <button
         type="button"
         onClick={onPreview}
-        className={`block w-full text-left ${tileClass}`}
+        className={`block w-full cursor-pointer text-left ${tileClass}`}
       >
         <div className="overflow-hidden rounded-xl border border-border/70 bg-bg-secondary/60 transition-colors group-hover:border-accent/60 group-hover:bg-bg-hover/70">
           <div className="relative bg-bg-tertiary">
@@ -1748,7 +1752,7 @@ function CombinedCostCurveChart({
                             onMouseEnter={(event) => onShowTooltip(event, label, "type", segment.label, segment.count)}
                             onFocus={(event) => onShowTooltip(event, label, "type", segment.label, segment.count)}
                             onClick={(event) => onShowTooltip(event, label, "type", segment.label, segment.count)}
-                            className={`block w-full ${segment.colorClass}`}
+                            className={`block w-full cursor-pointer ${segment.colorClass}`}
                             style={{ height: `${segment.percentOfBin}%` }}
                             title={`${label} cost ${segment.label}: ${segment.count}`}
                             aria-label={`${label} cost ${segment.label}: ${segment.count}`}
@@ -1979,7 +1983,7 @@ function TypePieChart({
               <button
                 key={slice.type}
                 type="button"
-                className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-2 border border-border/60 bg-bg-tertiary/14 px-1.5 py-0.5 text-[13px] text-text-secondary"
+                className="grid w-full min-w-0 cursor-pointer grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-2 border border-border/60 bg-bg-tertiary/14 px-1.5 py-0.5 text-[13px] text-text-secondary"
                 title={`${slice.type}: ${slice.count}`}
                 onMouseEnter={(event) => {
                   const rect = event.currentTarget.parentElement?.parentElement?.getBoundingClientRect();
@@ -2177,7 +2181,7 @@ function SearchTileActionButton({
         lastActivationRef.current = now;
         onClick();
       }}
-      className={`flex transform-gpu items-center justify-center rounded-full border border-white/20 bg-black/78 font-semibold text-white shadow-[0_8px_20px_rgba(0,0,0,0.35)] backdrop-blur transition duration-150 hover:scale-[1.08] hover:bg-black/92 active:scale-[0.96] disabled:cursor-not-allowed disabled:border-white/12 disabled:bg-black/58 disabled:text-white/75 disabled:opacity-100 disabled:hover:scale-100 ${sizeClass} ${iconClass}`}
+      className={`flex cursor-pointer transform-gpu items-center justify-center rounded-full border border-white/20 bg-black/78 font-semibold text-white shadow-[0_8px_20px_rgba(0,0,0,0.35)] backdrop-blur transition duration-150 hover:scale-[1.08] hover:bg-black/92 active:scale-[0.96] disabled:cursor-not-allowed disabled:border-white/12 disabled:bg-black/58 disabled:text-white/75 disabled:opacity-100 disabled:hover:scale-100 ${sizeClass} ${iconClass}`}
     >
       {children}
     </button>
@@ -2338,7 +2342,7 @@ function CardPreviewModal({
         <button
           type="button"
           onClick={onClose}
-          className="hidden absolute right-3 top-3 z-10 h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-black/60 text-lg text-white transition hover:scale-105 hover:border-white/35 hover:bg-black/88 hover:text-white"
+          className="hidden absolute right-3 top-3 z-10 h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-white/15 bg-black/60 text-lg text-white transition hover:scale-105 hover:border-white/35 hover:bg-black/88 hover:text-white"
         >
           ×
         </button>
@@ -2451,7 +2455,7 @@ function CardPreviewModal({
                     <button
                       type="button"
                       onClick={() => onAddToDeck(activeVariantIndex)}
-                      className="inline-flex items-center gap-1.5 rounded-md border border-border/70 bg-bg-input/70 px-2.5 py-1.5 text-[11px] font-medium text-text-primary transition hover:bg-bg-hover"
+                      className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-border/70 bg-bg-input/70 px-2.5 py-1.5 text-[11px] font-medium text-text-primary transition hover:bg-bg-hover"
                     >
                       {cardType.toLowerCase() === "leader" ? "Set leader" : "Add this variant"}
                     </button>
@@ -2477,7 +2481,7 @@ function CardPreviewModal({
                             setActiveVariantIndex(variant.variant_index);
                             onSelectVariant?.(variant.variant_index);
                           }}
-                          className="block w-full text-left"
+                          className="block w-full cursor-pointer text-left"
                           title={variantLabel}
                         >
                           <div
@@ -2588,7 +2592,7 @@ function DeckEntryRow({
         <button
           type="button"
           onClick={onPreview}
-          className="block shrink-0 text-left"
+          className="block shrink-0 cursor-pointer text-left"
           aria-label={`Preview ${card?.name ?? entry.card_number}`}
         >
           <div className="h-[64px] w-[60px] overflow-hidden bg-bg-tertiary">
@@ -2707,7 +2711,7 @@ function DeckActionButton({
       }}
       aria-label={label}
       disabled={!onClick}
-      className={`flex h-6 w-6 transform-gpu items-center justify-center rounded-md border text-sm transition duration-150 hover:scale-[1.08] active:scale-[0.96] disabled:cursor-default disabled:opacity-40 disabled:hover:scale-100 ${className}`}
+      className={`flex h-6 w-6 cursor-pointer transform-gpu items-center justify-center rounded-md border text-sm transition duration-150 hover:scale-[1.08] active:scale-[0.96] disabled:cursor-default disabled:opacity-40 disabled:hover:scale-100 ${className}`}
     >
       {children}
     </button>
@@ -3022,7 +3026,7 @@ function HoverLabelIconButton({
         onClick={onClick}
         aria-label={label}
         disabled={disabled}
-        className={`flex h-7 w-7 items-center justify-center rounded-md border transition ${className} ${disabled ? "cursor-default opacity-35 hover:bg-inherit" : ""}`}
+        className={`flex h-7 w-7 items-center justify-center rounded-md border transition ${disabled ? "cursor-default opacity-35 hover:bg-inherit" : "cursor-pointer"} ${className}`}
       >
         {children}
       </button>
