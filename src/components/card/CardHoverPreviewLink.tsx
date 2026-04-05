@@ -4,19 +4,26 @@ import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../../api/client";
 import type { CardDetail } from "../../api/types";
+import { CardRulesText } from "./CardRulesText";
+import { LegalityBadge } from "./LegalityBadge";
+import { TriggerBlock } from "./TriggerBlock";
 
 type CardHoverPreviewLinkProps = {
   cardNumber: string;
+  variantIndex?: number;
   className?: string;
   children?: ReactNode;
   previewPosition?: "top" | "bottom";
+  to?: string;
 };
 
 export function CardHoverPreviewLink({
   cardNumber,
+  variantIndex,
   className = "",
   children,
   previewPosition = "bottom",
+  to,
 }: CardHoverPreviewLinkProps) {
   const wrapperRef = useRef<HTMLSpanElement | null>(null);
   const previewRef = useRef<HTMLSpanElement | null>(null);
@@ -35,10 +42,13 @@ export function CardHoverPreviewLink({
   });
 
   const preview = data?.data;
-  const thumbnailUrl = preview?.variants?.[0]?.media.scan_thumbnail_url
-    ?? preview?.variants?.[0]?.media.scan_url
-    ?? preview?.variants?.[0]?.media.thumbnail_url
-    ?? preview?.variants?.[0]?.media.image_url
+  const resolvedVariant = variantIndex != null
+    ? preview?.variants?.find((v) => v.variant_index === variantIndex) ?? preview?.variants?.[0]
+    : preview?.variants?.[0];
+  const thumbnailUrl = resolvedVariant?.media.scan_thumbnail_url
+    ?? resolvedVariant?.media.scan_url
+    ?? resolvedVariant?.media.thumbnail_url
+    ?? resolvedVariant?.media.image_url
     ?? preview?.scan_thumb_url
     ?? preview?.scan_url
     ?? preview?.thumbnail_url
@@ -124,7 +134,7 @@ export function CardHoverPreviewLink({
       onFocus={handlePreviewIntent}
       onBlur={() => setIsOpen(false)}
     >
-      <Link to={`/cards/${cardNumber}`} className={className}>
+      <Link to={to ?? (variantIndex != null ? `/cards/${cardNumber}?variant=${variantIndex}` : `/cards/${cardNumber}`)} className={className}>
         {label}
       </Link>
       {isOpen && typeof document !== "undefined"
@@ -196,13 +206,13 @@ export function CardHoverPreviewLink({
                           <MetaRow label="Counter" value={`+${preview.counter}`} />
                         ) : null}
                         {effectText ? (
-                          <span className="mt-3 line-clamp-5 block text-sm leading-6 text-text-primary/90">
-                            {effectText}
+                          <span className="mt-3 line-clamp-5 block text-sm leading-6">
+                            <CardRulesText text={effectText} compact />
                           </span>
                         ) : null}
                         {triggerText ? (
-                          <span className="mt-2 line-clamp-3 block text-sm leading-6 text-text-primary/85">
-                            {triggerText}
+                          <span className="mt-2 line-clamp-3 block text-sm leading-6">
+                            <TriggerBlock className="-mx-1" text={triggerText} compact />
                           </span>
                         ) : null}
                         {(preview.rarity || preview.block || cardNumber) ? (
@@ -222,6 +232,13 @@ export function CardHoverPreviewLink({
                             {cardNumber ? (
                               <span className="font-semibold uppercase tracking-wider">{cardNumber}</span>
                             ) : null}
+                          </span>
+                        ) : null}
+                        {Object.keys(preview.legality).length > 0 ? (
+                          <span className="mt-2 flex flex-wrap gap-1">
+                            {Object.entries(preview.legality).map(([fmt, info]) => (
+                              <LegalityBadge key={fmt} format={fmt} status={info.status} />
+                            ))}
                           </span>
                         ) : null}
                       </>
@@ -249,3 +266,4 @@ function MetaRow({ label, value }: { label: string; value: string }) {
     </span>
   );
 }
+

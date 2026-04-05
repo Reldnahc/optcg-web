@@ -7,6 +7,7 @@ import { CardHoverPreviewLink } from "./CardHoverPreviewLink";
 import { CardRulesText } from "./CardRulesText";
 import { TriggerBlock } from "./TriggerBlock";
 import { DEFAULT_PAGE_CONTAINER_CLASS } from "../layout/container";
+import { LegalityBadge } from "./LegalityBadge";
 
 type LanguageSwitcherConfig = {
   current: string;
@@ -25,14 +26,7 @@ type ToolAction = {
   size?: number | null;
 };
 
-const STATUS_BADGE_STYLE: Record<string, string> = {
-  legal: "border-legal/30 bg-legal/10 text-legal",
-  banned: "border-banned/30 bg-banned/10 text-banned",
-  restricted: "border-restricted/30 bg-restricted/10 text-restricted",
-  pair: "border-pair/30 bg-pair/10 text-pair",
-  not_legal: "border-not-legal/30 bg-not-legal/10 text-text-secondary",
-  unreleased: "border-accent/30 bg-accent/10 text-accent",
-};
+
 const TCGPLAYER_AFFILIATE_BASE_URL = "https://partner.tcgplayer.com/poneglyph";
 
 export function CardDetailView({
@@ -542,9 +536,7 @@ function LegalityItem({ format, info }: { format: string; info: CardDetailType["
         >
           {format}
         </Link>
-        <span className={`inline-flex shrink-0 whitespace-nowrap rounded-full border px-2 py-1 text-xs leading-tight font-medium ${STATUS_BADGE_STYLE[legality.tone] || "border-border text-text-muted"}`}>
-          {legality.label}
-        </span>
+        <LegalityBadge status={legality.tone} label={legality.label} size="md" />
       </div>
       {partners.length > 0 ? (
         <p className="mt-1 flex flex-wrap items-baseline gap-x-1 text-xs text-text-muted">

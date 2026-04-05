@@ -1,6 +1,7 @@
 import { Link, useSearchParams } from "react-router-dom";
 import { useState } from "react";
 import { useScanProgress, useScanProgressMissing } from "../api/hooks";
+import { CardHoverPreviewLink } from "../components/card/CardHoverPreviewLink";
 import { ErrorState } from "../components/layout/ErrorState";
 import { PageContainer } from "../components/layout/PageContainer";
 import { usePageMeta } from "../hooks/usePageMeta";
@@ -51,9 +52,14 @@ function MissingVariantLine({ variant, lang }: { variant: ScanProgressMissingVar
 
   return (
     <li className="flex flex-wrap items-center gap-x-2 gap-y-1">
-      <Link to={url} className="font-mono text-link hover:text-link-hover">
+      <CardHoverPreviewLink
+        cardNumber={variant.card_number}
+        variantIndex={variant.variant_index}
+        to={url}
+        className="font-mono text-link hover:text-link-hover"
+      >
         {variant.card_number}
-      </Link>
+      </CardHoverPreviewLink>
       <span className="text-text-muted">variant {variant.variant_index}</span>
       {variant.label ? <span className="text-text-secondary">({variant.label})</span> : null}
       {variant.product_name ? (
@@ -97,9 +103,13 @@ function MissingDetails({ bucketKey, lang }: { bucketKey: string; lang: string }
 
               return (
                 <li key={card.card_number} className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <Link to={url} className="font-mono text-link hover:text-link-hover">
+                  <CardHoverPreviewLink
+                    cardNumber={card.card_number}
+                    to={url}
+                    className="font-mono text-link hover:text-link-hover"
+                  >
                     {card.card_number}
-                  </Link>
+                  </CardHoverPreviewLink>
                   <span className={card.has_any_image_or_scan ? "text-text-secondary" : "text-banned"}>
                     {card.has_any_image_or_scan ? "no scan yet" : "no image or scan"}
                   </span>
