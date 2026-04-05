@@ -3188,6 +3188,10 @@ function buildDeckLegality(
 
       if (legality.status === "banned") {
         reasons.push(`${card.card_number} is banned`);
+      } else if (legality.status === "not_legal") {
+        reasons.push(`${card.card_number} is rotated`);
+      } else if (legality.status === "unreleased") {
+        reasons.push(`${card.card_number} is not yet legal`);
       } else if (legality.status === "restricted") {
         const maxCopies = legality.max_copies ?? 1;
         if (entry.count > maxCopies) {
@@ -3201,6 +3205,8 @@ function buildDeckLegality(
             reasons.push(`${card.card_number} cannot be used with ${partner}`);
           }
         }
+      } else if (legality.status !== "legal") {
+        reasons.push(`${card.card_number} is not legal in ${format}`);
       }
     }
 
