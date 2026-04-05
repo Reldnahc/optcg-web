@@ -22,7 +22,6 @@ import {
   setMainDeckEntryVariant,
   sortedDeckEntries,
   uniqueDeckCardNumbers,
-  uniqueMainCount,
   updateMainDeckCount,
 } from "../decks/model";
 import type { Deck, DeckEntry } from "../decks/types";
@@ -367,7 +366,6 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
   const canSaveAsNewToLibrary = Boolean(mode === "edit" && canSaveToLibrary);
   const exportText = deck ? buildDeckExport(deck) : "";
   const totalMainCards = deck ? mainDeckCount(deck) : 0;
-  const totalUniqueMain = deck ? uniqueMainCount(deck) : 0;
   const warnings = deck ? buildDeckWarnings(deck) : [];
   const previewDetail = previewQuery.data?.data ?? null;
   const leaderTitle = deck?.leader
@@ -847,9 +845,6 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
               {deckStats && (
                 <>
                   <CompactStatusPill label="Avg Cost" value={deckStats.averageCost} />
-                  <CompactStatusPill label="2ks" value={String(deckStats.twoKs)} />
-                  <CompactStatusPill label="1ks" value={String(deckStats.oneKs)} />
-                  <CompactStatusPill label="Bricks" value={String(deckStats.bricks)} />
                   <CompactStatusPill label="Triggers" value={String(deckStats.triggers)} />
                   <CompactStatusPill label="Chars" value={String(deckStats.characters)} />
                   <CompactStatusPill label="Events" value={String(deckStats.events)} />
@@ -1352,8 +1347,8 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
                   )}
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-[11px] text-text-secondary sm:text-xs">
-                    {totalMainCards}/50 cards - {totalUniqueMain} unique
+                  <p className="text-[15px] font-semibold leading-none tracking-tight text-text-primary sm:text-base">
+                    {totalMainCards}/50 cards
                   </p>
                 </div>
               </div>
@@ -1724,7 +1719,7 @@ function CombinedCostCurveChart({
               transform: "translateX(-50%)",
             }}
           >
-            {curveTooltip.costLabel} Cost {curveTooltip.segmentLabel === "0" ? "Brick" : curveTooltip.segmentLabel}: {curveTooltip.count}
+            {curveTooltip.costLabel} Cost {curveTooltip.segmentLabel}: {curveTooltip.count}
           </ChartTooltip>
         )}
         <div className="grid grid-cols-11 gap-2">
@@ -1783,7 +1778,7 @@ function CounterBarChart({
   twoKs: number;
 }) {
   const bars = [
-    { label: "0", count: bricks, colorClass: "bg-slate-400/85" },
+    { label: "Brick", count: bricks, colorClass: "bg-slate-400/85" },
     { label: "1k", count: oneKs, colorClass: "bg-sky-400/85" },
     { label: "2k", count: twoKs, colorClass: "bg-amber-300/90" },
   ];
@@ -1810,7 +1805,7 @@ function CounterBarChart({
               transform: "translate(-50%, calc(-100% - 6px))",
             }}
           >
-            {(tooltip.label === "0" ? "Brick" : tooltip.label)} Counter: {tooltip.count}
+            {tooltip.label} Counter: {tooltip.count}
           </ChartTooltip>
         )}
       <div className="grid grid-cols-3 gap-2">
@@ -2581,7 +2576,6 @@ function DeckEntryRow({
   forceStaticCount?: boolean;
 }) {
   const previewImage = getPreferredDeckImage(card, entry.variant_index);
-  const variantSummary = getCardVariantSummary(getPreferredDeckVariant(card, entry.variant_index));
   const rowToneClass = getDeckRowToneClass(card?.color ?? []);
   const costBadgeClass = getDeckCostBadgeClass(card?.color ?? []);
   const showCostBadge = !forceStaticCount;
@@ -2640,8 +2634,6 @@ function DeckEntryRow({
       <div className="min-w-0 flex-1 pl-1">
         <p className="min-w-0 truncate text-[13px] font-semibold text-text-primary">{card?.name ?? entry.card_number}</p>
         <p className="truncate text-[10px] font-medium text-text-secondary">{entry.card_number}</p>
-        {variantSummary ? <p className="truncate text-[10px] text-text-secondary">{variantSummary}</p> : null}
-        {card?.power != null && <p className="truncate text-[10px] text-text-secondary">Power {card.power}</p>}
         {card?.counter != null && <p className="truncate text-[10px] text-text-secondary">Counter +{card.counter}</p>}
       </div>
 
@@ -2711,7 +2703,7 @@ function DeckActionButton({
       }}
       aria-label={label}
       disabled={!onClick}
-      className={`flex h-6 w-6 cursor-pointer transform-gpu items-center justify-center rounded-md border text-sm transition duration-150 hover:scale-[1.08] active:scale-[0.96] disabled:cursor-default disabled:opacity-40 disabled:hover:scale-100 ${className}`}
+      className={`flex h-6 w-6 cursor-pointer items-center justify-center rounded-md border text-sm transition-colors duration-150 disabled:cursor-default disabled:opacity-40 ${className}`}
     >
       {children}
     </button>
@@ -2785,14 +2777,14 @@ function getDeckVariantThumbnailUrl(variant: CardVariant) {
 }
 
 function getDeckVariantStripContainerClass(count: number): string {
-  if (count >= 4) return "flex gap-1.25 overflow-x-auto pb-1";
-  if (count >= 2) return "grid grid-cols-7 gap-1";
+  if (count >= 4) return "flex gap-1.5 overflow-x-auto pb-1 sm:gap-1.25";
+  if (count >= 2) return "grid grid-cols-4 gap-1.5 sm:grid-cols-7 sm:gap-1";
   return "grid grid-cols-1 gap-1.5";
 }
 
 function getDeckVariantStripItemClass(count: number): string {
   if (count >= 4) {
-    return "w-[calc((100%-1rem)/7)] min-w-[calc((100%-1rem)/7)] shrink-0";
+    return "w-[76px] min-w-[76px] shrink-0 sm:w-[calc((100%-1rem)/7)] sm:min-w-[calc((100%-1rem)/7)]";
   }
   return "min-w-0";
 }
@@ -3579,7 +3571,7 @@ function buildDeckCurve(
     const traitColorMap = new Map(traitSlices.map((slice) => [slice.type, slice.dotClass]));
     const segments = mode === "counter"
       ? [
-          { key: "counter0", label: "0", count: bin.counter0, colorClass: "bg-slate-400/80" },
+          { key: "counter0", label: "Brick", count: bin.counter0, colorClass: "bg-slate-400/80" },
           { key: "counter1k", label: "1k", count: bin.counter1k, colorClass: "bg-sky-400/80" },
           { key: "counter2k", label: "2k", count: bin.counter2k, colorClass: "bg-amber-300/85" },
         ]
