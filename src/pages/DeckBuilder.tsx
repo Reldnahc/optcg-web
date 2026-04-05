@@ -372,6 +372,7 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
     ? buildDeckTitle(deck.leader.card_number, cardsByNumber[deck.leader.card_number]?.name)
     : "Deck Builder";
   const deckStats = deck ? buildDeckStats(deck, cardsByNumber) : null;
+  const deckPriceStats = deck ? buildDeckPriceStats(deck, cardsByNumber) : null;
   const deckTraitCounts = deck ? buildDeckTypeCounts(deck, cardsByNumber) : [];
   const deckTraitPairCounts = deck ? buildDeckTraitCounts(deck, cardsByNumber) : [];
   const deckCurveByType = deck ? buildDeckCurve(deck, cardsByNumber, "type") : [];
@@ -844,6 +845,8 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
             <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
               {deckStats && (
                 <>
+                  <CompactStatusPill label="Low" value={deckPriceStats?.low ?? "-"} />
+                  <CompactStatusPill label="Market" value={deckPriceStats?.market ?? "-"} />
                   <CompactStatusPill label="Avg Cost" value={deckStats.averageCost} />
                   <CompactStatusPill label="Triggers" value={String(deckStats.triggers)} />
                   <CompactStatusPill label="Chars" value={String(deckStats.characters)} />
@@ -2736,6 +2739,16 @@ function formatDeckVariantPrice(val: string | null) {
   return `$${parseFloat(val).toFixed(2)}`;
 }
 
+function parseDeckPrice(value: string | null): number | null {
+  if (!value) return null;
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function formatDeckPriceTotal(value: number) {
+  return `$${value.toFixed(2)}`;
+}
+
 function getDeckVariantMarketPrice(variant: CardVariant): string | null {
   const firstPrice = Object.values(variant.market.prices)[0];
   return firstPrice?.market_price ?? null;
@@ -3454,6 +3467,42 @@ function buildDeckStats(deck: Deck, cardsByNumber: Record<string, CardDetail>) {
     characters,
     events,
     stages,
+  };
+}
+
+function buildDeckPriceStats(deck: Deck, cardsByNumber: Record<string, CardDetail>) {
+  let lowTotal = 0;
+  let marketTotal = 0;
+  let hasLow = false;
+  let hasMarket = false;
+
+  const entries: Array<{ card_number: string; count: number; variant_index?: number }> = [
+    ...(deck.leader ? [{ card_number: deck.leader.card_number, count: 1, variant_index: deck.leader.variant_index }] : []),
+    ...deck.main,
+  ];
+
+  for (const entry of entries) {
+    const card = cardsByNumber[entry.card_number];
+    const variant = getPreferredDeckVariant(card, entry.variant_index);
+    if (!variant) continue;
+
+    const low = parseDeckPrice(getDeckVariantLowPrice(variant));
+    const market = parseDeckPrice(getDeckVariantMarketPrice(variant));
+
+    if (low != null) {
+      lowTotal += low * entry.count;
+      hasLow = true;
+    }
+
+    if (market != null) {
+      marketTotal += market * entry.count;
+      hasMarket = true;
+    }
+  }
+
+  return {
+    low: hasLow ? formatDeckPriceTotal(lowTotal) : null,
+    market: hasMarket ? formatDeckPriceTotal(marketTotal) : null,
   };
 }
 
