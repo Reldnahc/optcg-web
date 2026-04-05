@@ -406,7 +406,7 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
     () => deck ? sortDeckEntriesForDisplay(deck.main, cardsByNumber) : [],
     [cardsByNumber, deck],
   );
-  const showDeckSidebar = mode === "edit" || !deckViewerOverview;
+  const hideDeckSidebarOnDesktop = mode === "view" && deckViewerOverview;
 
   useEffect(() => {
     if (!shouldWarnOnLeave || typeof window === "undefined") return;
@@ -1174,7 +1174,7 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
         )}
       </section>
 
-      <div className={`grid gap-3 ${mode === "edit" ? "xl:grid-cols-[minmax(0,2fr)_300px]" : showDeckSidebar ? "lg:grid-cols-[minmax(0,2fr)_300px]" : ""}`}>
+      <div className={`grid gap-3 ${mode === "edit" ? "xl:grid-cols-[minmax(0,2fr)_300px]" : !hideDeckSidebarOnDesktop ? "lg:grid-cols-[minmax(0,2fr)_300px]" : ""}`}>
         <section className={`${DECK_SURFACE_CLASS} p-2 sm:p-3`}>
           {mode === "edit" ? (
             <div className="space-y-2">
@@ -1329,8 +1329,8 @@ function DeckBuilderPage({ mode }: { mode: DeckBuilderMode }) {
           )}
         </section>
 
-        {(mode === "edit" || (mode === "view" && showDeckSidebar)) && (
-          <section className="space-y-3">
+        {(mode === "edit" || mode === "view") && (
+          <section className={`space-y-3 ${hideDeckSidebarOnDesktop ? "lg:hidden" : ""}`}>
             <section className={`overflow-hidden rounded-t-2xl rounded-b-none border border-border/70 bg-bg-card/72 pt-2.5 sm:pt-3`}>
               <div className="mb-3 space-y-2 px-2 sm:px-3">
                 <div className="flex items-center justify-between gap-3">
@@ -1575,12 +1575,11 @@ function ReadOnlyDeckTile({
   showPreviewButton?: boolean;
 }) {
   const thumbnailUrl = getPreferredDeckImage(card, entry.variant_index);
-  const variantSummary = getCardVariantSummary(getPreferredDeckVariant(card, entry.variant_index));
   const nameClass = compact
-    ? "min-w-0 truncate text-[11px] font-semibold leading-tight text-text-primary"
-    : "min-w-0 truncate text-[13px] font-semibold leading-tight text-text-primary";
+    ? "min-w-0 truncate text-[12px] font-semibold leading-tight text-text-primary"
+    : "min-w-0 truncate text-[14px] font-semibold leading-tight text-text-primary";
   const bodyClass = compact ? "space-y-1 p-1.5" : "space-y-1.5 p-2.5";
-  const countLabel = isLeader ? "LDR" : `x${entry.count}`;
+  const countLabel = isLeader ? "L" : `x${entry.count}`;
   const tileClass = getReadOnlyDeckTileClass(size, compact);
   const previewButtonPositionClass = getReadOnlyDeckTilePreviewPositionClass(size, compact);
   const imageOverlayPaddingClass = getReadOnlyDeckTileOverlayPaddingClass(size, compact);
@@ -1622,12 +1621,7 @@ function ReadOnlyDeckTile({
                   {card?.cost != null ? ` - Cost ${card.cost}` : ""}
                   {(card?.color?.length ?? 0) > 0 ? ` - ${card!.color.join("/")}` : ""}
                 </p>
-                {variantSummary ? (
-                  <p className="truncate text-[10px] text-text-secondary">{variantSummary}</p>
-                ) : null}
               </>
-            ) : variantSummary ? (
-              <p className="truncate text-[9px] text-text-secondary">{variantSummary}</p>
             ) : null}
           </div>
         </div>
@@ -1860,7 +1854,10 @@ function CounterBarChart({
                 >
                   <div
                     className={`w-full ${bar.colorClass}`}
-                    style={{ height: `${Math.max(4, Math.round((bar.count / maxCount) * 100))}%` }}
+                    style={{
+                      height: `${Math.round((bar.count / maxCount) * 100)}%`,
+                      minHeight: bar.count > 0 ? "4px" : "0px",
+                    }}
                   />
                 </div>
               </div>
@@ -3104,9 +3101,9 @@ function CompactStatusPill({
       : "border-border bg-bg-secondary/50 text-text-secondary";
 
   return (
-    <div className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 ${toneClass}`}>
-      <span className="text-[10px] uppercase tracking-[0.12em]">{label}</span>
-      <span className="font-semibold text-text-primary">{value}</span>
+    <div className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 lg:px-2.5 lg:py-1.5 ${toneClass}`}>
+      <span className="text-[10px] uppercase tracking-[0.12em] lg:text-[11px]">{label}</span>
+      <span className="font-semibold text-text-primary lg:text-[15px]">{value}</span>
     </div>
   );
 }
@@ -3126,12 +3123,12 @@ function LegalityPill({ result }: { result: FormatLegalityResult }) {
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
     >
-      <div className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 ${
+      <div className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 lg:px-2.5 lg:py-1.5 ${
         result.legal
           ? "border-legal/25 bg-legal/8 text-legal"
           : "border-banned/25 bg-banned/8 text-[#f2c1c1]"
       }`}>
-        <span className="text-[10px] uppercase tracking-[0.12em]">{result.format}</span>
+        <span className="text-[10px] uppercase tracking-[0.12em] lg:text-[11px]">{result.format}</span>
         {result.legal ? <LegalCheckIcon /> : <IllegalXIcon />}
       </div>
       {showTooltip && (
